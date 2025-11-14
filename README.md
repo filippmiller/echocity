@@ -185,15 +185,17 @@ The navbar automatically adjusts based on user role:
 
 ### Scripts
 
-- `npm run dev` - Start development server
+- `npm run dev` - Start development server on port 3010
 - `npm run build` - Build for production
 - `npm run start` - Start production server
 - `npm run lint` - Run ESLint
 - `npm run prisma:generate` - Generate Prisma client
-- `npm run prisma:migrate` - Create and apply migrations
-- `npm run prisma:deploy` - Deploy migrations (production)
+- `npm run prisma:migrate` - Create and apply migrations (development)
+- `npm run prisma:deploy` - Deploy migrations to Supabase (production)
 - `npm run prisma:studio` - Open Prisma Studio
 - `npm run prisma:seed` - Run seed script to create test data
+
+**Note:** Development server runs on `http://localhost:3010` by default.
 
 ## Deployment
 
