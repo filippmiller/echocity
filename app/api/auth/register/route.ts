@@ -5,25 +5,15 @@ import { createSession } from '@/modules/auth/session'
 import { logger } from '@/lib/logger'
 
 const registerUserSchema = z.object({
-  accountType: z.enum(['USER', 'BUSINESS_OWNER']),
+  accountType: z.enum(['CITIZEN', 'BUSINESS_OWNER']),
   email: z.string().email('Некорректный email'),
   password: z.string().min(1, 'Пароль обязателен'),
-  // User fields
-  fullName: z.string().optional(),
-  homeCity: z.string().optional(),
-  preferredLanguage: z.string().optional(),
-  // Business fields
-  contactName: z.string().optional(),
-  contactPhone: z.string().optional(),
-  displayName: z.string().optional(),
-  legalName: z.string().optional(),
-  contactEmail: z.string().email().optional(),
-  placeName: z.string().optional(),
-  placeCategory: z.string().optional(),
-  placeDescription: z.string().optional(),
-  placeCity: z.string().optional(),
-  placeAddress: z.string().optional(),
-  placePhone: z.string().optional(),
+  // CITIZEN fields
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  phone: z.string().optional(),
+  city: z.string().optional(),
+  language: z.enum(['ru', 'en']).optional(),
 })
 
 export async function POST(request: NextRequest) {
@@ -33,11 +23,11 @@ export async function POST(request: NextRequest) {
 
     let result
 
-    if (validated.accountType === 'USER') {
+    if (validated.accountType === 'CITIZEN') {
       // Validate required user fields
-      if (!validated.email || !validated.password) {
+      if (!validated.email || !validated.password || !validated.firstName) {
         return NextResponse.json(
-          { error: 'Email и пароль обязательны' },
+          { error: 'Email, пароль и имя обязательны' },
           { status: 400 }
         )
       }
@@ -45,46 +35,18 @@ export async function POST(request: NextRequest) {
       result = await registerUser({
         email: validated.email,
         password: validated.password,
-        fullName: validated.fullName,
-        homeCity: validated.homeCity,
-        preferredLanguage: validated.preferredLanguage,
+        firstName: validated.firstName!,
+        lastName: validated.lastName,
+        phone: validated.phone,
+        city: validated.city,
+        language: validated.language,
       })
     } else if (validated.accountType === 'BUSINESS_OWNER') {
-      // Validate required business fields
-      if (
-        !validated.email ||
-        !validated.password ||
-        !validated.contactName ||
-        !validated.contactPhone ||
-        !validated.displayName ||
-        !validated.contactEmail ||
-        !validated.placeName ||
-        !validated.placeCategory ||
-        !validated.placeCity ||
-        !validated.placeAddress ||
-        !validated.placePhone
-      ) {
-        return NextResponse.json(
-          { error: 'Все поля обязательны для регистрации бизнеса' },
-          { status: 400 }
-        )
-      }
-
-      result = await registerBusiness({
-        email: validated.email,
-        password: validated.password,
-        contactName: validated.contactName!,
-        contactPhone: validated.contactPhone!,
-        displayName: validated.displayName!,
-        legalName: validated.legalName,
-        contactEmail: validated.contactEmail!,
-        placeName: validated.placeName!,
-        placeCategory: validated.placeCategory!,
-        placeDescription: validated.placeDescription,
-        placeCity: validated.placeCity!,
-        placeAddress: validated.placeAddress!,
-        placePhone: validated.placePhone!,
-      })
+      // Business registration should go through /business/register wizard
+      return NextResponse.json(
+        { error: 'Регистрация бизнеса доступна через мастер регистрации' },
+        { status: 400 }
+      )
     } else {
       return NextResponse.json(
         { error: 'Неверный тип аккаунта' },

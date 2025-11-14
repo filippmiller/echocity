@@ -6,11 +6,11 @@ import Link from 'next/link'
 import { PasswordInput } from '@/components/forms/PasswordInput'
 import { getPasswordStrengthError } from '@/lib/password'
 
-type AccountType = 'USER' | 'BUSINESS_OWNER'
+type AccountType = 'CITIZEN' | 'BUSINESS_OWNER'
 
 export default function RegisterPage() {
   const router = useRouter()
-  const [accountType, setAccountType] = useState<AccountType>('USER')
+  const [accountType, setAccountType] = useState<AccountType>('CITIZEN')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -19,23 +19,13 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
 
-  // User fields
-  const [fullName, setFullName] = useState('')
-  const [homeCity, setHomeCity] = useState('Санкт-Петербург')
-  const [preferredLanguage, setPreferredLanguage] = useState('ru')
+  // CITIZEN fields
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
+  const [phone, setPhone] = useState('')
+  const [city, setCity] = useState('Санкт-Петербург')
+  const [language, setLanguage] = useState<'ru' | 'en'>('ru')
 
-  // Business fields
-  const [contactName, setContactName] = useState('')
-  const [contactPhone, setContactPhone] = useState('')
-  const [displayName, setDisplayName] = useState('')
-  const [legalName, setLegalName] = useState('')
-  const [contactEmail, setContactEmail] = useState('')
-  const [placeName, setPlaceName] = useState('')
-  const [placeCategory, setPlaceCategory] = useState('CAFE')
-  const [placeDescription, setPlaceDescription] = useState('')
-  const [placeCity, setPlaceCity] = useState('Санкт-Петербург')
-  const [placeAddress, setPlaceAddress] = useState('')
-  const [placePhone, setPlacePhone] = useState('')
 
   const [passwordError, setPasswordError] = useState<string | null>(null)
 
@@ -72,22 +62,12 @@ export default function RegisterPage() {
         password,
       }
 
-      if (accountType === 'USER') {
-        payload.fullName = fullName || undefined
-        payload.homeCity = homeCity || undefined
-        payload.preferredLanguage = preferredLanguage || 'ru'
-      } else {
-        payload.contactName = contactName
-        payload.contactPhone = contactPhone
-        payload.displayName = displayName
-        payload.legalName = legalName || undefined
-        payload.contactEmail = contactEmail
-        payload.placeName = placeName
-        payload.placeCategory = placeCategory
-        payload.placeDescription = placeDescription || undefined
-        payload.placeCity = placeCity
-        payload.placeAddress = placeAddress
-        payload.placePhone = placePhone
+      if (accountType === 'CITIZEN') {
+        payload.firstName = firstName
+        payload.lastName = lastName || undefined
+        payload.phone = phone || undefined
+        payload.city = city || undefined
+        payload.language = language || 'ru'
       }
 
       const response = await fetch('/api/auth/register', {
@@ -104,10 +84,10 @@ export default function RegisterPage() {
       }
 
       // Redirect based on role
-      if (data.user.role === 'USER') {
-        router.push('/dashboard')
+      if (data.user.role === 'CITIZEN') {
+        router.push('/map')
       } else if (data.user.role === 'BUSINESS_OWNER') {
-        router.push('/business/dashboard')
+        router.push('/business/places')
       } else {
         router.push('/admin')
       }
@@ -137,8 +117,8 @@ export default function RegisterPage() {
               <label className="flex items-center">
                 <input
                   type="radio"
-                  value="USER"
-                  checked={accountType === 'USER'}
+                  value="CITIZEN"
+                  checked={accountType === 'CITIZEN'}
                   onChange={(e) => setAccountType(e.target.value as AccountType)}
                   className="mr-2"
                 />
@@ -202,185 +182,89 @@ export default function RegisterPage() {
               />
             </div>
 
-            {accountType === 'USER' ? (
+            {accountType === 'CITIZEN' ? (
               <>
                 <div>
-                  <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">
-                    Имя
+                  <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
+                    Имя *
                   </label>
                   <input
-                    id="fullName"
+                    id="firstName"
                     type="text"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    required
                     className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
                 <div>
-                  <label htmlFor="homeCity" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
+                    Фамилия
+                  </label>
+                  <input
+                    id="lastName"
+                    type="text"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+                    Телефон
+                  </label>
+                  <input
+                    id="phone"
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="city" className="block text-sm font-medium text-gray-700">
                     Город
                   </label>
                   <input
-                    id="homeCity"
+                    id="city"
                     type="text"
-                    value={homeCity}
-                    onChange={(e) => setHomeCity(e.target.value)}
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
                     className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Язык интерфейса
+                  </label>
+                  <div className="flex gap-4">
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        value="ru"
+                        checked={language === 'ru'}
+                        onChange={(e) => setLanguage(e.target.value as 'ru' | 'en')}
+                        className="mr-2"
+                      />
+                      Русский
+                    </label>
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        value="en"
+                        checked={language === 'en'}
+                        onChange={(e) => setLanguage(e.target.value as 'ru' | 'en')}
+                        className="mr-2"
+                      />
+                      English
+                    </label>
+                  </div>
                 </div>
               </>
             ) : (
-              <>
-                <div>
-                  <label htmlFor="contactName" className="block text-sm font-medium text-gray-700">
-                    Имя контактного лица *
-                  </label>
-                  <input
-                    id="contactName"
-                    type="text"
-                    value={contactName}
-                    onChange={(e) => setContactName(e.target.value)}
-                    required
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="contactPhone" className="block text-sm font-medium text-gray-700">
-                    Телефон контактного лица *
-                  </label>
-                  <input
-                    id="contactPhone"
-                    type="tel"
-                    value={contactPhone}
-                    onChange={(e) => setContactPhone(e.target.value)}
-                    required
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="displayName" className="block text-sm font-medium text-gray-700">
-                    Название бизнеса *
-                  </label>
-                  <input
-                    id="displayName"
-                    type="text"
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                    required
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="legalName" className="block text-sm font-medium text-gray-700">
-                    Юридическое название
-                  </label>
-                  <input
-                    id="legalName"
-                    type="text"
-                    value={legalName}
-                    onChange={(e) => setLegalName(e.target.value)}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="contactEmail" className="block text-sm font-medium text-gray-700">
-                    Email для клиентов *
-                  </label>
-                  <input
-                    id="contactEmail"
-                    type="email"
-                    value={contactEmail}
-                    onChange={(e) => setContactEmail(e.target.value)}
-                    required
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="placeName" className="block text-sm font-medium text-gray-700">
-                    Название точки *
-                  </label>
-                  <input
-                    id="placeName"
-                    type="text"
-                    value={placeName}
-                    onChange={(e) => setPlaceName(e.target.value)}
-                    required
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="placeCategory" className="block text-sm font-medium text-gray-700">
-                    Категория *
-                  </label>
-                  <select
-                    id="placeCategory"
-                    value={placeCategory}
-                    onChange={(e) => setPlaceCategory(e.target.value)}
-                    required
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    <option value="CAFE">Кафе</option>
-                    <option value="BAR">Бар</option>
-                    <option value="RESTAURANT">Ресторан</option>
-                    <option value="NAIL_SALON">Маникюр</option>
-                    <option value="HAIRDRESSER">Парикмахерская</option>
-                    <option value="BARBERSHOP">Барбершоп</option>
-                    <option value="DRY_CLEANING">Химчистка</option>
-                    <option value="OTHER_SERVICE">Другое</option>
-                  </select>
-                </div>
-                <div>
-                  <label htmlFor="placeDescription" className="block text-sm font-medium text-gray-700">
-                    Описание
-                  </label>
-                  <textarea
-                    id="placeDescription"
-                    value={placeDescription}
-                    onChange={(e) => setPlaceDescription(e.target.value)}
-                    rows={3}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="placeCity" className="block text-sm font-medium text-gray-700">
-                    Город *
-                  </label>
-                  <input
-                    id="placeCity"
-                    type="text"
-                    value={placeCity}
-                    onChange={(e) => setPlaceCity(e.target.value)}
-                    required
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="placeAddress" className="block text-sm font-medium text-gray-700">
-                    Адрес *
-                  </label>
-                  <input
-                    id="placeAddress"
-                    type="text"
-                    value={placeAddress}
-                    onChange={(e) => setPlaceAddress(e.target.value)}
-                    required
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="placePhone" className="block text-sm font-medium text-gray-700">
-                    Телефон точки *
-                  </label>
-                  <input
-                    id="placePhone"
-                    type="tel"
-                    value={placePhone}
-                    onChange={(e) => setPlacePhone(e.target.value)}
-                    required
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-              </>
+              <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded">
+                <p>Для регистрации бизнеса используйте <Link href="/business/register" className="underline font-medium">мастер регистрации</Link></p>
+              </div>
             )}
 
             {error && (

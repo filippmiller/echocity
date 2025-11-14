@@ -73,7 +73,7 @@ echocity/
    npm run dev
    ```
 
-   Open [http://localhost:3000](http://localhost:3000)
+   Open [http://localhost:3010](http://localhost:3010)
 
 ## Database Schema
 
@@ -110,20 +110,24 @@ The platform supports a franchise model where:
 
 #### Migrations
 
-To apply the franchise and cities schema:
+To apply migrations to Supabase (DATABASE_URL points to Supabase Postgres):
 
 ```bash
 # Generate Prisma client
 npm run prisma:generate
 
-# Create and apply migration (development)
+# Create and apply migration (development - creates migration files)
 npm run prisma:migrate
 
-# Deploy migrations (production)
+# Deploy migrations (production - applies existing migrations to Supabase)
 npm run prisma:deploy
 ```
 
-**Note:** If the database is empty (current case), the migration will create all tables from scratch. If you have existing data, you'll need to migrate the `Place.city` string field to `Place.cityId` foreign key.
+**Note:** 
+- `prisma:migrate` creates migration files and applies them (use for development)
+- `prisma:deploy` applies existing migrations without creating new files (use for production/Supabase)
+- If the database is empty, the migration will create all tables from scratch
+- If you have existing data, you'll need to migrate the `Place.city` string field to `Place.cityId` foreign key
 
 #### Seeds
 

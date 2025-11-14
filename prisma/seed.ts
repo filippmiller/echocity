@@ -34,11 +34,135 @@ async function main() {
 
   console.log('✅ Created city: Москва (moscow)')
 
-  // Create test franchise (optional - only if we have a user)
-  // For now, cities are created without franchiseId (managed by central ADMIN)
+  // Create service categories and types
+  const beautyCategory = await prisma.serviceCategory.upsert({
+    where: { slug: 'beauty' },
+    update: {},
+    create: {
+      name: 'Красота',
+      slug: 'beauty',
+      description: 'Услуги красоты и ухода',
+      icon: '💅',
+      sortOrder: 1,
+    },
+  })
+
+  const hairCategory = await prisma.serviceCategory.upsert({
+    where: { slug: 'hair' },
+    update: {},
+    create: {
+      name: 'Парикмахерские услуги',
+      slug: 'hair',
+      description: 'Стрижки, укладки, окрашивание',
+      icon: '✂️',
+      sortOrder: 2,
+    },
+  })
+
+  const cleaningCategory = await prisma.serviceCategory.upsert({
+    where: { slug: 'cleaning' },
+    update: {},
+    create: {
+      name: 'Химчистка и прачечная',
+      slug: 'cleaning',
+      description: 'Химчистка, стирка, чистка',
+      icon: '🧺',
+      sortOrder: 3,
+    },
+  })
+
+  const cafeCategory = await prisma.serviceCategory.upsert({
+    where: { slug: 'food-drinks' },
+    update: {},
+    create: {
+      name: 'Еда и напитки',
+      slug: 'food-drinks',
+      description: 'Кафе, рестораны, бары',
+      icon: '☕',
+      sortOrder: 4,
+    },
+  })
+
+  console.log('✅ Created service categories')
+
+  // Create service types
+  const nailService = await prisma.serviceType.upsert({
+    where: { slug: 'nail-manicure' },
+    update: {},
+    create: {
+      categoryId: beautyCategory.id,
+      name: 'Маникюр',
+      slug: 'nail-manicure',
+      description: 'Классический и аппаратный маникюр',
+      sortOrder: 1,
+    },
+  })
+
+  const pedicureService = await prisma.serviceType.upsert({
+    where: { slug: 'nail-pedicure' },
+    update: {},
+    create: {
+      categoryId: beautyCategory.id,
+      name: 'Педикюр',
+      slug: 'nail-pedicure',
+      description: 'Классический и аппаратный педикюр',
+      sortOrder: 2,
+    },
+  })
+
+  const hairCutService = await prisma.serviceType.upsert({
+    where: { slug: 'haircut' },
+    update: {},
+    create: {
+      categoryId: hairCategory.id,
+      name: 'Стрижка',
+      slug: 'haircut',
+      description: 'Мужская и женская стрижка',
+      sortOrder: 1,
+    },
+  })
+
+  const hairColorService = await prisma.serviceType.upsert({
+    where: { slug: 'hair-coloring' },
+    update: {},
+    create: {
+      categoryId: hairCategory.id,
+      name: 'Окрашивание',
+      slug: 'hair-coloring',
+      description: 'Окрашивание волос',
+      sortOrder: 2,
+    },
+  })
+
+  const dryCleaningService = await prisma.serviceType.upsert({
+    where: { slug: 'dry-cleaning' },
+    update: {},
+    create: {
+      categoryId: cleaningCategory.id,
+      name: 'Химчистка',
+      slug: 'dry-cleaning',
+      description: 'Химчистка одежды и текстиля',
+      sortOrder: 1,
+    },
+  })
+
+  const coffeeService = await prisma.serviceType.upsert({
+    where: { slug: 'coffee' },
+    update: {},
+    create: {
+      categoryId: cafeCategory.id,
+      name: 'Кофе',
+      slug: 'coffee',
+      description: 'Эспрессо, капучино, фильтр-кофе',
+      sortOrder: 1,
+    },
+  })
+
+  console.log('✅ Created service types')
 
   console.log('✅ Seed completed!')
-  console.log(`   Cities created: ${spb.name}, ${moscow.name}`)
+  console.log(`   Cities: ${spb.name}, ${moscow.name}`)
+  console.log(`   Categories: ${beautyCategory.name}, ${hairCategory.name}, ${cleaningCategory.name}, ${cafeCategory.name}`)
 }
 
 main()
@@ -49,4 +173,5 @@ main()
   .finally(async () => {
     await prisma.$disconnect()
   })
+
 

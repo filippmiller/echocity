@@ -69,3 +69,4 @@ For production deployment (Railway/Vercel):
 - ✅ Service role key should only be used server-side
 - ✅ Anon key can be used in frontend (but don't log it)
 
+

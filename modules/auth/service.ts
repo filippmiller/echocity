@@ -7,25 +7,49 @@ import type { Role } from '@prisma/client'
 export interface RegisterUserData {
   email: string
   password: string
-  fullName?: string
-  homeCity?: string
-  preferredLanguage?: string
+  firstName: string
+  lastName?: string
+  phone?: string
+  city?: string
+  language?: 'ru' | 'en'
 }
 
 export interface RegisterBusinessData {
+  // Step 1: Contact person
   email: string
   password: string
-  contactName: string
-  contactPhone: string
-  displayName: string
+  firstName: string
+  lastName?: string
+  phone: string
+  
+  // Step 2: Business data
+  businessName: string
   legalName?: string
-  contactEmail: string
-  placeName: string
-  placeCategory: string
-  placeDescription?: string
+  businessType: string
+  description?: string
+  website?: string
+  instagram?: string
+  vk?: string
+  telegram?: string
+  supportEmail?: string
+  supportPhone?: string
+  
+  // Step 3: First place
+  placeTitle: string
   placeCity: string
   placeAddress: string
-  placePhone: string
+  placeLat?: number
+  placeLng?: number
+  placePhone?: string
+  placeType: string
+  hasWorkspace?: boolean
+  hasWifi?: boolean
+  hasSockets?: boolean
+  isSpecialtyCoffee?: boolean
+  hasParking?: boolean
+  isKidsFriendly?: boolean
+  openingHours?: any
+  averageCheck?: number
 }
 
 export interface LoginData {
@@ -45,7 +69,7 @@ export interface AuthResult {
 }
 
 /**
- * Register a regular user (USER role)
+ * Register a regular user (CITIZEN role)
  */
 export async function registerUser(data: RegisterUserData): Promise<AuthResult> {
   try {
@@ -80,12 +104,18 @@ export async function registerUser(data: RegisterUserData): Promise<AuthResult> 
       data: {
         email: data.email,
         passwordHash,
-        role: 'USER',
+        role: 'CITIZEN',
+        firstName: data.firstName,
+        lastName: data.lastName,
+        phone: data.phone,
+        city: data.city || 'Санкт-Петербург',
+        language: data.language || 'ru',
         profile: {
           create: {
-            fullName: data.fullName,
-            homeCity: data.homeCity,
-            preferredLanguage: data.preferredLanguage || 'ru',
+            fullName: data.firstName + (data.lastName ? ` ${data.lastName}` : ''),
+            homeCity: data.city || 'Санкт-Петербург',
+            preferredLanguage: data.language || 'ru',
+            phone: data.phone,
           },
         },
       },
@@ -96,14 +126,14 @@ export async function registerUser(data: RegisterUserData): Promise<AuthResult> 
       },
     })
 
-    logger.info('auth.register.user', { userId: user.id, email: user.email })
+    logger.info('auth.register.citizen', { userId: user.id, email: user.email })
 
     return {
       success: true,
       user,
     }
   } catch (error) {
-    logger.error('auth.register.user.error', { error: String(error) })
+    logger.error('auth.register.citizen.error', { error: String(error) })
     return {
       success: false,
       error: 'Ошибка при регистрации',
@@ -145,36 +175,55 @@ export async function registerBusiness(
     // Hash password
     const passwordHash = await bcrypt.hash(data.password, 10)
 
-    // Create user, profile, business account, and place in transaction
+    // Create user, profile, business, and place in transaction
     const user = await prisma.user.create({
       data: {
         email: data.email,
         passwordHash,
         role: 'BUSINESS_OWNER',
+        firstName: data.firstName,
+        lastName: data.lastName,
+        phone: data.phone,
+        city: data.placeCity || 'Санкт-Петербург',
+        language: 'ru',
         profile: {
           create: {
-            fullName: data.contactName,
-            phone: data.contactPhone,
+            fullName: data.firstName + (data.lastName ? ` ${data.lastName}` : ''),
+            phone: data.phone,
             preferredLanguage: 'ru',
           },
         },
-        businessAccount: {
+        businesses: {
           create: {
-            displayName: data.displayName,
+            name: data.businessName,
             legalName: data.legalName,
-            contactName: data.contactName,
-            contactPhone: data.contactPhone,
-            contactEmail: data.contactEmail,
+            type: data.businessType as any,
+            description: data.description,
+            website: data.website,
+            instagram: data.instagram,
+            vk: data.vk,
+            telegram: data.telegram,
+            supportEmail: data.supportEmail,
+            supportPhone: data.supportPhone,
+            status: 'PENDING',
             places: {
               create: {
-                publicName: data.placeName,
-                category: data.placeCategory as any,
-                descriptionShort: data.placeDescription,
+                title: data.placeTitle,
                 city: data.placeCity,
-                addressLine1: data.placeAddress,
-                phonePublic: data.placePhone,
-                isApproved: false,
-                isPublished: false,
+                address: data.placeAddress,
+                lat: data.placeLat,
+                lng: data.placeLng,
+                phone: data.placePhone,
+                placeType: data.placeType as any,
+                hasWorkspace: data.hasWorkspace || false,
+                hasWifi: data.hasWifi || false,
+                hasSockets: data.hasSockets || false,
+                isSpecialtyCoffee: data.isSpecialtyCoffee || false,
+                hasParking: data.hasParking || false,
+                isKidsFriendly: data.isKidsFriendly || false,
+                openingHours: data.openingHours,
+                averageCheck: data.averageCheck,
+                isActive: true,
               },
             },
           },

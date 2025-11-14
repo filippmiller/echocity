@@ -36,10 +36,10 @@ export default function LoginPage() {
       }
 
       // Redirect based on role
-      if (data.user.role === 'USER') {
-        router.push('/dashboard')
+      if (data.user.role === 'CITIZEN') {
+        router.push('/map')
       } else if (data.user.role === 'BUSINESS_OWNER') {
-        router.push('/business/dashboard')
+        router.push('/business/places')
       } else if (data.user.role === 'ADMIN') {
         router.push('/admin')
       } else {
