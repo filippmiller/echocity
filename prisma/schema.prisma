@@ -1,0 +1,174 @@
+// Prisma schema for CityEcho
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  USER
+  BUSINESS_OWNER
+}
+
+enum PlaceCategory {
+  CAFE
+  BAR
+  RESTAURANT
+  NAIL_SALON
+  HAIRDRESSER
+  BARBERSHOP
+  DRY_CLEANING
+  OTHER_SERVICE
+}
+
+enum FranchiseStatus {
+  DRAFT
+  ACTIVE
+  SUSPENDED
+  EXPIRED
+}
+
+enum FranchiseMemberRole {
+  OWNER
+  MANAGER
+  SUPPORT
+}
+
+model User {
+  id           String         @id @default(cuid())
+  email        String         @unique
+  passwordHash String
+  role         Role           @default(USER)
+  isActive     Boolean        @default(true)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  
+  profile           UserProfile?
+  businessAccount   BusinessAccount?
+  ownedFranchises   Franchise[]
+  franchiseMemberships FranchiseMember[]
+  
+  @@index([email])
+  @@index([role])
+}
+
+model UserProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName        String?
+  phone           String?
+  homeCity        String?
+  preferredLanguage String? @default("ru")
+  timezone        String?
+  marketingOptIn  Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([userId])
+}
+
+model BusinessAccount {
+  id          String   @id @default(cuid())
+  ownerUserId String   @unique
+  owner       User     @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  displayName String
+  legalName   String?
+  contactName String
+  contactPhone String
+  contactEmail String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  places      Place[]
+  
+  @@index([ownerUserId])
+}
+
+model Place {
+  id              String         @id @default(cuid())
+  businessAccountId String
+  businessAccount   BusinessAccount @relation(fields: [businessAccountId], references: [id], onDelete: Cascade)
+  publicName      String
+  category        PlaceCategory
+  descriptionShort String?       @db.Text
+  phonePublic     String?
+  websiteUrl      String?
+  cityId          String
+  city            City           @relation(fields: [cityId], references: [id])
+  addressLine1    String
+  addressLine2    String?
+  postcode        String?
+  country         String         @default("RU")
+  latitude        Float?
+  longitude       Float?
+  priceLevel      Int?
+  tagsJson        Json?
+  isApproved      Boolean        @default(false)
+  isPublished     Boolean        @default(false)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  
+  @@index([businessAccountId])
+  @@index([cityId])
+  @@index([category])
+  @@index([isApproved, isPublished])
+}
+
+model Franchise {
+  id                String             @id @default(cuid())
+  code              String             @unique
+  name              String
+  ownerUserId       String
+  ownerUser         User               @relation(fields: [ownerUserId], references: [id])
+  status            FranchiseStatus    @default(ACTIVE)
+  billingEmail      String?
+  billingPlan       String?
+  revenueSharePercent Int?
+  settings          Json?
+  cities            City[]
+  members           FranchiseMember[]
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  
+  @@index([ownerUserId])
+  @@index([code])
+  @@index([status])
+}
+
+model City {
+  id              String      @id @default(cuid())
+  name            String
+  slug            String      @unique
+  countryCode     String
+  timezone        String
+  defaultLanguage String?
+  franchiseId    String?
+  franchise      Franchise?  @relation(fields: [franchiseId], references: [id], onDelete: SetNull)
+  places          Place[]
+  
+  @@index([slug])
+  @@index([franchiseId])
+}
+
+model FranchiseMember {
+  id           String              @id @default(cuid())
+  franchiseId  String
+  franchise    Franchise           @relation(fields: [franchiseId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role         FranchiseMemberRole
+  isActive     Boolean             @default(true)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  
+  @@unique([franchiseId, userId])
+  @@index([franchiseId])
+  @@index([userId])
+}
+
