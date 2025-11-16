@@ -8,7 +8,7 @@ export default async function DashboardPage() {
     redirect('/auth/login')
   }
 
-  if (session.role !== 'USER') {
+  if (session.role !== 'CITIZEN') {
     redirect('/')
   }
 

@@ -12,11 +12,17 @@ const createServiceSchema = z.object({
   priceUnit: z.enum(['FIXED', 'PER_HOUR', 'PER_ITEM', 'PER_KG', 'PER_SQ_M']).optional(),
   durationMinutes: z.number().int().positive().optional(),
   isActive: z.boolean().optional(),
+  // Specials fields
+  isSpecial: z.boolean().optional(),
+  specialPrice: z.number().optional(),
+  specialTitle: z.string().optional(),
+  specialDescription: z.string().optional(),
+  specialValidUntil: z.string().datetime().optional(),
 })
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { placeId: string } }
+  { params }: { params: Promise<{ placeId: string }> }
 ) {
   try {
     const session = await getSession()
@@ -24,7 +30,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const placeId = params.placeId
+    const { placeId } = await params
 
     // Check if user owns this place
     const place = await prisma.place.findFirst({
@@ -75,7 +81,7 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { placeId: string } }
+  { params }: { params: Promise<{ placeId: string }> }
 ) {
   try {
     const session = await getSession()
@@ -83,7 +89,7 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const placeId = params.placeId
+    const { placeId } = await params
 
     // Check if user owns this place
     const place = await prisma.place.findFirst({
@@ -130,6 +136,12 @@ export async function POST(
         priceUnit: validated.priceUnit || 'FIXED',
         durationMinutes: validated.durationMinutes,
         isActive: validated.isActive ?? true,
+        // Specials
+        isSpecial: validated.isSpecial ?? false,
+        specialPrice: validated.specialPrice ? validated.specialPrice.toString() : null,
+        specialTitle: validated.specialTitle,
+        specialDescription: validated.specialDescription,
+        specialValidUntil: validated.specialValidUntil ? new Date(validated.specialValidUntil) : null,
       },
       include: {
         serviceType: {
@@ -168,4 +180,5 @@ export async function POST(
     )
   }
 }
+
 

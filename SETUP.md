@@ -70,3 +70,4 @@ For production deployment (Railway/Vercel):
 - ✅ Anon key can be used in frontend (but don't log it)
 
 
+

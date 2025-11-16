@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { PasswordInput } from '@/components/forms/PasswordInput'
+import YandexSignInButton from '@/components/YandexSignInButton'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -112,6 +113,21 @@ export default function LoginPage() {
               {loading ? 'Вход...' : 'Войти'}
             </button>
           </form>
+
+          <div className="mt-6">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">или</span>
+              </div>
+            </div>
+
+            <div className="mt-6">
+              <YandexSignInButton />
+            </div>
+          </div>
 
           <p className="mt-4 text-center text-sm text-gray-600">
             Нет аккаунта?{' '}

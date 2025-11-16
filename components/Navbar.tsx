@@ -40,8 +40,15 @@ export function Navbar() {
             <Link href="/" className="text-xl font-bold text-gray-900">
               ГдеСейчас
             </Link>
-            {user && (
-              <div className="hidden md:flex space-x-4">
+            <div className="hidden md:flex space-x-4">
+              <Link
+                href="/search"
+                className="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+              >
+                Поиск
+              </Link>
+              {user && (
+                <>
                 {user.role === 'CITIZEN' && (
                   <>
                     <Link
@@ -102,8 +109,9 @@ export function Navbar() {
                     </Link>
                   </>
                 )}
-              </div>
-            )}
+                </>
+              )}
+            </div>
           </div>
 
           <div className="flex items-center">
@@ -126,9 +134,20 @@ export function Navbar() {
               <div className="relative">
                 <button
                   onClick={() => setShowMenu(!showMenu)}
-                  className="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+                  className="flex items-center gap-2 text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
                 >
-                  {user.email.split('@')[0]}
+                  {user.avatarUrl ? (
+                    <img
+                      src={user.avatarUrl}
+                      alt="Avatar"
+                      className="w-8 h-8 rounded-full object-cover border border-gray-300"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 text-xs font-semibold">
+                      {user.email[0]?.toUpperCase() || '?'}
+                    </div>
+                  )}
+                  <span className="hidden sm:inline">{user.email.split('@')[0]}</span>
                 </button>
 
                 {showMenu && (

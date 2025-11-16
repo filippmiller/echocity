@@ -7,6 +7,7 @@ export interface UserSession {
   userId: string
   email: string
   role: Role
+  avatarUrl?: string | null
 }
 
 export function useAuth() {

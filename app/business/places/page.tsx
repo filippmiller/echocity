@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { getSession } from '@/modules/auth/session'
 import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
+import YandexBusinessVerification from '@/components/YandexBusinessVerification'
 
 export default async function BusinessPlacesPage() {
   const session = await getSession()
@@ -19,7 +20,13 @@ export default async function BusinessPlacesPage() {
     where: {
       ownerId: session.userId,
     },
-    include: {
+    select: {
+      id: true,
+      name: true,
+      legalName: true,
+      status: true,
+      yandexVerifiedAt: true,
+      yandexOrgName: true,
       places: {
         where: {
           isActive: true,
@@ -92,6 +99,14 @@ export default async function BusinessPlacesPage() {
                   </div>
                 </div>
 
+                <div className="mt-4 mb-4">
+                  <YandexBusinessVerification
+                    businessId={business.id}
+                    isVerified={!!business.yandexVerifiedAt}
+                    yandexOrgName={business.yandexOrgName}
+                  />
+                </div>
+
                 <div className="mt-4">
                   <h3 className="text-sm font-medium text-gray-700 mb-2">
                     Точки ({business.places.length})
@@ -132,4 +147,5 @@ export default async function BusinessPlacesPage() {
     </div>
   )
 }
+
 

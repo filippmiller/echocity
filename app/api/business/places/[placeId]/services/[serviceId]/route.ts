@@ -11,11 +11,17 @@ const updateServiceSchema = z.object({
   priceUnit: z.enum(['FIXED', 'PER_HOUR', 'PER_ITEM', 'PER_KG', 'PER_SQ_M']).optional(),
   durationMinutes: z.number().int().positive().optional(),
   isActive: z.boolean().optional(),
+  // Specials fields
+  isSpecial: z.boolean().optional(),
+  specialPrice: z.number().optional(),
+  specialTitle: z.string().optional(),
+  specialDescription: z.string().optional(),
+  specialValidUntil: z.string().datetime().optional(),
 })
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { placeId: string; serviceId: string } }
+  { params }: { params: Promise<{ placeId: string; serviceId: string }> }
 ) {
   try {
     const session = await getSession()
@@ -23,7 +29,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { placeId, serviceId } = params
+    const { placeId, serviceId } = await params
 
     // Check if user owns this place
     const place = await prisma.place.findFirst({
@@ -43,19 +49,27 @@ export async function PATCH(
     const body = await request.json()
     const validated = updateServiceSchema.parse(body)
 
+    const updateData: any = {}
+    
+    if (validated.name !== undefined) updateData.name = validated.name
+    if (validated.description !== undefined) updateData.description = validated.description
+    if (validated.price !== undefined) updateData.price = validated.price ? validated.price.toString() : null
+    if (validated.priceUnit !== undefined) updateData.priceUnit = validated.priceUnit
+    if (validated.durationMinutes !== undefined) updateData.durationMinutes = validated.durationMinutes
+    if (validated.isActive !== undefined) updateData.isActive = validated.isActive
+    // Specials
+    if (validated.isSpecial !== undefined) updateData.isSpecial = validated.isSpecial
+    if (validated.specialPrice !== undefined) updateData.specialPrice = validated.specialPrice ? validated.specialPrice.toString() : null
+    if (validated.specialTitle !== undefined) updateData.specialTitle = validated.specialTitle
+    if (validated.specialDescription !== undefined) updateData.specialDescription = validated.specialDescription
+    if (validated.specialValidUntil !== undefined) updateData.specialValidUntil = validated.specialValidUntil ? new Date(validated.specialValidUntil) : null
+
     const service = await prisma.placeService.update({
       where: {
         id: serviceId,
         placeId, // Ensure service belongs to this place
       },
-      data: {
-        name: validated.name,
-        description: validated.description,
-        price: validated.price ? validated.price.toString() : undefined,
-        priceUnit: validated.priceUnit,
-        durationMinutes: validated.durationMinutes,
-        isActive: validated.isActive,
-      },
+      data: updateData,
       include: {
         serviceType: {
           include: {
@@ -95,7 +109,7 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { placeId: string; serviceId: string } }
+  { params }: { params: Promise<{ placeId: string; serviceId: string }> }
 ) {
   try {
     const session = await getSession()
@@ -103,7 +117,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { placeId, serviceId } = params
+    const { placeId, serviceId } = await params
 
     // Check if user owns this place
     const place = await prisma.place.findFirst({
@@ -141,4 +155,5 @@ export async function DELETE(
     )
   }
 }
+
 

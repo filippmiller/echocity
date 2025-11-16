@@ -63,138 +63,151 @@ enum FranchiseMemberRole {
 }
 
 model User {
-  id            String         @id @default(cuid())
-  email         String         @unique
+  id            String    @id @default(cuid())
+  email         String    @unique
   emailVerified DateTime?
   passwordHash  String
-  role          Role           @default(CITIZEN)
+  role          Role      @default(CITIZEN)
   firstName     String
   lastName      String?
   phone         String?
-  city          String         @default("Санкт-Петербург")
-  language      Language       @default(ru)
-  isActive      Boolean        @default(true)
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  
-  profile           UserProfile?
-  businessAccount   BusinessAccount?
-  businesses        Business[]
-  ownedFranchises   Franchise[]
+  city          String    @default("Санкт-Петербург")
+  language      Language  @default(ru)
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  profile              UserProfile?
+  businessAccount      BusinessAccount?
+  businesses           Business[]
+  ownedFranchises      Franchise[]
   franchiseMemberships FranchiseMember[]
-  
+  reviews              Review[]
+  photos               UserPhoto[]
+  oauthAccounts        OAuthAccount[]
+
   @@index([email])
   @@index([role])
 }
 
 model UserProfile {
-  id              String   @id @default(cuid())
-  userId          String   @unique
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  fullName        String?
-  phone           String?
-  homeCity        String?
-  preferredLanguage String? @default("ru")
-  timezone        String?
-  marketingOptIn  Boolean  @default(false)
-  preferredRadius Int?     // радиус поиска по умолчанию (в метрах)
-  notificationsEnabled Boolean @default(true)
-  emailNotifications Boolean @default(true)
-  pushNotifications Boolean @default(false)
-  favoriteCity    String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
+  id                   String   @id @default(cuid())
+  userId               String   @unique
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName             String?
+  phone                String?
+  homeCity             String?
+  preferredLanguage    String?  @default("ru")
+  timezone             String?
+  marketingOptIn       Boolean  @default(false)
+  preferredRadius      Int? // радиус поиска по умолчанию (в метрах)
+  notificationsEnabled Boolean  @default(true)
+  emailNotifications   Boolean  @default(true)
+  pushNotifications    Boolean  @default(false)
+  favoriteCity         String?
+  avatarUrl            String? // ссылка на аватар в Supabase Storage
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
   @@index([userId])
 }
 
 model BusinessAccount {
-  id          String   @id @default(cuid())
-  ownerUserId String   @unique
-  owner       User     @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
-  displayName String
-  legalName   String?
-  contactName String
+  id           String   @id @default(cuid())
+  ownerUserId  String   @unique
+  owner        User     @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  displayName  String
+  legalName    String?
+  contactName  String
   contactPhone String
   contactEmail String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  places      Place[]
-  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  places Place[]
+
   @@index([ownerUserId])
 }
 
 model Business {
-  id            String        @id @default(cuid())
-  ownerId       String
-  owner         User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  name          String
-  legalName     String?
-  type          BusinessType
-  description   String?       @db.Text
-  website       String?
-  instagram     String?
-  vk            String?
-  telegram      String?
-  supportEmail  String?
-  supportPhone  String?
-  status        BusinessStatus @default(PENDING)
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  
-  places        Place[]
-  
+  id           String         @id @default(cuid())
+  ownerId      String
+  owner        User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name         String
+  legalName    String?
+  type         BusinessType
+  description  String?        @db.Text
+  website      String?
+  instagram    String?
+  vk           String?
+  telegram     String?
+  supportEmail String?
+  supportPhone String?
+  status       BusinessStatus @default(PENDING)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  // Yandex Maps integration
+  yandexOrgId              String? // Yandex organization ID from Places API
+  yandexOrgName            String? // Cached name from Yandex
+  yandexOrgRaw             Json? // Full Yandex feature object
+  yandexVerifiedAt         DateTime?
+  yandexVerificationMethod String? // e.g. 'places_api_soft'
+
+  places Place[]
+
   @@index([ownerId])
   @@index([status])
+  @@index([yandexOrgId])
 }
 
 model Place {
-  id              String         @id @default(cuid())
+  id                String           @id @default(cuid())
   businessAccountId String?
   businessAccount   BusinessAccount? @relation(fields: [businessAccountId], references: [id], onDelete: Cascade)
-  businessId      String?
-  business        Business?      @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  title           String
-  city            String
-  address         String
-  lat             Float?
-  lng             Float?
-  phone           String?
-  placeType       BusinessType
-  hasWorkspace    Boolean        @default(false)
-  hasWifi         Boolean        @default(false)
-  hasSockets      Boolean        @default(false)
-  isSpecialtyCoffee Boolean      @default(false)
-  hasParking      Boolean        @default(false)
-  isKidsFriendly  Boolean        @default(false)
-  openingHours    Json?
-  averageCheck    Int?
-  isActive        Boolean        @default(true)
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  
+  businessId        String?
+  business          Business?        @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  title             String
+  city              String
+  address           String
+  lat               Float?
+  lng               Float?
+  phone             String?
+  placeType         BusinessType
+  hasWorkspace      Boolean          @default(false)
+  hasWifi           Boolean          @default(false)
+  hasSockets        Boolean          @default(false)
+  isSpecialtyCoffee Boolean          @default(false)
+  hasParking        Boolean          @default(false)
+  isKidsFriendly    Boolean          @default(false)
+  openingHours      Json?
+  averageCheck      Int?
+  isActive          Boolean          @default(true)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
   // Legacy fields (for backward compatibility)
-  publicName      String?
-  category        PlaceCategory?
-  descriptionShort String?       @db.Text
-  phonePublic     String?
-  websiteUrl      String?
-  cityId          String?
-  cityRelation    City?          @relation("CityPlaces", fields: [cityId], references: [id])
-  addressLine1    String?
-  addressLine2    String?
-  postcode        String?
-  country         String         @default("RU")
-  latitude        Float?
-  longitude       Float?
-  priceLevel      Int?
-  tagsJson        Json?
-  isApproved      Boolean        @default(false)
-  isPublished     Boolean        @default(false)
-  
-  services        PlaceService[]
-  
+  publicName       String?
+  category         PlaceCategory?
+  descriptionShort String?        @db.Text
+  phonePublic      String?
+  websiteUrl       String?
+  cityId           String?
+  cityRelation     City?          @relation("CityPlaces", fields: [cityId], references: [id])
+  addressLine1     String?
+  addressLine2     String?
+  postcode         String?
+  country          String         @default("RU")
+  latitude         Float?
+  longitude        Float?
+  priceLevel       Int?
+  tagsJson         Json?
+  isApproved       Boolean        @default(false)
+  isPublished      Boolean        @default(false)
+
+  services PlaceService[]
+  reviews  Review[]
+
   @@index([businessAccountId])
   @@index([businessId])
   @@index([cityId])
@@ -202,54 +215,53 @@ model Place {
   @@index([isActive])
 }
 
-
 model Franchise {
-  id                String             @id @default(cuid())
-  code              String             @unique
-  name              String
-  ownerUserId       String
-  ownerUser         User               @relation(fields: [ownerUserId], references: [id])
-  status            FranchiseStatus    @default(ACTIVE)
-  billingEmail      String?
-  billingPlan       String?
+  id                  String            @id @default(cuid())
+  code                String            @unique
+  name                String
+  ownerUserId         String
+  ownerUser           User              @relation(fields: [ownerUserId], references: [id])
+  status              FranchiseStatus   @default(ACTIVE)
+  billingEmail        String?
+  billingPlan         String?
   revenueSharePercent Int?
-  settings          Json?
-  cities            City[]
-  members           FranchiseMember[]
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
-  
+  settings            Json?
+  cities              City[]
+  members             FranchiseMember[]
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
   @@index([ownerUserId])
   @@index([code])
   @@index([status])
 }
 
 model City {
-  id              String      @id @default(cuid())
+  id              String     @id @default(cuid())
   name            String
-  slug            String      @unique
+  slug            String     @unique
   countryCode     String
   timezone        String
   defaultLanguage String?
-  franchiseId    String?
-  franchise      Franchise?  @relation(fields: [franchiseId], references: [id], onDelete: SetNull)
-  places          Place[]     @relation("CityPlaces")
-  
+  franchiseId     String?
+  franchise       Franchise? @relation(fields: [franchiseId], references: [id], onDelete: SetNull)
+  places          Place[]    @relation("CityPlaces")
+
   @@index([slug])
   @@index([franchiseId])
 }
 
 model FranchiseMember {
-  id           String              @id @default(cuid())
-  franchiseId  String
-  franchise    Franchise           @relation(fields: [franchiseId], references: [id], onDelete: Cascade)
-  userId       String
-  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role         FranchiseMemberRole
-  isActive     Boolean             @default(true)
-  createdAt    DateTime            @default(now())
-  updatedAt    DateTime            @updatedAt
-  
+  id          String              @id @default(cuid())
+  franchiseId String
+  franchise   Franchise           @relation(fields: [franchiseId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role        FranchiseMemberRole
+  isActive    Boolean             @default(true)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
   @@unique([franchiseId, userId])
   @@index([franchiseId])
   @@index([userId])
@@ -264,59 +276,119 @@ enum ServicePricingUnit {
 }
 
 model ServiceCategory {
-  id          String        @id @default(cuid())
+  id          String   @id @default(cuid())
   name        String
-  slug        String        @unique
-  description String?       @db.Text
-  icon        String?       // icon name or emoji
-  isActive    Boolean       @default(true)
-  sortOrder   Int           @default(0)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  
+  slug        String   @unique
+  description String?  @db.Text
+  icon        String? // icon name or emoji
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
   serviceTypes ServiceType[]
-  
+
   @@index([slug])
   @@index([isActive, sortOrder])
 }
 
 model ServiceType {
-  id          String        @id @default(cuid())
+  id          String          @id @default(cuid())
   categoryId  String
   category    ServiceCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   name        String
-  slug        String        @unique
-  description String?       @db.Text
-  isActive    Boolean       @default(true)
-  sortOrder   Int           @default(0)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  
+  slug        String          @unique
+  description String?         @db.Text
+  isActive    Boolean         @default(true)
+  sortOrder   Int             @default(0)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
   placeServices PlaceService[]
-  
+
   @@index([categoryId])
   @@index([slug])
   @@index([isActive, sortOrder])
 }
 
 model PlaceService {
-  id              String            @id @default(cuid())
+  id              String             @id @default(cuid())
   placeId         String
-  place           Place             @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  place           Place              @relation(fields: [placeId], references: [id], onDelete: Cascade)
   serviceTypeId   String
-  serviceType     ServiceType       @relation(fields: [serviceTypeId], references: [id], onDelete: Cascade)
-  name            String?           // кастомное название (если отличается от serviceType.name)
-  description     String?           @db.Text
-  price           Decimal?          @db.Decimal(10, 2)
+  serviceType     ServiceType        @relation(fields: [serviceTypeId], references: [id], onDelete: Cascade)
+  name            String? // кастомное название (если отличается от serviceType.name)
+  description     String?            @db.Text
+  price           Decimal?           @db.Decimal(10, 2)
   priceUnit       ServicePricingUnit @default(FIXED)
-  durationMinutes Int?              // примерная длительность услуги
-  isActive        Boolean           @default(true)
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  durationMinutes Int? // примерная длительность услуги
+  isActive        Boolean            @default(true)
   
+  // Basic specials support
+  isSpecial       Boolean            @default(false) // Флаг акции/спецпредложения
+  specialPrice    Decimal?           @db.Decimal(10, 2) // Цена по акции
+  specialTitle    String? // Заголовок акции (например, "Скидка 20%")
+  specialDescription String?         @db.Text // Описание акции
+  specialValidUntil DateTime? // До какой даты действует акция
+  
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
   @@unique([placeId, serviceTypeId])
   @@index([placeId])
   @@index([serviceTypeId])
   @@index([isActive])
+  @@index([isSpecial])
 }
 
+model Review {
+  id          String    @id @default(cuid())
+  placeId     String
+  place       Place     @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating      Int // 1-5
+  title       String?
+  body        String    @db.Text
+  visitDate   DateTime?
+  isPublished Boolean   @default(true)
+  isDeleted   Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([placeId])
+  @@index([userId])
+  @@index([isPublished, isDeleted])
+  @@index([placeId, isPublished, isDeleted])
+}
+
+model UserPhoto {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  url       String // ссылка на файл в Supabase Storage
+  isAvatar  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([userId, isAvatar])
+}
+
+model OAuthAccount {
+  id             String    @id @default(cuid())
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider       String // 'yandex', 'google', etc.
+  providerUserId String // External provider's user ID
+  providerLogin  String? // Provider login/username
+  email          String? // Email from provider
+  accessToken    String? // Encrypted or hashed token (treat as sensitive)
+  refreshToken   String? // Optional refresh token
+  expiresAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([provider, providerUserId])
+  @@index([userId])
+  @@index([provider, providerUserId])
+}
