@@ -9,15 +9,33 @@ export async function GET() {
     return NextResponse.json({ user: null }, { status: 200 })
   }
 
+  // Always get fresh data from database to reflect role changes
+  const user = await prisma.user.findUnique({
+    where: { id: session.userId },
+    select: {
+      id: true,
+      email: true,
+      role: true,
+      firstName: true,
+      lastName: true,
+    },
+  })
+
+  if (!user) {
+    return NextResponse.json({ user: null }, { status: 200 })
+  }
+
   // Get avatar URL from profile
   const profile = await prisma.userProfile.findUnique({
-    where: { userId: session.userId },
+    where: { userId: user.id },
     select: { avatarUrl: true },
   })
 
   return NextResponse.json({
     user: {
-      ...session,
+      userId: user.id,
+      email: user.email,
+      role: user.role,
       avatarUrl: profile?.avatarUrl || null,
     },
   })
