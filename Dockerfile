@@ -5,7 +5,9 @@ RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
-RUN npm ci
+
+# Install ALL deps including devDeps for build (Coolify injects NODE_ENV=production which skips devDeps)
+RUN NODE_ENV=development npm ci
 
 COPY . .
 
