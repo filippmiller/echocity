@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/modules/auth/session'
-import { getSupabaseAdmin, USER_PHOTOS_BUCKET } from '@/lib/supabase'
+import { deleteFile, getKeyFromUrl } from '@/lib/supabase'
 import { logger } from '@/lib/logger'
 
 // PATCH /api/profile/photos/[photoId] - Update photo (set as avatar)
@@ -19,12 +19,8 @@ export async function PATCH(
     const body = await request.json()
     const { isAvatar } = body
 
-    // Verify photo belongs to user
     const photo = await prisma.userPhoto.findFirst({
-      where: {
-        id: photoId,
-        userId: session.userId,
-      },
+      where: { id: photoId, userId: session.userId },
     })
 
     if (!photo) {
@@ -34,41 +30,25 @@ export async function PATCH(
       )
     }
 
-    // If setting as avatar, unset previous avatar
     if (isAvatar === true) {
       await prisma.userPhoto.updateMany({
-        where: {
-          userId: session.userId,
-          isAvatar: true,
-        },
-        data: {
-          isAvatar: false,
-        },
+        where: { userId: session.userId, isAvatar: true },
+        data: { isAvatar: false },
       })
 
-      // Update UserProfile avatarUrl
       await prisma.userProfile.upsert({
         where: { userId: session.userId },
-        create: {
-          userId: session.userId,
-          avatarUrl: photo.url,
-        },
-        update: {
-          avatarUrl: photo.url,
-        },
+        create: { userId: session.userId, avatarUrl: photo.url },
+        update: { avatarUrl: photo.url },
       })
     }
 
-    // Update photo
     const updatedPhoto = await prisma.userPhoto.update({
       where: { id: photoId },
       data: { isAvatar: isAvatar === true },
     })
 
-    return NextResponse.json({
-      success: true,
-      photo: updatedPhoto,
-    })
+    return NextResponse.json({ success: true, photo: updatedPhoto })
   } catch (error) {
     logger.error('photos.update.error', { error: String(error) })
     return NextResponse.json(
@@ -91,12 +71,8 @@ export async function DELETE(
 
     const { photoId } = await params
 
-    // Verify photo belongs to user
     const photo = await prisma.userPhoto.findFirst({
-      where: {
-        id: photoId,
-        userId: session.userId,
-      },
+      where: { id: photoId, userId: session.userId },
     })
 
     if (!photo) {
@@ -106,24 +82,17 @@ export async function DELETE(
       )
     }
 
-    // Delete from Supabase Storage
-    const supabase = getSupabaseAdmin()
-    const filePath = photo.url.split('/').slice(-2).join('/') // Extract path from URL
-    const { error: deleteError } = await supabase.storage
-      .from(USER_PHOTOS_BUCKET)
-      .remove([filePath])
-
-    if (deleteError) {
-      logger.error('photos.delete.storage.error', { error: String(deleteError) })
+    // Delete from MinIO
+    try {
+      const key = getKeyFromUrl(photo.url)
+      await deleteFile(key)
+    } catch (storageError) {
+      logger.error('photos.delete.storage.error', { error: String(storageError) })
       // Continue with DB deletion even if storage deletion fails
     }
 
-    // Delete from database
-    await prisma.userPhoto.delete({
-      where: { id: photoId },
-    })
+    await prisma.userPhoto.delete({ where: { id: photoId } })
 
-    // If this was the avatar, clear avatarUrl from profile
     if (photo.isAvatar) {
       await prisma.userProfile.update({
         where: { userId: session.userId },
@@ -140,4 +109,3 @@ export async function DELETE(
     )
   }
 }
-

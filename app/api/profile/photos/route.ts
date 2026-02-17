@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/modules/auth/session'
-import { getSupabaseAdmin, USER_PHOTOS_BUCKET } from '@/lib/supabase'
+import { uploadFile } from '@/lib/supabase'
 import { logger } from '@/lib/logger'
 import { randomBytes } from 'crypto'
 
@@ -49,7 +49,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validate file type
     if (!ALLOWED_MIME_TYPES.includes(file.type)) {
       return NextResponse.json(
         { error: 'Неподдерживаемый тип файла. Используйте JPEG, PNG или WebP' },
@@ -57,7 +56,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validate file size
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json(
         { error: 'Файл слишком большой. Максимальный размер: 5MB' },
@@ -65,39 +63,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const supabase = getSupabaseAdmin()
-
-    // Generate unique file path
     const fileExt = file.name.split('.').pop() || 'jpg'
-    const fileName = `${session.userId}/${Date.now()}-${randomBytes(8).toString('hex')}.${fileExt}`
-    const filePath = `photos/${fileName}`
+    const key = `photos/${session.userId}/${Date.now()}-${randomBytes(8).toString('hex')}.${fileExt}`
 
-    // Convert File to Buffer
     const arrayBuffer = await file.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
 
-    // Upload to Supabase Storage
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from(USER_PHOTOS_BUCKET)
-      .upload(filePath, buffer, {
-        contentType: file.type,
-        upsert: false,
-      })
+    const publicUrl = await uploadFile(key, buffer, file.type)
 
-    if (uploadError) {
-      logger.error('photos.upload.storage.error', { error: String(uploadError) })
-      return NextResponse.json(
-        { error: 'Ошибка при загрузке файла' },
-        { status: 500 }
-      )
-    }
-
-    // Get public URL
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from(USER_PHOTOS_BUCKET).getPublicUrl(filePath)
-
-    // Create photo record
     const photo = await prisma.userPhoto.create({
       data: {
         userId: session.userId,
@@ -106,10 +79,7 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    return NextResponse.json({
-      success: true,
-      photo,
-    })
+    return NextResponse.json({ success: true, photo })
   } catch (error) {
     logger.error('photos.upload.error', { error: String(error) })
     return NextResponse.json(
@@ -118,4 +88,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-
