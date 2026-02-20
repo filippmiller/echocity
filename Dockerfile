@@ -16,8 +16,13 @@ RUN npx prisma generate
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
+RUN addgroup -S app && adduser -S -G app app
+RUN chown -R app:app /app
+
 EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
+
+USER app
 
 CMD ["sh", "-c", "npx prisma migrate deploy && npm start"]
