@@ -160,6 +160,46 @@ async function main() {
 
   console.log('✅ Created service types')
 
+  // Seed subscription plans
+  const plans = [
+    {
+      code: 'free',
+      name: 'Бесплатный',
+      monthlyPrice: 0,
+      currency: 'RUB',
+      features: { maxOffers: 5, visibility: ['FREE_FOR_ALL'] },
+      trialDays: 0,
+      sortOrder: 0,
+    },
+    {
+      code: 'plus',
+      name: 'Plus',
+      monthlyPrice: 19900,
+      currency: 'RUB',
+      features: { maxOffers: -1, visibility: ['FREE_FOR_ALL', 'MEMBERS_ONLY', 'PUBLIC'] },
+      trialDays: 7,
+      sortOrder: 1,
+    },
+    {
+      code: 'premium',
+      name: 'Premium',
+      monthlyPrice: 49900,
+      currency: 'RUB',
+      features: { maxOffers: -1, visibility: ['FREE_FOR_ALL', 'MEMBERS_ONLY', 'PUBLIC'], flash: true, priorityDemand: true },
+      trialDays: 7,
+      sortOrder: 2,
+    },
+  ]
+
+  for (const plan of plans) {
+    await prisma.subscriptionPlan.upsert({
+      where: { code: plan.code },
+      update: plan,
+      create: plan,
+    })
+  }
+  console.log('✅ Seeded subscription plans')
+
   console.log('✅ Seed completed!')
   console.log(`   Cities: ${spb.name}, ${moscow.name}`)
   console.log(`   Categories: ${beautyCategory.name}, ${hairCategory.name}, ${cleaningCategory.name}, ${cafeCategory.name}`)
