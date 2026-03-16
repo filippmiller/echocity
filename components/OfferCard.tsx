@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { Clock, Users, Flame } from 'lucide-react'
 
 interface OfferCardProps {
   id: string
@@ -14,61 +15,113 @@ interface OfferCardProps {
   branchName: string
   branchAddress: string
   distance?: number
-  isActive?: boolean
+  expiresAt?: string | null
+  redemptionCount?: number
+  maxRedemptions?: number | null
+  isFlash?: boolean
 }
 
 function getBenefitBadge(benefitType: string, benefitValue: number) {
   switch (benefitType) {
     case 'PERCENT': return `-${benefitValue}%`
-    case 'FIXED_AMOUNT': return `-${benefitValue / 100}\u20BD`
-    case 'FIXED_PRICE': return `${benefitValue / 100}\u20BD`
+    case 'FIXED_AMOUNT': return `-${Math.round(benefitValue)}\u20BD`
+    case 'FIXED_PRICE': return `${Math.round(benefitValue)}\u20BD`
     case 'FREE_ITEM': return 'Бесплатно'
     case 'BUNDLE': return 'Комплект'
     default: return `${benefitValue}`
   }
 }
 
-function getVisibilityLabel(visibility: string) {
-  switch (visibility) {
-    case 'FREE_FOR_ALL': return null
-    case 'MEMBERS_ONLY': return 'Plus'
-    case 'PUBLIC': return null
-    default: return null
-  }
+function getTimeLeft(expiresAt: string): string | null {
+  const diff = new Date(expiresAt).getTime() - Date.now()
+  if (diff <= 0 || diff > 86400000) return null
+  const hours = Math.floor(diff / 3600000)
+  const minutes = Math.floor((diff % 3600000) / 60000)
+  if (hours > 0) return `${hours}ч ${minutes}м`
+  return `${minutes}м`
 }
 
-export function OfferCard({ id, title, subtitle, benefitType, benefitValue, visibility, imageUrl, branchName, branchAddress, distance }: OfferCardProps) {
+export function OfferCard({
+  id, title, subtitle, benefitType, benefitValue, visibility,
+  imageUrl, branchName, branchAddress, distance,
+  expiresAt, redemptionCount, maxRedemptions, isFlash,
+}: OfferCardProps) {
   const badge = getBenefitBadge(benefitType, benefitValue)
-  const memberBadge = getVisibilityLabel(visibility)
+  const isMembersOnly = visibility === 'MEMBERS_ONLY'
+  const timeLeft = expiresAt ? getTimeLeft(expiresAt) : null
+  const utilizationPercent = maxRedemptions && redemptionCount
+    ? Math.round((redemptionCount / maxRedemptions) * 100)
+    : 0
+  const isAlmostGone = utilizationPercent >= 80
 
   return (
     <Link href={`/offers/${id}`} className="block group">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
-        <div className="relative h-40 bg-gray-100">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all active:scale-[0.98]">
+        {/* Image */}
+        <div className="relative aspect-[16/10] bg-gray-100">
           {imageUrl ? (
-            <img src={imageUrl} alt={title} className="w-full h-full object-cover" />
+            <img src={imageUrl} alt={title} className="w-full h-full object-cover" loading="lazy" />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-gray-400 text-4xl">%</div>
+            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+              <span className="text-4xl text-gray-300">%</span>
+            </div>
           )}
-          <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded-lg text-sm font-bold">
+
+          {/* Discount badge */}
+          <div className={`absolute top-2 left-2 px-2 py-1 rounded-lg text-sm font-bold text-white badge ${
+            isFlash ? 'bg-deal-flash' : 'bg-deal-discount'
+          }`}>
+            {isFlash && <Flame className="inline w-3.5 h-3.5 mr-0.5 -mt-0.5" />}
             {badge}
           </div>
-          {memberBadge && (
-            <div className="absolute top-2 right-2 bg-purple-600 text-white px-2 py-0.5 rounded text-xs font-medium">
-              {memberBadge}
+
+          {/* Plus badge */}
+          {isMembersOnly && (
+            <div className="absolute top-2 right-2 bg-deal-premium text-white px-2 py-0.5 rounded text-xs font-semibold badge">
+              Plus
+            </div>
+          )}
+
+          {/* Urgency bar */}
+          {(timeLeft || isAlmostGone) && (
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent px-2 py-1.5 flex items-center gap-2">
+              {timeLeft && (
+                <span className="flex items-center gap-1 text-xs font-medium text-deal-urgent badge">
+                  <Clock className="w-3 h-3" />
+                  {timeLeft}
+                </span>
+              )}
+              {isAlmostGone && maxRedemptions && redemptionCount !== undefined && (
+                <span className="flex items-center gap-1 text-xs font-medium text-white badge">
+                  Осталось {maxRedemptions - (redemptionCount || 0)}
+                </span>
+              )}
             </div>
           )}
         </div>
+
+        {/* Content */}
         <div className="p-3">
-          <h3 className="font-semibold text-gray-900 text-sm group-hover:text-blue-600 line-clamp-1">{title}</h3>
-          {subtitle && <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{subtitle}</p>}
-          <div className="mt-2 flex items-center gap-1 text-xs text-gray-500">
-            <span className="truncate">{branchName}</span>
+          <h3 className="font-semibold text-gray-900 text-sm leading-snug line-clamp-2 group-hover:text-brand-600">
+            {title}
+          </h3>
+          {subtitle && (
+            <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{subtitle}</p>
+          )}
+          <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
+            <span className="truncate max-w-[60%]">{branchName}</span>
             {distance !== undefined && (
-              <span className="shrink-0 ml-auto">{distance < 1 ? `${Math.round(distance * 1000)}m` : `${distance.toFixed(1)}km`}</span>
+              <span className="shrink-0 font-medium text-gray-600">
+                {distance < 1 ? `${Math.round(distance * 1000)} м` : `${distance.toFixed(1)} км`}
+              </span>
             )}
           </div>
-          <p className="text-xs text-gray-400 truncate">{branchAddress}</p>
+          {redemptionCount !== undefined && redemptionCount > 0 && (
+            <div className="mt-1.5 flex items-center gap-1 text-xs text-gray-400">
+              <Users className="w-3 h-3" />
+              <span>{redemptionCount} использовали</span>
+            </div>
+          )}
         </div>
       </div>
     </Link>

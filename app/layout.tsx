@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { Toaster } from "@/components/ui/Toaster";
 import { Navbar } from "@/components/Navbar";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
 
 export const metadata: Metadata = {
-  title: "CityEcho - Voice Search for Local Places",
-  description: "Find cafes, salons, and services near you with AI voice search",
+  title: "ГдеСейчас — скидки рядом с вами",
+  description: "Находите лучшие скидки в кафе, ресторанах и салонах вашего города. Активируйте через QR.",
 };
 
 export default function RootLayout({
@@ -14,9 +16,17 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ru">
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <meta name="theme-color" content="#2563EB" />
+      </head>
       <body>
         <Navbar />
-        {children}
+        <div className="pb-safe md:pb-0">
+          {children}
+        </div>
+        <MobileBottomNav />
+        <Toaster />
       </body>
     </html>
   );
