@@ -41,3 +41,12 @@ next-env.d.ts
 # prisma
 /prisma/migrations
 
+.env.*
+*.p12
+*.key
+*.crt
+credentials*.json
+service-account*.json
+sessions/
+logs/
+*.log

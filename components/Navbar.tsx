@@ -47,6 +47,12 @@ export function Navbar() {
               >
                 Поиск
               </Link>
+              <Link
+                href="/offers"
+                className="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+              >
+                Скидки
+              </Link>
               {user && (
                 <>
                 {user.role === 'CITIZEN' && (
@@ -85,6 +91,12 @@ export function Navbar() {
                     >
                       Акции
                     </Link>
+                    <Link
+                      href="/business/scanner"
+                      className="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+                    >
+                      Сканер
+                    </Link>
                   </>
                 )}
                 {user.role === 'ADMIN' && (
@@ -106,6 +118,12 @@ export function Navbar() {
                       className="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
                     >
                       Франшизы
+                    </Link>
+                    <Link
+                      href="/admin/offers"
+                      className="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+                    >
+                      Модерация
                     </Link>
                   </>
                 )}
