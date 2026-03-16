@@ -50,3 +50,4 @@ service-account*.json
 sessions/
 logs/
 *.log
+.claude/worktrees/
