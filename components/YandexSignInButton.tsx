@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { toast } from 'sonner'
 
 interface YandexSignInButtonProps {
   redirectTo?: string
@@ -30,12 +31,12 @@ export default function YandexSignInButton({
       } else {
         // Handle error - Yandex might not be configured
         console.error('Yandex OAuth not available:', data.error)
-        alert('Вход через Яндекс временно недоступен')
+        toast.error('Вход через Яндекс временно недоступен')
         setLoading(false)
       }
     } catch (error) {
       console.error('Yandex sign-in error:', error)
-      alert('Ошибка при входе через Яндекс')
+      toast.error('Ошибка при входе через Яндекс')
       setLoading(false)
     }
   }

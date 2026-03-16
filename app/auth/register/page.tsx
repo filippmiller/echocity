@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { toast } from 'sonner'
+import { Loader2 } from 'lucide-react'
 import { PasswordInput } from '@/components/forms/PasswordInput'
 import { getPasswordStrengthError } from '@/lib/password'
 import YandexSignInButton from '@/components/YandexSignInButton'
@@ -13,12 +15,12 @@ export default function RegisterPage() {
   const router = useRouter()
   const [accountType, setAccountType] = useState<AccountType>('CITIZEN')
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
 
   // Common fields
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [passwordError, setPasswordError] = useState<string | null>(null)
 
   // CITIZEN fields
   const [firstName, setFirstName] = useState('')
@@ -26,9 +28,6 @@ export default function RegisterPage() {
   const [phone, setPhone] = useState('')
   const [city, setCity] = useState('Санкт-Петербург')
   const [language, setLanguage] = useState<'ru' | 'en'>('ru')
-
-
-  const [passwordError, setPasswordError] = useState<string | null>(null)
 
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newPassword = e.target.value
@@ -38,11 +37,10 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError(null)
 
     // Validate password match
     if (password !== confirmPassword) {
-      setError('Пароли не совпадают')
+      toast.error('Пароли не совпадают')
       return
     }
 
@@ -50,14 +48,14 @@ export default function RegisterPage() {
     const passwordErrorMsg = getPasswordStrengthError(password)
     if (passwordErrorMsg) {
       setPasswordError(passwordErrorMsg)
-      setError(passwordErrorMsg)
+      toast.error(passwordErrorMsg)
       return
     }
 
     setLoading(true)
 
     try {
-      const payload: any = {
+      const payload: Record<string, unknown> = {
         accountType,
         email,
         password,
@@ -80,9 +78,11 @@ export default function RegisterPage() {
       const data = await response.json()
 
       if (!response.ok) {
-        setError(data.error || 'Ошибка при регистрации')
+        toast.error(data.error || 'Ошибка при регистрации')
         return
       }
+
+      toast.success('Аккаунт создан!')
 
       // Redirect based on role
       if (data.user.role === 'CITIZEN') {
@@ -92,102 +92,113 @@ export default function RegisterPage() {
       } else {
         router.push('/admin')
       }
-    } catch (err) {
-      setError('Ошибка при регистрации. Попробуйте позже.')
+    } catch {
+      toast.error('Ошибка при регистрации. Попробуйте позже.')
     } finally {
       setLoading(false)
     }
   }
 
+  const inputClassName = "block w-full px-4 py-3 border border-gray-200 rounded-xl text-base shadow-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-shadow"
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-2xl w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Регистрация
-          </h2>
+    <div className="space-y-6">
+      {/* Heading */}
+      <div className="text-center">
+        <h1 className="text-2xl font-bold text-gray-900">Регистрация</h1>
+        <p className="mt-1 text-sm text-gray-500">
+          Создайте аккаунт и начните экономить
+        </p>
+      </div>
+
+      {/* Card */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">
+        {/* Account type toggle */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Тип аккаунта
+          </label>
+          <div className="grid grid-cols-2 gap-2 p-1 bg-gray-100 rounded-xl">
+            <button
+              type="button"
+              onClick={() => setAccountType('CITIZEN')}
+              className={`py-2.5 px-3 text-sm font-medium rounded-lg transition-all min-h-[44px] ${
+                accountType === 'CITIZEN'
+                  ? 'bg-white text-brand-600 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Пользователь
+            </button>
+            <button
+              type="button"
+              onClick={() => setAccountType('BUSINESS_OWNER')}
+              className={`py-2.5 px-3 text-sm font-medium rounded-lg transition-all min-h-[44px] ${
+                accountType === 'BUSINESS_OWNER'
+                  ? 'bg-white text-brand-600 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Бизнес
+            </button>
+          </div>
         </div>
 
-        <div className="bg-white py-8 px-6 shadow rounded-lg">
-          {/* Account type selector */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Тип аккаунта
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Email */}
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1.5">
+              Email <span className="text-red-400">*</span>
             </label>
-            <div className="flex gap-4">
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  value="CITIZEN"
-                  checked={accountType === 'CITIZEN'}
-                  onChange={(e) => setAccountType(e.target.value as AccountType)}
-                  className="mr-2"
-                />
-                Я пользователь
-              </label>
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  value="BUSINESS_OWNER"
-                  checked={accountType === 'BUSINESS_OWNER'}
-                  onChange={(e) => setAccountType(e.target.value as AccountType)}
-                  className="mr-2"
-                />
-                Я представляю бизнес
-              </label>
-            </div>
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              placeholder="you@example.com"
+              className={inputClassName}
+            />
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Common fields */}
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email *
-              </label>
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
+          {/* Password */}
+          <div>
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1.5">
+              Пароль <span className="text-red-400">*</span>
+            </label>
+            <PasswordInput
+              id="password"
+              name="password"
+              value={password}
+              onChange={handlePasswordChange}
+              error={passwordError || undefined}
+              required
+            />
+          </div>
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Пароль *
-              </label>
-              <PasswordInput
-                id="password"
-                name="password"
-                value={password}
-                onChange={handlePasswordChange}
-                error={passwordError || undefined}
-                required
-              />
-            </div>
+          {/* Confirm Password */}
+          <div>
+            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1.5">
+              Подтверждение пароля <span className="text-red-400">*</span>
+            </label>
+            <PasswordInput
+              id="confirmPassword"
+              name="confirmPassword"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="Повторите пароль"
+              error={password !== confirmPassword && confirmPassword ? 'Пароли не совпадают' : undefined}
+              required
+            />
+          </div>
 
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-                Подтверждение пароля *
-              </label>
-              <PasswordInput
-                id="confirmPassword"
-                name="confirmPassword"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Повторите пароль"
-                error={password !== confirmPassword && confirmPassword ? 'Пароли не совпадают' : undefined}
-                required
-              />
-            </div>
-
-            {accountType === 'CITIZEN' ? (
-              <>
+          {accountType === 'CITIZEN' ? (
+            <>
+              {/* Name row */}
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
-                    Имя *
+                  <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Имя <span className="text-red-400">*</span>
                   </label>
                   <input
                     id="firstName"
@@ -195,11 +206,11 @@ export default function RegisterPage() {
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
                     required
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className={inputClassName}
                   />
                 </div>
                 <div>
-                  <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1.5">
                     Фамилия
                   </label>
                   <input
@@ -207,11 +218,15 @@ export default function RegisterPage() {
                     type="text"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className={inputClassName}
                   />
                 </div>
+              </div>
+
+              {/* Phone & City row */}
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1.5">
                     Телефон
                   </label>
                   <input
@@ -219,11 +234,12 @@ export default function RegisterPage() {
                     type="tel"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="+7..."
+                    className={inputClassName}
                   />
                 </div>
                 <div>
-                  <label htmlFor="city" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1.5">
                     Город
                   </label>
                   <input
@@ -231,82 +247,91 @@ export default function RegisterPage() {
                     type="text"
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className={inputClassName}
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Язык интерфейса
-                  </label>
-                  <div className="flex gap-4">
-                    <label className="flex items-center">
-                      <input
-                        type="radio"
-                        value="ru"
-                        checked={language === 'ru'}
-                        onChange={(e) => setLanguage(e.target.value as 'ru' | 'en')}
-                        className="mr-2"
-                      />
-                      Русский
-                    </label>
-                    <label className="flex items-center">
-                      <input
-                        type="radio"
-                        value="en"
-                        checked={language === 'en'}
-                        onChange={(e) => setLanguage(e.target.value as 'ru' | 'en')}
-                        className="mr-2"
-                      />
-                      English
-                    </label>
-                  </div>
+              </div>
+
+              {/* Language */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Язык интерфейса
+                </label>
+                <div className="grid grid-cols-2 gap-2 p-1 bg-gray-100 rounded-xl">
+                  <button
+                    type="button"
+                    onClick={() => setLanguage('ru')}
+                    className={`py-2 px-3 text-sm font-medium rounded-lg transition-all min-h-[40px] ${
+                      language === 'ru'
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    Русский
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLanguage('en')}
+                    className={`py-2 px-3 text-sm font-medium rounded-lg transition-all min-h-[40px] ${
+                      language === 'en'
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    English
+                  </button>
                 </div>
+              </div>
+            </>
+          ) : (
+            <div className="bg-brand-50 border border-brand-200 text-brand-700 px-4 py-3 rounded-xl text-sm">
+              <p>
+                Для регистрации бизнеса используйте{' '}
+                <Link href="/business/register" className="underline font-semibold">
+                  мастер регистрации
+                </Link>
+              </p>
+            </div>
+          )}
+
+          {/* Submit */}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-base font-semibold text-white bg-brand-600 hover:bg-brand-700 active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 disabled:opacity-60 disabled:pointer-events-none transition-all min-h-[48px]"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Регистрация...
               </>
             ) : (
-              <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded">
-                <p>Для регистрации бизнеса используйте <Link href="/business/register" className="underline font-medium">мастер регистрации</Link></p>
-              </div>
+              'Зарегистрироваться'
             )}
+          </button>
+        </form>
 
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-                {error}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-            >
-              {loading ? 'Регистрация...' : 'Зарегистрироваться'}
-            </button>
-          </form>
-
-          <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">или</span>
-              </div>
-            </div>
-
-            <div className="mt-6">
-              <YandexSignInButton />
-            </div>
+        {/* Divider */}
+        <div className="relative my-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-200" />
           </div>
-
-          <p className="mt-4 text-center text-sm text-gray-600">
-            Уже есть аккаунт?{' '}
-            <Link href="/auth/login" className="font-medium text-blue-600 hover:text-blue-500">
-              Войти
-            </Link>
-          </p>
+          <div className="relative flex justify-center text-sm">
+            <span className="bg-white px-3 text-gray-400">или</span>
+          </div>
         </div>
+
+        {/* Yandex */}
+        <YandexSignInButton className="rounded-xl py-3 min-h-[48px] text-base" />
       </div>
+
+      {/* Switch to login */}
+      <p className="text-center text-sm text-gray-500">
+        Уже есть аккаунт?{' '}
+        <Link href="/auth/login" className="font-semibold text-brand-600 hover:text-brand-700 transition-colors">
+          Войти
+        </Link>
+      </p>
     </div>
   )
 }
-

@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { toast } from 'sonner'
+import { Loader2 } from 'lucide-react'
 import { PasswordInput } from '@/components/forms/PasswordInput'
 import YandexSignInButton from '@/components/YandexSignInButton'
 
@@ -11,13 +13,14 @@ export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [passwordError, setPasswordError] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError(null)
-    setPasswordError(null)
+
+    if (!email || !password) {
+      toast.error('Заполните все поля')
+      return
+    }
 
     setLoading(true)
 
@@ -31,10 +34,11 @@ export default function LoginPage() {
       const data = await response.json()
 
       if (!response.ok) {
-        setError(data.error || 'Неверный email или пароль')
-        setPasswordError(data.error || 'Неверный email или пароль')
+        toast.error(data.error || 'Неверный email или пароль')
         return
       }
+
+      toast.success('Добро пожаловать!')
 
       // Redirect based on role
       if (data.user.role === 'CITIZEN') {
@@ -46,98 +50,96 @@ export default function LoginPage() {
       } else {
         router.push('/')
       }
-    } catch (err) {
-      setError('Ошибка при входе. Попробуйте позже.')
-      setPasswordError('Ошибка при входе. Попробуйте позже.')
+    } catch {
+      toast.error('Ошибка при входе. Попробуйте позже.')
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Вход в аккаунт
-          </h2>
-        </div>
+    <div className="space-y-6">
+      {/* Heading */}
+      <div className="text-center">
+        <h1 className="text-2xl font-bold text-gray-900">Вход в аккаунт</h1>
+        <p className="mt-1 text-sm text-gray-500">
+          Войдите, чтобы видеть скидки рядом с вами
+        </p>
+      </div>
 
-        <div className="bg-white py-8 px-6 shadow rounded-lg">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 ${
-                  error
-                    ? 'border-red-500 focus:ring-red-500'
-                    : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                }`}
-              />
-            </div>
-
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Пароль
-              </label>
-              <PasswordInput
-                id="password"
-                name="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                error={passwordError || undefined}
-                required
-              />
-            </div>
-
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-                {error}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-            >
-              {loading ? 'Вход...' : 'Войти'}
-            </button>
-          </form>
-
-          <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">или</span>
-              </div>
-            </div>
-
-            <div className="mt-6">
-              <YandexSignInButton />
-            </div>
+      {/* Card */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Email */}
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1.5">
+              Email
+            </label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              className="block w-full px-4 py-3 border border-gray-200 rounded-xl text-base shadow-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-shadow"
+            />
           </div>
 
-          <p className="mt-4 text-center text-sm text-gray-600">
-            Нет аккаунта?{' '}
-            <Link href="/auth/register" className="font-medium text-blue-600 hover:text-blue-500">
-              Зарегистрироваться
-            </Link>
-          </p>
+          {/* Password */}
+          <div>
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1.5">
+              Пароль
+            </label>
+            <PasswordInput
+              id="password"
+              name="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+
+          {/* Submit */}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-base font-semibold text-white bg-brand-600 hover:bg-brand-700 active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 disabled:opacity-60 disabled:pointer-events-none transition-all min-h-[48px]"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Вход...
+              </>
+            ) : (
+              'Войти'
+            )}
+          </button>
+        </form>
+
+        {/* Divider */}
+        <div className="relative my-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-200" />
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="bg-white px-3 text-gray-400">или</span>
+          </div>
         </div>
+
+        {/* Yandex */}
+        <YandexSignInButton className="rounded-xl py-3 min-h-[48px] text-base" />
       </div>
+
+      {/* Switch to register */}
+      <p className="text-center text-sm text-gray-500">
+        Нет аккаунта?{' '}
+        <Link href="/auth/register" className="font-semibold text-brand-600 hover:text-brand-700 transition-colors">
+          Зарегистрироваться
+        </Link>
+      </p>
     </div>
   )
 }
-

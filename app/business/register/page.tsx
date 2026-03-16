@@ -4,8 +4,11 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { PasswordInput } from '@/components/forms/PasswordInput'
 import { getPasswordStrengthError } from '@/lib/password'
+import { toast } from 'sonner'
 
 type Step = 1 | 2 | 3
+
+const STEP_TITLES = ['Контактное лицо', 'Данные бизнеса', 'Первая точка']
 
 export default function BusinessRegisterPage() {
   const router = useRouter()
@@ -159,6 +162,7 @@ export default function BusinessRegisterPage() {
         return
       }
 
+      toast.success('Бизнес успешно зарегистрирован!')
       router.push('/business/places')
     } catch (err) {
       setError('Ошибка при регистрации. Попробуйте позже.')
@@ -167,98 +171,69 @@ export default function BusinessRegisterPage() {
     }
   }
 
+  const inputClass = 'mt-1 block w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-shadow'
+  const labelClass = 'block text-sm font-medium text-gray-700'
+
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-3xl w-full mx-auto">
-        <div className="bg-white shadow rounded-lg p-8">
-          <h2 className="text-3xl font-bold text-center mb-8">
-            Регистрация бизнеса
-          </h2>
+    <div className="px-4 py-6 sm:px-6">
+      <div className="max-w-2xl mx-auto">
+        <h1 className="text-2xl font-bold text-gray-900 text-center mb-6">
+          Регистрация бизнеса
+        </h1>
 
-          {/* Progress indicator */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between">
-              <div
-                className={`flex items-center ${
-                  step >= 1 ? 'text-blue-600' : 'text-gray-400'
-                }`}
-              >
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                    step >= 1 ? 'bg-blue-600 text-white' : 'bg-gray-200'
-                  }`}
-                >
-                  1
+        {/* Progress indicator */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-2">
+            {STEP_TITLES.map((title, i) => {
+              const stepNum = i + 1
+              const isCompleted = step > stepNum
+              const isCurrent = step === stepNum
+
+              return (
+                <div key={stepNum} className="flex items-center">
+                  {i > 0 && (
+                    <div className={`hidden sm:block w-12 md:w-20 h-0.5 mx-2 ${step > i ? 'bg-brand-600' : 'bg-gray-200'}`} />
+                  )}
+                  <div className="flex items-center gap-2">
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium shrink-0 transition-colors ${
+                        isCompleted || isCurrent
+                          ? 'bg-brand-600 text-white'
+                          : 'bg-gray-200 text-gray-500'
+                      }`}
+                    >
+                      {isCompleted ? (
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                      ) : (
+                        stepNum
+                      )}
+                    </div>
+                    <span className={`hidden sm:inline text-sm font-medium ${isCurrent ? 'text-brand-600' : 'text-gray-400'}`}>
+                      {title}
+                    </span>
+                  </div>
                 </div>
-                <span className="ml-2 text-sm font-medium">Контактное лицо</span>
-              </div>
-              <div className="flex-1 h-1 mx-4 bg-gray-200">
-                <div
-                  className={`h-1 ${
-                    step >= 2 ? 'bg-blue-600' : 'bg-gray-200'
-                  }`}
-                  style={{ width: step >= 2 ? '100%' : '0%' }}
-                />
-              </div>
-              <div
-                className={`flex items-center ${
-                  step >= 2 ? 'text-blue-600' : 'text-gray-400'
-                }`}
-              >
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                    step >= 2 ? 'bg-blue-600 text-white' : 'bg-gray-200'
-                  }`}
-                >
-                  2
-                </div>
-                <span className="ml-2 text-sm font-medium">Данные бизнеса</span>
-              </div>
-              <div className="flex-1 h-1 mx-4 bg-gray-200">
-                <div
-                  className={`h-1 ${
-                    step >= 3 ? 'bg-blue-600' : 'bg-gray-200'
-                  }`}
-                  style={{ width: step >= 3 ? '100%' : '0%' }}
-                />
-              </div>
-              <div
-                className={`flex items-center ${
-                  step >= 3 ? 'text-blue-600' : 'text-gray-400'
-                }`}
-              >
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                    step >= 3 ? 'bg-blue-600 text-white' : 'bg-gray-200'
-                  }`}
-                >
-                  3
-                </div>
-                <span className="ml-2 text-sm font-medium">Первая точка</span>
-              </div>
-            </div>
+              )
+            })}
           </div>
+          {/* Mobile step label */}
+          <p className="sm:hidden text-center text-sm font-medium text-brand-600 mt-3">
+            Шаг {step}: {STEP_TITLES[step - 1]}
+          </p>
+        </div>
 
-          <form onSubmit={step === 3 ? handleSubmit : (e) => { e.preventDefault(); handleNext(); }} className="space-y-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 sm:p-6">
+          <form onSubmit={step === 3 ? handleSubmit : (e) => { e.preventDefault(); handleNext() }} className="space-y-5">
             {step === 1 && (
               <div className="space-y-4">
-                <h3 className="text-xl font-semibold mb-4">Шаг 1: Контактное лицо</h3>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Email *
-                  </label>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-                  />
+                  <label className={labelClass}>Email *</label>
+                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className={inputClass} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Пароль *
-                  </label>
+                  <label className={labelClass}>Пароль *</label>
                   <PasswordInput
                     value={password}
                     onChange={handlePasswordChange}
@@ -267,9 +242,7 @@ export default function BusinessRegisterPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Подтверждение пароля *
-                  </label>
+                  <label className={labelClass}>Подтверждение пароля *</label>
                   <PasswordInput
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
@@ -278,82 +251,36 @@ export default function BusinessRegisterPage() {
                     required
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Имя *
-                    </label>
-                    <input
-                      type="text"
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                      required
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-                    />
+                    <label className={labelClass}>Имя *</label>
+                    <input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} required className={inputClass} />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Фамилия
-                    </label>
-                    <input
-                      type="text"
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-                    />
+                    <label className={labelClass}>Фамилия</label>
+                    <input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} className={inputClass} />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Телефон *
-                  </label>
-                  <input
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    required
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-                  />
+                  <label className={labelClass}>Телефон *</label>
+                  <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} required className={inputClass} />
                 </div>
               </div>
             )}
 
             {step === 2 && (
               <div className="space-y-4">
-                <h3 className="text-xl font-semibold mb-4">Шаг 2: Данные бизнеса</h3>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Название бизнеса *
-                  </label>
-                  <input
-                    type="text"
-                    value={businessName}
-                    onChange={(e) => setBusinessName(e.target.value)}
-                    required
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-                  />
+                  <label className={labelClass}>Название бизнеса *</label>
+                  <input type="text" value={businessName} onChange={(e) => setBusinessName(e.target.value)} required className={inputClass} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Юридическое название
-                  </label>
-                  <input
-                    type="text"
-                    value={legalName}
-                    onChange={(e) => setLegalName(e.target.value)}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-                  />
+                  <label className={labelClass}>Юридическое название</label>
+                  <input type="text" value={legalName} onChange={(e) => setLegalName(e.target.value)} className={inputClass} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Тип бизнеса *
-                  </label>
-                  <select
-                    value={businessType}
-                    onChange={(e) => setBusinessType(e.target.value)}
-                    required
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-                  >
+                  <label className={labelClass}>Тип бизнеса *</label>
+                  <select value={businessType} onChange={(e) => setBusinessType(e.target.value)} required className={inputClass}>
                     <option value="CAFE">Кафе</option>
                     <option value="RESTAURANT">Ресторан</option>
                     <option value="BAR">Бар</option>
@@ -365,84 +292,35 @@ export default function BusinessRegisterPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Описание
-                  </label>
-                  <textarea
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    rows={3}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-                  />
+                  <label className={labelClass}>Описание</label>
+                  <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} className={inputClass} />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Сайт
-                    </label>
-                    <input
-                      type="url"
-                      value={website}
-                      onChange={(e) => setWebsite(e.target.value)}
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-                    />
+                    <label className={labelClass}>Сайт</label>
+                    <input type="url" value={website} onChange={(e) => setWebsite(e.target.value)} className={inputClass} />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Email для клиентов
-                    </label>
-                    <input
-                      type="email"
-                      value={supportEmail}
-                      onChange={(e) => setSupportEmail(e.target.value)}
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-                    />
+                    <label className={labelClass}>Email для клиентов</label>
+                    <input type="email" value={supportEmail} onChange={(e) => setSupportEmail(e.target.value)} className={inputClass} />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Телефон для клиентов
-                  </label>
-                  <input
-                    type="tel"
-                    value={supportPhone}
-                    onChange={(e) => setSupportPhone(e.target.value)}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-                  />
+                  <label className={labelClass}>Телефон для клиентов</label>
+                  <input type="tel" value={supportPhone} onChange={(e) => setSupportPhone(e.target.value)} className={inputClass} />
                 </div>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Instagram
-                    </label>
-                    <input
-                      type="text"
-                      value={instagram}
-                      onChange={(e) => setInstagram(e.target.value)}
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-                    />
+                    <label className={labelClass}>Instagram</label>
+                    <input type="text" value={instagram} onChange={(e) => setInstagram(e.target.value)} className={inputClass} />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      VK
-                    </label>
-                    <input
-                      type="text"
-                      value={vk}
-                      onChange={(e) => setVk(e.target.value)}
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-                    />
+                    <label className={labelClass}>VK</label>
+                    <input type="text" value={vk} onChange={(e) => setVk(e.target.value)} className={inputClass} />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Telegram
-                    </label>
-                    <input
-                      type="text"
-                      value={telegram}
-                      onChange={(e) => setTelegram(e.target.value)}
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-                    />
+                    <label className={labelClass}>Telegram</label>
+                    <input type="text" value={telegram} onChange={(e) => setTelegram(e.target.value)} className={inputClass} />
                   </div>
                 </div>
               </div>
@@ -450,42 +328,18 @@ export default function BusinessRegisterPage() {
 
             {step === 3 && (
               <div className="space-y-4">
-                <h3 className="text-xl font-semibold mb-4">Шаг 3: Первая точка</h3>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Название точки *
-                  </label>
-                  <input
-                    type="text"
-                    value={placeTitle}
-                    onChange={(e) => setPlaceTitle(e.target.value)}
-                    required
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-                  />
+                  <label className={labelClass}>Название точки *</label>
+                  <input type="text" value={placeTitle} onChange={(e) => setPlaceTitle(e.target.value)} required className={inputClass} />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Город *
-                    </label>
-                    <input
-                      type="text"
-                      value={placeCity}
-                      onChange={(e) => setPlaceCity(e.target.value)}
-                      required
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-                    />
+                    <label className={labelClass}>Город *</label>
+                    <input type="text" value={placeCity} onChange={(e) => setPlaceCity(e.target.value)} required className={inputClass} />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Тип точки *
-                    </label>
-                    <select
-                      value={placeType}
-                      onChange={(e) => setPlaceType(e.target.value)}
-                      required
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-                    >
+                    <label className={labelClass}>Тип точки *</label>
+                    <select value={placeType} onChange={(e) => setPlaceType(e.target.value)} required className={inputClass}>
                       <option value="CAFE">Кафе</option>
                       <option value="RESTAURANT">Ресторан</option>
                       <option value="BAR">Бар</option>
@@ -498,155 +352,80 @@ export default function BusinessRegisterPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Адрес *
-                  </label>
-                  <input
-                    type="text"
-                    value={placeAddress}
-                    onChange={(e) => setPlaceAddress(e.target.value)}
-                    required
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-                  />
+                  <label className={labelClass}>Адрес *</label>
+                  <input type="text" value={placeAddress} onChange={(e) => setPlaceAddress(e.target.value)} required className={inputClass} />
                 </div>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Широта (lat)
-                    </label>
-                    <input
-                      type="number"
-                      step="any"
-                      value={placeLat || ''}
-                      onChange={(e) =>
-                        setPlaceLat(e.target.value ? parseFloat(e.target.value) : undefined)
-                      }
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-                    />
+                    <label className={labelClass}>Широта</label>
+                    <input type="number" step="any" value={placeLat || ''} onChange={(e) => setPlaceLat(e.target.value ? parseFloat(e.target.value) : undefined)} className={inputClass} />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Долгота (lng)
-                    </label>
-                    <input
-                      type="number"
-                      step="any"
-                      value={placeLng || ''}
-                      onChange={(e) =>
-                        setPlaceLng(e.target.value ? parseFloat(e.target.value) : undefined)
-                      }
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-                    />
+                    <label className={labelClass}>Долгота</label>
+                    <input type="number" step="any" value={placeLng || ''} onChange={(e) => setPlaceLng(e.target.value ? parseFloat(e.target.value) : undefined)} className={inputClass} />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Телефон точки
-                    </label>
-                    <input
-                      type="tel"
-                      value={placePhone}
-                      onChange={(e) => setPlacePhone(e.target.value)}
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-                    />
+                    <label className={labelClass}>Телефон точки</label>
+                    <input type="tel" value={placePhone} onChange={(e) => setPlacePhone(e.target.value)} className={inputClass} />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Особенности
-                  </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={hasWorkspace}
-                        onChange={(e) => setHasWorkspace(e.target.checked)}
-                        className="mr-2"
-                      />
-                      Есть места для работы с ноутбуком
-                    </label>
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={hasWifi}
-                        onChange={(e) => setHasWifi(e.target.checked)}
-                        className="mr-2"
-                      />
-                      Есть Wi-Fi
-                    </label>
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={hasSockets}
-                        onChange={(e) => setHasSockets(e.target.checked)}
-                        className="mr-2"
-                      />
-                      Есть розетки
-                    </label>
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={isSpecialtyCoffee}
-                        onChange={(e) => setIsSpecialtyCoffee(e.target.checked)}
-                        className="mr-2"
-                      />
-                      Specialty кофе
-                    </label>
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={hasParking}
-                        onChange={(e) => setHasParking(e.target.checked)}
-                        className="mr-2"
-                      />
-                      Есть парковка
-                    </label>
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={isKidsFriendly}
-                        onChange={(e) => setIsKidsFriendly(e.target.checked)}
-                        className="mr-2"
-                      />
-                      Детская зона
-                    </label>
+                  <label className={`${labelClass} mb-3`}>Особенности</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {[
+                      { checked: hasWorkspace, set: setHasWorkspace, label: 'Места для работы с ноутбуком' },
+                      { checked: hasWifi, set: setHasWifi, label: 'Wi-Fi' },
+                      { checked: hasSockets, set: setHasSockets, label: 'Розетки' },
+                      { checked: isSpecialtyCoffee, set: setIsSpecialtyCoffee, label: 'Specialty кофе' },
+                      { checked: hasParking, set: setHasParking, label: 'Парковка' },
+                      { checked: isKidsFriendly, set: setIsKidsFriendly, label: 'Детская зона' },
+                    ].map((feat) => (
+                      <label
+                        key={feat.label}
+                        className="flex items-center gap-2.5 p-2.5 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={feat.checked}
+                          onChange={(e) => feat.set(e.target.checked)}
+                          className="w-4 h-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
+                        />
+                        <span className="text-sm text-gray-700">{feat.label}</span>
+                      </label>
+                    ))}
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Средний чек (₽)
-                  </label>
-                  <input
-                    type="number"
-                    value={averageCheck}
-                    onChange={(e) => setAverageCheck(e.target.value)}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-                  />
+                  <label className={labelClass}>Средний чек (&#8381;)</label>
+                  <input type="number" value={averageCheck} onChange={(e) => setAverageCheck(e.target.value)} className={inputClass} />
                 </div>
               </div>
             )}
 
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
                 {error}
               </div>
             )}
 
-            <div className="flex justify-between">
-              {step > 1 && (
+            <div className="flex justify-between pt-2">
+              {step > 1 ? (
                 <button
                   type="button"
                   onClick={handleBack}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                  className="px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                 >
                   Назад
                 </button>
+              ) : (
+                <div />
               )}
-              <div className="ml-auto">
+              <div>
                 {step < 3 ? (
                   <button
                     type="button"
                     onClick={handleNext}
-                    className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                    className="px-6 py-2.5 bg-brand-600 text-white rounded-lg text-sm font-medium hover:bg-brand-700 transition-colors"
                   >
                     Далее
                   </button>
@@ -654,7 +433,7 @@ export default function BusinessRegisterPage() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                    className="px-6 py-2.5 bg-brand-600 text-white rounded-lg text-sm font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors"
                   >
                     {loading ? 'Регистрация...' : 'Зарегистрировать'}
                   </button>
@@ -667,5 +446,3 @@ export default function BusinessRegisterPage() {
     </div>
   )
 }
-
-

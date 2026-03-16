@@ -15,7 +15,6 @@ export default async function BusinessPlacesPage() {
     redirect('/')
   }
 
-  // Get user's businesses and places
   const businesses = await prisma.business.findMany({
     where: {
       ownerId: session.userId,
@@ -44,49 +43,54 @@ export default async function BusinessPlacesPage() {
   })
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">Мои заведения</h1>
+    <div className="px-4 py-6 sm:px-6">
+      <div className="flex items-center justify-between mb-5">
+        <h1 className="text-2xl font-bold text-gray-900">Мои заведения</h1>
+        <Link
+          href="/business/register"
+          className="bg-brand-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-brand-700 transition-colors active:scale-[0.98]"
+        >
+          Добавить
+        </Link>
+      </div>
+
+      {businesses.length === 0 ? (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-10 text-center">
+          <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
+            <svg className="w-7 h-7 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 21v-7.5a.75.75 0 01.75-.75h3a.75.75 0 01.75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349m-16.5 11.65V9.35m0 0a3.001 3.001 0 003.75-.615A2.993 2.993 0 009.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 002.25 1.016c.896 0 1.7-.393 2.25-1.016a3.001 3.001 0 003.75.614m-16.5 0a3.004 3.004 0 01-.621-4.72L4.318 3.44A1.5 1.5 0 015.378 3h13.243a1.5 1.5 0 011.06.44l1.19 1.189a3 3 0 01-.621 4.72m-13.5 8.65h3.75a.75.75 0 00.75-.75V13.5a.75.75 0 00-.75-.75H6.75a.75.75 0 00-.75.75v3.15c0 .415.336.75.75.75z" />
+            </svg>
+          </div>
+          <p className="text-gray-600 mb-4">У вас пока нет заведений</p>
           <Link
             href="/business/register"
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+            className="inline-block bg-brand-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-brand-700 transition-colors"
           >
-            Добавить заведение
+            Зарегистрировать первое заведение
           </Link>
         </div>
-
-        {businesses.length === 0 ? (
-          <div className="bg-white shadow rounded-lg p-8 text-center">
-            <p className="text-gray-600 mb-4">У вас пока нет заведений</p>
-            <Link
-              href="/business/register"
-              className="inline-block bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700"
-            >
-              Зарегистрировать первое заведение
-            </Link>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {businesses.map((business) => (
-              <div key={business.id} className="bg-white shadow rounded-lg p-6">
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h2 className="text-xl font-semibold text-gray-900">
+      ) : (
+        <div className="space-y-4">
+          {businesses.map((business) => (
+            <div key={business.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="px-4 py-4 sm:px-5">
+                <div className="flex items-start justify-between">
+                  <div className="min-w-0">
+                    <h2 className="text-lg font-semibold text-gray-900 truncate">
                       {business.name}
                     </h2>
                     {business.legalName && (
                       <p className="text-sm text-gray-500">{business.legalName}</p>
                     )}
-                    <p className="text-sm text-gray-600 mt-1">
-                      Статус:{' '}
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-sm text-gray-500">Статус:</span>
                       <span
-                        className={`font-medium ${
+                        className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
                           business.status === 'APPROVED'
-                            ? 'text-green-600'
+                            ? 'bg-green-100 text-green-800'
                             : business.status === 'PENDING'
-                            ? 'text-yellow-600'
-                            : 'text-red-600'
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : 'bg-red-100 text-red-800'
                         }`}
                       >
                         {business.status === 'APPROVED'
@@ -95,57 +99,56 @@ export default async function BusinessPlacesPage() {
                           ? 'На модерации'
                           : 'Отклонено'}
                       </span>
-                    </p>
+                    </div>
                   </div>
                 </div>
 
-                <div className="mt-4 mb-4">
+                <div className="mt-4">
                   <YandexBusinessVerification
                     businessId={business.id}
                     isVerified={!!business.yandexVerifiedAt}
                     yandexOrgName={business.yandexOrgName}
                   />
                 </div>
-
-                <div className="mt-4">
-                  <h3 className="text-sm font-medium text-gray-700 mb-2">
-                    Точки ({business.places.length})
-                  </h3>
-                  {business.places.length === 0 ? (
-                    <p className="text-sm text-gray-500">Нет точек</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {business.places.map((place) => (
-                        <div
-                          key={place.id}
-                          className="flex justify-between items-center p-3 bg-gray-50 rounded-md"
-                        >
-                          <div>
-                            <p className="font-medium text-gray-900">
-                              {place.title}
-                            </p>
-                            <p className="text-sm text-gray-600">
-                              {place.city}, {place.address}
-                            </p>
-                          </div>
-                          <Link
-                            href={`/business/places/${place.id}/services`}
-                            className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-                          >
-                            Управление услугами →
-                          </Link>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+
+              {/* Places */}
+              <div className="border-t border-gray-100 px-4 py-3 sm:px-5">
+                <h3 className="text-sm font-medium text-gray-700 mb-2">
+                  Точки ({business.places.length})
+                </h3>
+                {business.places.length === 0 ? (
+                  <p className="text-sm text-gray-400 py-2">Нет активных точек</p>
+                ) : (
+                  <div className="space-y-2">
+                    {business.places.map((place) => (
+                      <div
+                        key={place.id}
+                        className="flex items-center justify-between p-3 bg-surface-secondary rounded-lg"
+                      >
+                        <div className="min-w-0">
+                          <p className="font-medium text-gray-900 text-sm truncate">
+                            {place.title}
+                          </p>
+                          <p className="text-xs text-gray-500 truncate">
+                            {place.city}, {place.address}
+                          </p>
+                        </div>
+                        <Link
+                          href={`/business/places/${place.id}/services`}
+                          className="shrink-0 ml-3 text-brand-600 hover:text-brand-700 text-sm font-medium"
+                        >
+                          Услуги
+                        </Link>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
-
-

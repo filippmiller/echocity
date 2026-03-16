@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
+import { Building2, Plus, X, Loader2 } from 'lucide-react'
 
 interface Franchise {
   id: string
@@ -21,6 +23,20 @@ interface Franchise {
   }
 }
 
+const STATUS_STYLES: Record<string, string> = {
+  ACTIVE: 'bg-green-50 text-deal-savings',
+  SUSPENDED: 'bg-amber-50 text-deal-urgent',
+  EXPIRED: 'bg-red-50 text-deal-discount',
+  DRAFT: 'bg-gray-100 text-gray-600',
+}
+
+const STATUS_LABELS: Record<string, string> = {
+  ACTIVE: 'Активна',
+  SUSPENDED: 'Приостановлена',
+  EXPIRED: 'Истекла',
+  DRAFT: 'Черновик',
+}
+
 export default function AdminFranchisesPage() {
   const router = useRouter()
   const [franchises, setFranchises] = useState<Franchise[]>([])
@@ -35,7 +51,6 @@ export default function AdminFranchisesPage() {
     billingPlan: '',
     revenueSharePercent: '',
   })
-  const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
@@ -51,8 +66,8 @@ export default function AdminFranchisesPage() {
       }
       const data = await res.json()
       setFranchises(data.franchises || [])
-    } catch (err) {
-      setError('Ошибка при загрузке франшиз')
+    } catch {
+      toast.error('Ошибка при загрузке франшиз')
     } finally {
       setLoading(false)
     }
@@ -60,26 +75,20 @@ export default function AdminFranchisesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError(null)
     setSubmitting(true)
 
     try {
-      const payload: any = {
+      const payload: Record<string, unknown> = {
         code: formData.code,
         name: formData.name,
         ownerUserEmail: formData.ownerUserEmail,
         status: formData.status,
       }
 
-      if (formData.billingEmail) {
-        payload.billingEmail = formData.billingEmail
-      }
-      if (formData.billingPlan) {
-        payload.billingPlan = formData.billingPlan
-      }
-      if (formData.revenueSharePercent) {
+      if (formData.billingEmail) payload.billingEmail = formData.billingEmail
+      if (formData.billingPlan) payload.billingPlan = formData.billingPlan
+      if (formData.revenueSharePercent)
         payload.revenueSharePercent = parseInt(formData.revenueSharePercent)
-      }
 
       const res = await fetch('/api/admin/franchises', {
         method: 'POST',
@@ -90,11 +99,11 @@ export default function AdminFranchisesPage() {
       const data = await res.json()
 
       if (!res.ok) {
-        setError(data.error || 'Ошибка при создании франшизы')
+        toast.error(data.error || 'Ошибка при создании франшизы')
         return
       }
 
-      // Reset form and reload
+      toast.success(`Франшиза "${formData.name}" создана`)
       setFormData({
         code: '',
         name: '',
@@ -106,217 +115,243 @@ export default function AdminFranchisesPage() {
       })
       setShowForm(false)
       loadFranchises()
-    } catch (err) {
-      setError('Ошибка при создании франшизы')
+    } catch {
+      toast.error('Ошибка при создании франшизы')
     } finally {
       setSubmitting(false)
     }
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <p>Загрузка...</p>
-        </div>
-      </div>
-    )
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">Управление франшизами</h1>
-          <button
-            onClick={() => setShowForm(!showForm)}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-          >
-            {showForm ? 'Отмена' : 'Создать франшизу'}
-          </button>
+    <div className="p-4 sm:p-6 lg:p-8 max-w-6xl">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center">
+            <Building2 className="w-5 h-5 text-deal-premium" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Франшизы</h1>
+            <p className="text-sm text-gray-500">
+              {loading ? '...' : `${franchises.length} франшиз`}
+            </p>
+          </div>
         </div>
+        <button
+          onClick={() => setShowForm(!showForm)}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            showForm
+              ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              : 'bg-brand-600 text-white hover:bg-brand-700'
+          }`}
+        >
+          {showForm ? (
+            <>
+              <X className="w-4 h-4" />
+              Отмена
+            </>
+          ) : (
+            <>
+              <Plus className="w-4 h-4" />
+              Создать франшизу
+            </>
+          )}
+        </button>
+      </div>
 
-        {showForm && (
-          <div className="bg-white shadow rounded-lg p-6 mb-6">
-            <h2 className="text-xl font-semibold mb-4">Новая франшиза</h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Код *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.code}
-                    onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
-                    required
-                    pattern="[A-Z0-9-_]+"
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Название *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    required
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Email владельца *
-                  </label>
-                  <input
-                    type="email"
-                    value={formData.ownerUserEmail}
-                    onChange={(e) => setFormData({ ...formData, ownerUserEmail: e.target.value })}
-                    required
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Статус *
-                  </label>
-                  <select
-                    value={formData.status}
-                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                    required
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-                  >
-                    <option value="DRAFT">Черновик</option>
-                    <option value="ACTIVE">Активна</option>
-                    <option value="SUSPENDED">Приостановлена</option>
-                    <option value="EXPIRED">Истекла</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Email для биллинга
-                  </label>
-                  <input
-                    type="email"
-                    value={formData.billingEmail}
-                    onChange={(e) => setFormData({ ...formData, billingEmail: e.target.value })}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    План биллинга
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.billingPlan}
-                    onChange={(e) => setFormData({ ...formData, billingPlan: e.target.value })}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Процент дохода (%)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={formData.revenueSharePercent}
-                    onChange={(e) => setFormData({ ...formData, revenueSharePercent: e.target.value })}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-                  />
-                </div>
+      {/* Create form */}
+      {showForm && (
+        <div className="bg-white rounded-xl border border-gray-200 p-5 sm:p-6 mb-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Новая франшиза</h2>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Код *</label>
+                <input
+                  type="text"
+                  value={formData.code}
+                  onChange={(e) =>
+                    setFormData({ ...formData, code: e.target.value.toUpperCase() })
+                  }
+                  required
+                  pattern="[A-Z0-9\-_]+"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                  placeholder="MSK-PRIME"
+                />
               </div>
-              {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-                  {error}
-                </div>
-              )}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Название *
+                </label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  required
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email владельца *
+                </label>
+                <input
+                  type="email"
+                  value={formData.ownerUserEmail}
+                  onChange={(e) =>
+                    setFormData({ ...formData, ownerUserEmail: e.target.value })
+                  }
+                  required
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Статус *</label>
+                <select
+                  value={formData.status}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                  required
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent bg-white"
+                >
+                  <option value="DRAFT">Черновик</option>
+                  <option value="ACTIVE">Активна</option>
+                  <option value="SUSPENDED">Приостановлена</option>
+                  <option value="EXPIRED">Истекла</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email для биллинга
+                </label>
+                <input
+                  type="email"
+                  value={formData.billingEmail}
+                  onChange={(e) =>
+                    setFormData({ ...formData, billingEmail: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  План биллинга
+                </label>
+                <input
+                  type="text"
+                  value={formData.billingPlan}
+                  onChange={(e) =>
+                    setFormData({ ...formData, billingPlan: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Доля дохода (%)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={formData.revenueSharePercent}
+                  onChange={(e) =>
+                    setFormData({ ...formData, revenueSharePercent: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end">
               <button
                 type="submit"
                 disabled={submitting}
-                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
+                className="flex items-center gap-2 px-5 py-2.5 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 disabled:opacity-50 transition-colors"
               >
-                {submitting ? 'Создание...' : 'Создать'}
+                {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
+                {submitting ? 'Создание...' : 'Создать франшизу'}
               </button>
-            </form>
-          </div>
-        )}
+            </div>
+          </form>
+        </div>
+      )}
 
-        <div className="bg-white shadow rounded-lg overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Код
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Название
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Статус
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Владелец
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Городов
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Участников
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {franchises.map((franchise) => (
-                <tr key={franchise.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {franchise.code}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {franchise.name}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <span
-                      className={`px-2 py-1 text-xs rounded-full ${
-                        franchise.status === 'ACTIVE'
-                          ? 'bg-green-100 text-green-800'
-                          : franchise.status === 'SUSPENDED'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : franchise.status === 'EXPIRED'
-                          ? 'bg-red-100 text-red-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}
-                    >
-                      {franchise.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {franchise.ownerUser.email}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {franchise._count.cities}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {franchise._count.members}
-                  </td>
+      {/* Loading */}
+      {loading && (
+        <div className="flex items-center justify-center py-16">
+          <Loader2 className="w-6 h-6 text-gray-400 animate-spin" />
+        </div>
+      )}
+
+      {/* Table */}
+      {!loading && (
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead>
+                <tr className="bg-surface-tertiary">
+                  <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    Код
+                  </th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    Название
+                  </th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    Статус
+                  </th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden md:table-cell">
+                    Владелец
+                  </th>
+                  <th className="px-5 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    Городов
+                  </th>
+                  <th className="px-5 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider hidden sm:table-cell">
+                    Участников
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {franchises.map((franchise) => (
+                  <tr key={franchise.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-5 py-3.5 text-sm whitespace-nowrap">
+                      <code className="px-1.5 py-0.5 bg-gray-100 rounded text-xs font-semibold">
+                        {franchise.code}
+                      </code>
+                    </td>
+                    <td className="px-5 py-3.5 text-sm font-medium text-gray-900 whitespace-nowrap">
+                      {franchise.name}
+                    </td>
+                    <td className="px-5 py-3.5 text-sm whitespace-nowrap">
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          STATUS_STYLES[franchise.status] || STATUS_STYLES.DRAFT
+                        }`}
+                      >
+                        {STATUS_LABELS[franchise.status] || franchise.status}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3.5 text-sm text-gray-500 whitespace-nowrap hidden md:table-cell">
+                      {franchise.ownerUser.email}
+                    </td>
+                    <td className="px-5 py-3.5 text-sm text-gray-500 whitespace-nowrap text-right tabular-nums">
+                      {franchise._count.cities}
+                    </td>
+                    <td className="px-5 py-3.5 text-sm text-gray-500 whitespace-nowrap text-right tabular-nums hidden sm:table-cell">
+                      {franchise._count.members}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
           {franchises.length === 0 && (
-            <div className="px-6 py-4 text-center text-gray-500">
-              Франшизы не найдены
+            <div className="px-6 py-12 text-center text-gray-500">
+              <Building2 className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+              <p className="font-medium">Франшизы не найдены</p>
+              <p className="text-sm mt-1">Создайте первую франшизу</p>
             </div>
           )}
         </div>
-      </div>
+      )}
     </div>
   )
 }
-
-
-

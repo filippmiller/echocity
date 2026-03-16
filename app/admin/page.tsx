@@ -1,138 +1,200 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import {
+  Tag,
+  MapPin,
+  Building2,
+  ShieldAlert,
+  TrendingUp,
+  Users,
+  Clock,
+  CheckCircle2,
+} from 'lucide-react'
 
-type AdminTab = 'overview' | 'api-control' | 'subscriptions' | 'users' | 'locations' | 'franchises'
+interface DashboardStats {
+  pendingOffers: number
+  activeOffers: number
+  totalCities: number
+  totalFranchises: number
+  totalUsers: number
+  fraudAlerts: number
+}
 
-export default function AdminPage() {
-  const [activeTab, setActiveTab] = useState<AdminTab>('overview')
+export default function AdminDashboardPage() {
+  const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [loading, setLoading] = useState(true)
 
-  const tabs = [
-    { id: 'overview' as AdminTab, label: 'Обзор', href: '/admin' },
-    { id: 'api-control' as AdminTab, label: 'API Control', href: '/admin/api-control' },
-    { id: 'subscriptions' as AdminTab, label: 'Подписки', href: '/admin/subscriptions' },
-    { id: 'users' as AdminTab, label: 'Пользователи', href: '/admin/users' },
-    { id: 'locations' as AdminTab, label: 'Локации', href: '/admin/cities' },
-    { id: 'franchises' as AdminTab, label: 'Франшизы', href: '/admin/franchises' },
+  useEffect(() => {
+    loadStats()
+  }, [])
+
+  const loadStats = async () => {
+    try {
+      // Load stats from multiple endpoints in parallel
+      const [offersRes, citiesRes, franchisesRes] = await Promise.allSettled([
+        fetch('/api/admin/offers?status=PENDING').then((r) => r.json()),
+        fetch('/api/admin/cities').then((r) => r.json()),
+        fetch('/api/admin/franchises').then((r) => r.json()),
+      ])
+
+      const pending =
+        offersRes.status === 'fulfilled' ? offersRes.value.offers?.length ?? 0 : 0
+      const cities =
+        citiesRes.status === 'fulfilled' ? citiesRes.value.cities?.length ?? 0 : 0
+      const franchises =
+        franchisesRes.status === 'fulfilled'
+          ? franchisesRes.value.franchises?.length ?? 0
+          : 0
+
+      setStats({
+        pendingOffers: pending,
+        activeOffers: 0,
+        totalCities: cities,
+        totalFranchises: franchises,
+        totalUsers: 0,
+        fraudAlerts: 0,
+      })
+    } catch {
+      // Still show the page, just with zeroes
+      setStats({
+        pendingOffers: 0,
+        activeOffers: 0,
+        totalCities: 0,
+        totalFranchises: 0,
+        totalUsers: 0,
+        fraudAlerts: 0,
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const cards = [
+    {
+      label: 'На модерации',
+      value: stats?.pendingOffers ?? '...',
+      icon: Clock,
+      href: '/admin/offers',
+      color: 'text-deal-urgent',
+      bg: 'bg-amber-50',
+      borderColor: 'border-amber-200',
+    },
+    {
+      label: 'Городов',
+      value: stats?.totalCities ?? '...',
+      icon: MapPin,
+      href: '/admin/cities',
+      color: 'text-brand-600',
+      bg: 'bg-brand-50',
+      borderColor: 'border-brand-200',
+    },
+    {
+      label: 'Франшиз',
+      value: stats?.totalFranchises ?? '...',
+      icon: Building2,
+      href: '/admin/franchises',
+      color: 'text-deal-premium',
+      bg: 'bg-purple-50',
+      borderColor: 'border-purple-200',
+    },
+    {
+      label: 'Фрод-алерты',
+      value: stats?.fraudAlerts ?? '...',
+      icon: ShieldAlert,
+      href: '/admin/fraud',
+      color: 'text-deal-flash',
+      bg: 'bg-rose-50',
+      borderColor: 'border-rose-200',
+    },
+  ]
+
+  const quickLinks = [
+    {
+      label: 'Модерация офферов',
+      description: 'Одобрение и отклонение новых предложений',
+      href: '/admin/offers',
+      icon: Tag,
+    },
+    {
+      label: 'Управление городами',
+      description: 'Добавление и настройка городов',
+      href: '/admin/cities',
+      icon: MapPin,
+    },
+    {
+      label: 'Франшизы',
+      description: 'Управление франшизами и партнерами',
+      href: '/admin/franchises',
+      icon: Building2,
+    },
+    {
+      label: 'Фрод-мониторинг',
+      description: 'Контроль подозрительной активности',
+      href: '/admin/fraud',
+      icon: ShieldAlert,
+    },
   ]
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">Админ-панель</h1>
-          <p className="mt-2 text-gray-600">Управление платформой</p>
-        </div>
+    <div className="p-4 sm:p-6 lg:p-8 max-w-6xl">
+      {/* Page heading */}
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-gray-900">Дашборд</h1>
+        <p className="mt-1 text-sm text-gray-500">Обзор платформы</p>
+      </div>
 
-        {/* Tabs */}
-        <div className="border-b border-gray-200 mb-6">
-          <nav className="-mb-px flex space-x-8" aria-label="Tabs">
-            {tabs.map((tab) => {
-              const isActive = activeTab === tab.id
-              return (
-                <Link
-                  key={tab.id}
-                  href={tab.href}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`
-                    whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm
-                    ${
-                      isActive
-                        ? 'border-blue-500 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }
-                  `}
-                >
-                  {tab.label}
-                </Link>
-              )
-            })}
-          </nav>
-        </div>
+      {/* Metric cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {cards.map((card) => {
+          const Icon = card.icon
+          return (
+            <Link
+              key={card.label}
+              href={card.href}
+              className={`relative flex flex-col gap-3 p-4 sm:p-5 rounded-xl border bg-white hover:shadow-md transition-shadow ${card.borderColor}`}
+            >
+              <div className={`w-10 h-10 rounded-lg ${card.bg} flex items-center justify-center`}>
+                <Icon className={`w-5 h-5 ${card.color}`} />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-900">
+                  {loading ? (
+                    <span className="inline-block w-8 h-7 bg-gray-100 rounded animate-pulse" />
+                  ) : (
+                    card.value
+                  )}
+                </p>
+                <p className="text-sm text-gray-500 mt-0.5">{card.label}</p>
+              </div>
+            </Link>
+          )
+        })}
+      </div>
 
-        {/* Tab Content */}
-        <div className="bg-white shadow rounded-lg p-6">
-          {activeTab === 'overview' && (
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Обзор системы</h2>
-              <p className="text-gray-600">Добро пожаловать в админ-панель!</p>
-              <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <h3 className="font-semibold text-gray-900">API Control</h3>
-                  <p className="text-sm text-gray-600 mt-1">Управление API ключами и доступом</p>
+      {/* Quick links */}
+      <div className="mb-8">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Быстрый доступ</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {quickLinks.map((link) => {
+            const Icon = link.icon
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="flex items-center gap-4 p-4 bg-white rounded-xl border border-gray-200 hover:border-brand-200 hover:shadow-sm transition-all group"
+              >
+                <div className="w-10 h-10 rounded-lg bg-gray-50 group-hover:bg-brand-50 flex items-center justify-center transition-colors">
+                  <Icon className="w-5 h-5 text-gray-400 group-hover:text-brand-600 transition-colors" />
                 </div>
-                <div className="bg-green-50 p-4 rounded-lg">
-                  <h3 className="font-semibold text-gray-900">Подписки</h3>
-                  <p className="text-sm text-gray-600 mt-1">Управление подписками пользователей</p>
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">{link.label}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">{link.description}</p>
                 </div>
-                <div className="bg-purple-50 p-4 rounded-lg">
-                  <h3 className="font-semibold text-gray-900">Пользователи</h3>
-                  <p className="text-sm text-gray-600 mt-1">Управление пользователями и ролями</p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'api-control' && (
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">API Control</h2>
-              <p className="text-gray-600">Управление API ключами и доступом</p>
-              <div className="mt-4">
-                <p className="text-sm text-gray-500">Функционал в разработке...</p>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'subscriptions' && (
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Подписки</h2>
-              <p className="text-gray-600">Управление подписками пользователей</p>
-              <div className="mt-4">
-                <p className="text-sm text-gray-500">Функционал в разработке...</p>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'users' && (
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Пользователи</h2>
-              <p className="text-gray-600">Управление пользователями и ролями</p>
-              <div className="mt-4">
-                <p className="text-sm text-gray-500">Функционал в разработке...</p>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'locations' && (
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Локации</h2>
-              <p className="text-gray-600">Управление городами и локациями</p>
-              <div className="mt-4">
-                <Link
-                  href="/admin/cities"
-                  className="text-blue-600 hover:text-blue-800 underline"
-                >
-                  Перейти к управлению городами →
-                </Link>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'franchises' && (
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Франшизы</h2>
-              <p className="text-gray-600">Управление франшизами</p>
-              <div className="mt-4">
-                <Link
-                  href="/admin/franchises"
-                  className="text-blue-600 hover:text-blue-800 underline"
-                >
-                  Перейти к управлению франшизами →
-                </Link>
-              </div>
-            </div>
-          )}
+              </Link>
+            )
+          })}
         </div>
       </div>
     </div>

@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Upload, X, Check, Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
 
 interface UserProfile {
   id: string
@@ -42,8 +43,7 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
+  // Errors/success handled via toast notifications
   
   const avatarInputRef = useRef<HTMLInputElement>(null)
   const photoInputRef = useRef<HTMLInputElement>(null)
@@ -86,7 +86,7 @@ export default function SettingsPage() {
         })
       }
     } catch (err) {
-      setError('Ошибка при загрузке профиля')
+      toast.error('Ошибка при загрузке профиля')
     } finally {
       setLoading(false)
     }
@@ -106,8 +106,6 @@ export default function SettingsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError(null)
-    setSuccess(null)
     setSaving(true)
 
     try {
@@ -135,15 +133,14 @@ export default function SettingsPage() {
 
       if (!res.ok) {
         const data = await res.json()
-        setError(data.error || 'Ошибка при сохранении')
+        toast.error(data.error || 'Ошибка при сохранении')
         return
       }
 
-      setSuccess('Профиль успешно обновлён')
-      setTimeout(() => setSuccess(null), 3000)
+      toast.success('Профиль успешно обновлён')
       loadProfile()
     } catch (err) {
-      setError('Ошибка при сохранении профиля')
+      toast.error('Ошибка при сохранении профиля')
     } finally {
       setSaving(false)
     }
@@ -153,7 +150,6 @@ export default function SettingsPage() {
     const file = e.target.files?.[0]
     if (!file) return
 
-    setError(null)
     setUploadingAvatar(true)
 
     try {
@@ -167,16 +163,15 @@ export default function SettingsPage() {
 
       if (!res.ok) {
         const data = await res.json()
-        setError(data.error || 'Ошибка при загрузке аватара')
+        toast.error(data.error || 'Ошибка при загрузке аватара')
         return
       }
 
-      setSuccess('Аватар успешно загружен')
-      setTimeout(() => setSuccess(null), 3000)
+      toast.success('Аватар успешно загружен')
       loadProfile()
       loadPhotos()
     } catch (err) {
-      setError('Ошибка при загрузке аватара')
+      toast.error('Ошибка при загрузке аватара')
     } finally {
       setUploadingAvatar(false)
       e.target.value = ''
@@ -187,7 +182,6 @@ export default function SettingsPage() {
     const file = e.target.files?.[0]
     if (!file) return
 
-    setError(null)
     setUploadingPhoto(true)
 
     try {
@@ -201,15 +195,14 @@ export default function SettingsPage() {
 
       if (!res.ok) {
         const data = await res.json()
-        setError(data.error || 'Ошибка при загрузке фотографии')
+        toast.error(data.error || 'Ошибка при загрузке фотографии')
         return
       }
 
-      setSuccess('Фотография успешно загружена')
-      setTimeout(() => setSuccess(null), 3000)
+      toast.success('Фотография успешно загружена')
       loadPhotos()
     } catch (err) {
-      setError('Ошибка при загрузке фотографии')
+      toast.error('Ошибка при загрузке фотографии')
     } finally {
       setUploadingPhoto(false)
       e.target.value = ''
@@ -226,16 +219,15 @@ export default function SettingsPage() {
 
       if (!res.ok) {
         const data = await res.json()
-        setError(data.error || 'Ошибка при установке аватара')
+        toast.error(data.error || 'Ошибка при установке аватара')
         return
       }
 
-      setSuccess('Аватар успешно установлен')
-      setTimeout(() => setSuccess(null), 3000)
+      toast.success('Аватар успешно установлен')
       loadProfile()
       loadPhotos()
     } catch (err) {
-      setError('Ошибка при установке аватара')
+      toast.error('Ошибка при установке аватара')
     }
   }
 
@@ -249,43 +241,30 @@ export default function SettingsPage() {
 
       if (!res.ok) {
         const data = await res.json()
-        setError(data.error || 'Ошибка при удалении фотографии')
+        toast.error(data.error || 'Ошибка при удалении фотографии')
         return
       }
 
-      setSuccess('Фотография удалена')
-      setTimeout(() => setSuccess(null), 3000)
+      toast.success('Фотография удалена')
       loadProfile()
       loadPhotos()
     } catch (err) {
-      setError('Ошибка при удалении фотографии')
+      toast.error('Ошибка при удалении фотографии')
     }
   }
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 py-8 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-brand-600" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-6">Настройки профиля</h1>
-
-        {error && (
-          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md text-red-800">
-            {error}
-          </div>
-        )}
-
-        {success && (
-          <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-md text-green-800">
-            {success}
-          </div>
-        )}
+    <div className="py-6">
+      <div className="max-w-2xl mx-auto px-4">
+        <h1 className="text-2xl font-bold text-gray-900 mb-6">Настройки профиля</h1>
 
         {/* Avatar Section */}
         <div className="bg-white shadow rounded-lg p-6 mb-6">
@@ -309,7 +288,7 @@ export default function SettingsPage() {
                 type="button"
                 onClick={() => avatarInputRef.current?.click()}
                 disabled={uploadingAvatar}
-                className="cursor-pointer inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="cursor-pointer inline-flex items-center px-4 py-2 bg-brand-600 text-white rounded-md hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Upload className="w-4 h-4 mr-2" />
                 {uploadingAvatar ? 'Загрузка...' : 'Загрузить аватар'}
@@ -341,7 +320,7 @@ export default function SettingsPage() {
                 type="text"
                 value={formData.fullName}
                 onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500"
               />
             </div>
 
@@ -353,7 +332,7 @@ export default function SettingsPage() {
                 type="tel"
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500"
               />
             </div>
 
@@ -365,7 +344,7 @@ export default function SettingsPage() {
                 type="text"
                 value={formData.homeCity}
                 onChange={(e) => setFormData({ ...formData, homeCity: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500"
               />
             </div>
 
@@ -381,7 +360,7 @@ export default function SettingsPage() {
                     preferredLanguage: e.target.value as 'ru' | 'en',
                   })
                 }
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500"
               >
                 <option value="ru">Русский</option>
                 <option value="en">English</option>
@@ -396,7 +375,7 @@ export default function SettingsPage() {
                 type="number"
                 value={formData.preferredRadius}
                 onChange={(e) => setFormData({ ...formData, preferredRadius: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500"
                 placeholder="5000"
               />
             </div>
@@ -432,7 +411,7 @@ export default function SettingsPage() {
             <button
               type="submit"
               disabled={saving}
-              className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+              className="w-full px-4 py-2 bg-brand-600 text-white rounded-md hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
             >
               {saving ? (
                 <>
@@ -454,7 +433,7 @@ export default function SettingsPage() {
               type="button"
               onClick={() => photoInputRef.current?.click()}
               disabled={uploadingPhoto}
-              className="cursor-pointer inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="cursor-pointer inline-flex items-center px-4 py-2 bg-brand-600 text-white rounded-md hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Upload className="w-4 h-4 mr-2" />
               {uploadingPhoto ? 'Загрузка...' : 'Добавить фотографию'}
@@ -480,7 +459,7 @@ export default function SettingsPage() {
                     className="w-full h-32 object-cover rounded-md border-2 border-gray-200"
                   />
                   {photo.isAvatar && (
-                    <div className="absolute top-2 right-2 bg-blue-600 text-white rounded-full p-1">
+                    <div className="absolute top-2 right-2 bg-brand-600 text-white rounded-full p-1">
                       <Check className="w-4 h-4" />
                     </div>
                   )}
@@ -488,7 +467,7 @@ export default function SettingsPage() {
                     {!photo.isAvatar && (
                       <button
                         onClick={() => handleSetAvatar(photo.id)}
-                        className="opacity-0 group-hover:opacity-100 px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                        className="opacity-0 group-hover:opacity-100 px-3 py-1 bg-brand-600 text-white rounded text-sm hover:bg-brand-700"
                       >
                         Сделать аватаром
                       </button>

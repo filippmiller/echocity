@@ -1,10 +1,13 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import QRCode from 'qrcode'
+import { CheckCircle2, RefreshCw } from 'lucide-react'
 
 interface QRRedeemScreenProps {
   offerId: string
+  offerTitle?: string
 }
 
 interface SessionData {
@@ -14,12 +17,13 @@ interface SessionData {
   expiresAt: string
 }
 
-export function QRRedeemScreen({ offerId }: QRRedeemScreenProps) {
+export function QRRedeemScreen({ offerId, offerTitle }: QRRedeemScreenProps) {
   const [session, setSession] = useState<SessionData | null>(null)
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
   const [secondsLeft, setSecondsLeft] = useState(60)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [redeemed, setRedeemed] = useState(false)
 
   const createSession = useCallback(async () => {
     setLoading(true)
@@ -39,7 +43,11 @@ export function QRRedeemScreen({ offerId }: QRRedeemScreenProps) {
       setSession(data.session)
       setSecondsLeft(60)
 
-      const url = await QRCode.toDataURL(data.session.sessionToken, { width: 280, margin: 2 })
+      const url = await QRCode.toDataURL(data.session.sessionToken, {
+        width: 280,
+        margin: 2,
+        color: { dark: '#1D4ED8', light: '#FFFFFF' },
+      })
       setQrDataUrl(url)
     } catch {
       setError('Не удалось создать сессию')
@@ -52,33 +60,68 @@ export function QRRedeemScreen({ offerId }: QRRedeemScreenProps) {
     createSession()
   }, [createSession])
 
-  // Countdown timer
   useEffect(() => {
     if (!session) return
     const interval = setInterval(() => {
       setSecondsLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(interval)
-          return 0
-        }
+        if (prev <= 1) { clearInterval(interval); return 0 }
         return prev - 1
       })
     }, 1000)
     return () => clearInterval(interval)
   }, [session])
 
-  // Auto-refresh at 30s
   useEffect(() => {
-    if (secondsLeft === 30) {
-      createSession()
-    }
+    if (secondsLeft === 30) createSession()
   }, [secondsLeft, createSession])
+
+  const progress = secondsLeft / 60
+  const circumference = 2 * Math.PI * 130
+  const strokeDashoffset = circumference * (1 - progress)
+
+  if (redeemed) {
+    return (
+      <motion.div
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        className="flex flex-col items-center justify-center py-12 text-center"
+      >
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ type: 'spring', stiffness: 200, damping: 15, delay: 0.2 }}
+        >
+          <CheckCircle2 className="w-24 h-24 text-deal-savings" />
+        </motion.div>
+        <motion.h2
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.4 }}
+          className="text-2xl font-bold text-gray-900 mt-4"
+        >
+          Использовано!
+        </motion.h2>
+        <motion.p
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.5 }}
+          className="text-gray-500 mt-2"
+        >
+          {offerTitle || 'Скидка активирована'}
+        </motion.p>
+      </motion.div>
+    )
+  }
 
   if (error) {
     return (
       <div className="text-center py-8">
         <div className="text-red-500 text-lg mb-4">{error}</div>
-        <button onClick={createSession} className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
+        <button
+          onClick={createSession}
+          className="inline-flex items-center gap-2 bg-brand-600 text-white px-6 py-3 rounded-xl font-medium hover:bg-brand-700 transition-colors"
+        >
+          <RefreshCw className="w-4 h-4" />
           Попробовать снова
         </button>
       </div>
@@ -86,32 +129,69 @@ export function QRRedeemScreen({ offerId }: QRRedeemScreenProps) {
   }
 
   if (loading && !session) {
-    return <div className="text-center py-8 text-gray-500">Создание QR-кода...</div>
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <div className="w-8 h-8 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" />
+        <p className="text-sm text-gray-500 mt-3">Создание QR-кода...</p>
+      </div>
+    )
   }
 
   return (
     <div className="flex flex-col items-center gap-4 py-4">
-      <p className="text-sm text-gray-500">Покажите QR-код кассиру</p>
+      <p className="text-sm text-gray-500 font-medium">Покажите QR-код кассиру</p>
 
-      {qrDataUrl && (
-        <div className="bg-white p-4 rounded-2xl shadow-lg">
-          <img src={qrDataUrl} alt="QR Code" className="w-64 h-64" />
-        </div>
-      )}
+      {/* QR with progress ring */}
+      <div className="relative">
+        <svg className="w-72 h-72" viewBox="0 0 280 280">
+          <circle cx="140" cy="140" r="130" fill="none" stroke="#F3F4F6" strokeWidth="6" />
+          <circle
+            cx="140" cy="140" r="130"
+            fill="none"
+            stroke={secondsLeft <= 10 ? '#EF4444' : '#2563EB'}
+            strokeWidth="6"
+            strokeLinecap="round"
+            strokeDasharray={circumference}
+            strokeDashoffset={strokeDashoffset}
+            transform="rotate(-90 140 140)"
+            className="transition-all duration-1000 ease-linear"
+          />
+        </svg>
+
+        <AnimatePresence mode="wait">
+          {qrDataUrl && (
+            <motion.div
+              key={session?.id}
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="absolute inset-0 flex items-center justify-center"
+            >
+              <img src={qrDataUrl} alt="QR Code" className="w-52 h-52 rounded-xl" />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
       {session && (
         <div className="text-center">
           <p className="text-xs text-gray-400 mb-1">или введите код</p>
-          <p className="text-3xl font-mono font-bold tracking-widest text-gray-900">{session.shortCode}</p>
+          <p className="text-3xl font-mono font-bold tracking-widest text-gray-900">
+            {session.shortCode}
+          </p>
         </div>
       )}
 
-      <div className={`text-sm font-medium ${secondsLeft <= 10 ? 'text-red-500' : 'text-gray-500'}`}>
+      <div className={`text-sm font-semibold ${secondsLeft <= 10 ? 'text-deal-discount' : 'text-gray-500'}`}>
         {secondsLeft > 0 ? `${secondsLeft}с` : 'Истёк'}
       </div>
 
       {secondsLeft === 0 && (
-        <button onClick={createSession} className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 text-sm">
+        <button
+          onClick={createSession}
+          className="inline-flex items-center gap-2 bg-brand-600 text-white px-6 py-3 rounded-xl font-medium hover:bg-brand-700 transition-colors"
+        >
+          <RefreshCw className="w-4 h-4" />
           Обновить QR
         </button>
       )}
