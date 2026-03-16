@@ -13,6 +13,7 @@ enum Role {
   ADMIN
   CITIZEN
   BUSINESS_OWNER
+  MERCHANT_STAFF
 }
 
 enum BusinessType {
@@ -47,6 +48,150 @@ enum PlaceCategory {
   BARBERSHOP
   DRY_CLEANING
   OTHER_SERVICE
+}
+
+// === SUBSCRIPTION ENUMS ===
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  EXPIRED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+enum PaymentType {
+  SUBSCRIPTION
+  RENEWAL
+  ONE_TIME
+  REFUND
+}
+
+// === OFFER ENUMS ===
+enum OfferType {
+  PERCENT_DISCOUNT
+  FIXED_PRICE
+  FREE_ITEM
+  BUNDLE
+  FIRST_VISIT
+  OFF_PEAK
+  FLASH
+  REQUEST_ONLY
+}
+
+enum OfferVisibility {
+  PUBLIC
+  MEMBERS_ONLY
+  FREE_FOR_ALL
+}
+
+enum BenefitType {
+  PERCENT
+  FIXED_AMOUNT
+  FIXED_PRICE
+  FREE_ITEM
+  BUNDLE
+}
+
+enum OfferApprovalStatus {
+  DRAFT
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum OfferLifecycleStatus {
+  INACTIVE
+  SCHEDULED
+  ACTIVE
+  PAUSED
+  EXPIRED
+  ARCHIVED
+}
+
+enum OfferRuleType {
+  FIRST_TIME_ONLY
+  ONCE_PER_DAY
+  ONCE_PER_WEEK
+  ONCE_PER_MONTH
+  ONCE_PER_LIFETIME
+  MIN_CHECK
+  GEO_RADIUS
+  EXCLUDED_CATEGORIES
+  ALLOWED_CATEGORIES
+  MIN_PARTY_SIZE
+}
+
+// === REDEMPTION ENUMS ===
+enum RedemptionSessionStatus {
+  ACTIVE
+  USED
+  EXPIRED
+  CANCELED
+}
+
+enum RedemptionStatus {
+  SUCCESS
+  REJECTED
+  REVERSED
+  FRAUD_SUSPECTED
+}
+
+enum RedemptionEventType {
+  QR_GENERATED
+  QR_REFRESHED
+  SCAN_STARTED
+  REDEEMED
+  REVERSED
+  LIMIT_FAILED
+  RULE_FAILED
+  GEO_FAILED
+  FRAUD_FLAGGED
+}
+
+// === MERCHANT STAFF ENUMS ===
+enum StaffRole {
+  CASHIER
+  MANAGER
+}
+
+// === BILLING ENUMS ===
+enum BillingEventType {
+  REDEMPTION_FEE
+  CLICK_FEE
+}
+
+enum BillingEventStatus {
+  PENDING
+  INVOICED
+  PAID
+}
+
+// === DEMAND ENUMS ===
+enum DemandStatus {
+  OPEN
+  COLLECTING
+  FULFILLED
+  EXPIRED
+}
+
+// === FRAUD ENUMS ===
+enum FraudSeverity {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum FraudFlagStatus {
+  OPEN
+  REVIEWED
+  DISMISSED
 }
 
 enum FranchiseStatus {
@@ -85,6 +230,15 @@ model User {
   reviews              Review[]
   photos               UserPhoto[]
   oauthAccounts        OAuthAccount[]
+  subscriptions        UserSubscription[]
+  payments             Payment[]
+  redemptionSessions   RedemptionSession[]
+  redemptions          Redemption[]
+  scannedRedemptions   Redemption[]        @relation("RedemptionScanner")
+  createdOffers        Offer[]             @relation("OfferCreator")
+  merchantStaff        MerchantStaff[]
+  demandRequests       DemandRequest[]
+  demandSupports       DemandSupport[]
 
   @@index([email])
   @@index([role])
@@ -154,7 +308,11 @@ model Business {
   yandexVerifiedAt         DateTime?
   yandexVerificationMethod String? // e.g. 'places_api_soft'
 
-  places Place[]
+  places        Place[]
+  offers        Offer[]
+  redemptions   Redemption[]
+  staff         MerchantStaff[]
+  billingEvents MerchantBillingEvent[]
 
   @@index([ownerId])
   @@index([status])
@@ -205,8 +363,13 @@ model Place {
   isApproved       Boolean        @default(false)
   isPublished      Boolean        @default(false)
 
-  services PlaceService[]
-  reviews  Review[]
+  services           PlaceService[]
+  reviews            Review[]
+  offers             Offer[]
+  redemptionSessions RedemptionSession[] @relation("RedemptionSessionBranch")
+  branchRedemptions  Redemption[]        @relation("RedemptionBranch")
+  merchantStaff      MerchantStaff[]
+  demandRequests     DemandRequest[]
 
   @@index([businessAccountId])
   @@index([businessId])
@@ -237,15 +400,16 @@ model Franchise {
 }
 
 model City {
-  id              String     @id @default(cuid())
+  id              String          @id @default(cuid())
   name            String
-  slug            String     @unique
+  slug            String          @unique
   countryCode     String
   timezone        String
   defaultLanguage String?
   franchiseId     String?
-  franchise       Franchise? @relation(fields: [franchiseId], references: [id], onDelete: SetNull)
-  places          Place[]    @relation("CityPlaces")
+  franchise       Franchise?      @relation(fields: [franchiseId], references: [id], onDelete: SetNull)
+  places          Place[]         @relation("CityPlaces")
+  demandRequests  DemandRequest[]
 
   @@index([slug])
   @@index([franchiseId])
@@ -286,7 +450,8 @@ model ServiceCategory {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  serviceTypes ServiceType[]
+  serviceTypes   ServiceType[]
+  demandRequests DemandRequest[]
 
   @@index([slug])
   @@index([isActive, sortOrder])
@@ -323,16 +488,16 @@ model PlaceService {
   priceUnit       ServicePricingUnit @default(FIXED)
   durationMinutes Int? // примерная длительность услуги
   isActive        Boolean            @default(true)
-  
+
   // Basic specials support
-  isSpecial       Boolean            @default(false) // Флаг акции/спецпредложения
-  specialPrice    Decimal?           @db.Decimal(10, 2) // Цена по акции
-  specialTitle    String? // Заголовок акции (например, "Скидка 20%")
-  specialDescription String?         @db.Text // Описание акции
-  specialValidUntil DateTime? // До какой даты действует акция
-  
-  createdAt       DateTime           @default(now())
-  updatedAt       DateTime           @updatedAt
+  isSpecial          Boolean   @default(false) // Флаг акции/спецпредложения
+  specialPrice       Decimal?  @db.Decimal(10, 2) // Цена по акции
+  specialTitle       String? // Заголовок акции (например, "Скидка 20%")
+  specialDescription String?   @db.Text // Описание акции
+  specialValidUntil  DateTime? // До какой даты действует акция
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([placeId, serviceTypeId])
   @@index([placeId])
@@ -391,4 +556,332 @@ model OAuthAccount {
   @@unique([provider, providerUserId])
   @@index([userId])
   @@index([provider, providerUserId])
+}
+
+// ==============================
+// DEALS PLATFORM MODELS
+// ==============================
+
+model SubscriptionPlan {
+  id           String   @id @default(cuid())
+  code         String   @unique
+  name         String
+  monthlyPrice Int // in kopecks
+  yearlyPrice  Int?
+  currency     String   @default("RUB")
+  features     Json // feature flags
+  trialDays    Int      @default(0)
+  isActive     Boolean  @default(true)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  subscriptions UserSubscription[]
+}
+
+model UserSubscription {
+  id                     String             @id @default(cuid())
+  userId                 String
+  planId                 String
+  status                 SubscriptionStatus @default(TRIALING)
+  startAt                DateTime
+  endAt                  DateTime
+  autoRenew              Boolean            @default(true)
+  canceledAt             DateTime?
+  graceUntil             DateTime?
+  externalSubscriptionId String?
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+
+  user     User             @relation(fields: [userId], references: [id])
+  plan     SubscriptionPlan @relation(fields: [planId], references: [id])
+  payments Payment[]
+
+  @@index([userId])
+  @@index([status])
+}
+
+model Payment {
+  id                String        @id @default(cuid())
+  userId            String
+  subscriptionId    String?
+  provider          String        @default("YOKASSA")
+  externalPaymentId String?
+  amount            Int // kopecks
+  currency          String        @default("RUB")
+  status            PaymentStatus @default(PENDING)
+  type              PaymentType
+  paidAt            DateTime?
+  failureReason     String?
+  rawPayload        Json?
+  createdAt         DateTime      @default(now())
+
+  user         User              @relation(fields: [userId], references: [id])
+  subscription UserSubscription? @relation(fields: [subscriptionId], references: [id])
+
+  @@index([userId])
+  @@index([externalPaymentId])
+}
+
+model Offer {
+  id                String               @id @default(cuid())
+  merchantId        String
+  branchId          String
+  title             String
+  subtitle          String?
+  description       String?
+  offerType         OfferType
+  visibility        OfferVisibility      @default(PUBLIC)
+  benefitType       BenefitType
+  benefitValue      Decimal
+  currency          String               @default("RUB")
+  minOrderAmount    Decimal?
+  maxDiscountAmount Decimal?
+  approvalStatus    OfferApprovalStatus  @default(DRAFT)
+  lifecycleStatus   OfferLifecycleStatus @default(INACTIVE)
+  startAt           DateTime
+  endAt             DateTime?
+  termsText         String?
+  imageUrl          String?
+  rejectionReason   String?
+  createdByUserId   String
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  merchant  Business @relation(fields: [merchantId], references: [id])
+  branch    Place    @relation(fields: [branchId], references: [id])
+  createdBy User     @relation("OfferCreator", fields: [createdByUserId], references: [id])
+
+  schedules      OfferSchedule[]
+  blackoutDates  OfferBlackoutDate[]
+  rules          OfferRule[]
+  limits         OfferLimit?
+  sessions       RedemptionSession[]
+  redemptions    Redemption[]
+  demandRequests DemandRequest[]
+  billingEvents  MerchantBillingEvent[]
+
+  @@index([merchantId])
+  @@index([branchId])
+  @@index([lifecycleStatus])
+  @@index([visibility])
+  @@index([offerType])
+}
+
+model OfferSchedule {
+  id         String  @id @default(cuid())
+  offerId    String
+  weekday    Int // 0=Monday, 6=Sunday
+  startTime  String // "14:00"
+  endTime    String // "17:00"
+  timezone   String  @default("Europe/Moscow")
+  isBlackout Boolean @default(false)
+
+  offer Offer @relation(fields: [offerId], references: [id], onDelete: Cascade)
+
+  @@index([offerId])
+}
+
+model OfferBlackoutDate {
+  id      String   @id @default(cuid())
+  offerId String
+  date    DateTime
+  reason  String?
+
+  offer Offer @relation(fields: [offerId], references: [id], onDelete: Cascade)
+
+  @@index([offerId])
+}
+
+model OfferRule {
+  id       String        @id @default(cuid())
+  offerId  String
+  ruleType OfferRuleType
+  operator String?
+  value    Json
+
+  offer Offer @relation(fields: [offerId], references: [id], onDelete: Cascade)
+
+  @@index([offerId])
+}
+
+model OfferLimit {
+  id                   String @id @default(cuid())
+  offerId              String @unique
+  dailyLimit           Int?
+  weeklyLimit          Int?
+  monthlyLimit         Int?
+  totalLimit           Int?
+  perUserDailyLimit    Int?
+  perUserWeeklyLimit   Int?
+  perUserLifetimeLimit Int?
+
+  offer Offer @relation(fields: [offerId], references: [id], onDelete: Cascade)
+}
+
+model RedemptionSession {
+  id           String                  @id @default(cuid())
+  userId       String
+  offerId      String
+  branchId     String
+  sessionToken String                  @unique
+  shortCode    String                  @unique
+  status       RedemptionSessionStatus @default(ACTIVE)
+  expiresAt    DateTime
+  userLat      Float?
+  userLng      Float?
+  createdAt    DateTime                @default(now())
+
+  user   User  @relation(fields: [userId], references: [id])
+  offer  Offer @relation(fields: [offerId], references: [id])
+  branch Place @relation("RedemptionSessionBranch", fields: [branchId], references: [id])
+
+  redemption Redemption?
+  events     RedemptionEvent[]
+
+  @@index([userId])
+  @@index([offerId])
+  @@index([sessionToken])
+  @@index([shortCode])
+  @@index([status, expiresAt])
+}
+
+model Redemption {
+  id              String           @id @default(cuid())
+  sessionId       String           @unique
+  userId          String
+  offerId         String
+  merchantId      String
+  branchId        String
+  scannedByUserId String?
+  status          RedemptionStatus @default(SUCCESS)
+  orderAmount     Decimal?
+  discountAmount  Decimal?
+  currency        String           @default("RUB")
+  redeemedAt      DateTime         @default(now())
+  createdAt       DateTime         @default(now())
+
+  session   RedemptionSession @relation(fields: [sessionId], references: [id])
+  user      User              @relation(fields: [userId], references: [id])
+  offer     Offer             @relation(fields: [offerId], references: [id])
+  merchant  Business          @relation(fields: [merchantId], references: [id])
+  branch    Place             @relation("RedemptionBranch", fields: [branchId], references: [id])
+  scannedBy User?             @relation("RedemptionScanner", fields: [scannedByUserId], references: [id])
+
+  events        RedemptionEvent[]
+  billingEvents MerchantBillingEvent[]
+
+  @@index([userId])
+  @@index([offerId])
+  @@index([merchantId])
+  @@index([branchId])
+  @@index([redeemedAt])
+}
+
+model RedemptionEvent {
+  id           String              @id @default(cuid())
+  sessionId    String?
+  redemptionId String?
+  eventType    RedemptionEventType
+  actorType    String
+  actorId      String?
+  metadata     Json?
+  createdAt    DateTime            @default(now())
+
+  session    RedemptionSession? @relation(fields: [sessionId], references: [id])
+  redemption Redemption?        @relation(fields: [redemptionId], references: [id])
+
+  @@index([sessionId])
+  @@index([redemptionId])
+  @@index([eventType])
+}
+
+model MerchantStaff {
+  id         String    @id @default(cuid())
+  merchantId String
+  branchId   String?
+  userId     String
+  staffRole  StaffRole @default(CASHIER)
+  isActive   Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+
+  merchant Business @relation(fields: [merchantId], references: [id])
+  branch   Place?   @relation(fields: [branchId], references: [id])
+  user     User     @relation(fields: [userId], references: [id])
+
+  @@unique([merchantId, userId])
+  @@index([userId])
+}
+
+model MerchantBillingEvent {
+  id           String             @id @default(cuid())
+  merchantId   String
+  offerId      String
+  redemptionId String?
+  eventType    BillingEventType
+  amount       Int
+  currency     String             @default("RUB")
+  status       BillingEventStatus @default(PENDING)
+  createdAt    DateTime           @default(now())
+
+  merchant   Business    @relation(fields: [merchantId], references: [id])
+  offer      Offer       @relation(fields: [offerId], references: [id])
+  redemption Redemption? @relation(fields: [redemptionId], references: [id])
+
+  @@index([merchantId])
+  @@index([status])
+}
+
+model DemandRequest {
+  id           String       @id @default(cuid())
+  userId       String
+  placeId      String?
+  offerId      String?
+  placeName    String?
+  categoryId   String?
+  cityId       String
+  lat          Float?
+  lng          Float?
+  status       DemandStatus @default(OPEN)
+  supportCount Int          @default(1)
+  createdAt    DateTime     @default(now())
+
+  user     User             @relation(fields: [userId], references: [id])
+  place    Place?           @relation(fields: [placeId], references: [id])
+  offer    Offer?           @relation(fields: [offerId], references: [id])
+  category ServiceCategory? @relation(fields: [categoryId], references: [id])
+  city     City             @relation(fields: [cityId], references: [id])
+
+  supports DemandSupport[]
+
+  @@index([placeId])
+  @@index([cityId])
+  @@index([status])
+}
+
+model DemandSupport {
+  id              String   @id @default(cuid())
+  demandRequestId String
+  userId          String
+  createdAt       DateTime @default(now())
+
+  demandRequest DemandRequest @relation(fields: [demandRequestId], references: [id])
+  user          User          @relation(fields: [userId], references: [id])
+
+  @@unique([demandRequestId, userId])
+}
+
+model FraudFlag {
+  id               String          @id @default(cuid())
+  entityType       String
+  entityId         String
+  flagType         String
+  severity         FraudSeverity   @default(MEDIUM)
+  reason           String
+  status           FraudFlagStatus @default(OPEN)
+  createdAt        DateTime        @default(now())
+  resolvedAt       DateTime?
+  resolvedByUserId String?
+
+  @@index([entityType, entityId])
+  @@index([status])
 }
