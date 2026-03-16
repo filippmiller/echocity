@@ -45,7 +45,7 @@ export type CreateOfferInput = {
   imageUrl?: string
   schedules?: Array<{ weekday: number; startTime: string; endTime: string }>
   blackoutDates?: Array<{ date: string; reason?: string }>
-  rules?: Array<{ ruleType: string; operator?: string; value: unknown }>
+  rules?: Array<{ ruleType: string; operator?: string; value?: unknown }>
   limits?: {
     dailyLimit?: number
     weeklyLimit?: number

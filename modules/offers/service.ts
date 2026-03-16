@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import type { OfferType, BenefitType, OfferVisibility } from '@prisma/client'
 import type { CreateOfferInput, OfferValidationResult, OfferWithDetails } from './types'
 
 export async function createOffer(input: CreateOfferInput, createdByUserId: string) {
@@ -7,6 +8,9 @@ export async function createOffer(input: CreateOfferInput, createdByUserId: stri
   return prisma.offer.create({
     data: {
       ...offerData,
+      offerType: offerData.offerType as OfferType,
+      benefitType: offerData.benefitType as BenefitType,
+      visibility: (offerData.visibility || 'PUBLIC') as OfferVisibility,
       benefitValue: offerData.benefitValue,
       minOrderAmount: offerData.minOrderAmount ?? null,
       maxDiscountAmount: offerData.maxDiscountAmount ?? null,

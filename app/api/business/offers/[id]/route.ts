@@ -24,12 +24,16 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ error: 'Validation failed', details: parsed.error.flatten() }, { status: 400 })
   }
 
+  const { schedules, blackoutDates, rules, limits, ...simpleFields } = parsed.data
   const updated = await prisma.offer.update({
     where: { id },
     data: {
-      ...parsed.data,
-      startAt: parsed.data.startAt ? new Date(parsed.data.startAt) : undefined,
-      endAt: parsed.data.endAt ? new Date(parsed.data.endAt) : undefined,
+      ...simpleFields,
+      offerType: simpleFields.offerType as any,
+      benefitType: simpleFields.benefitType as any,
+      visibility: simpleFields.visibility as any,
+      startAt: simpleFields.startAt ? new Date(simpleFields.startAt) : undefined,
+      endAt: simpleFields.endAt ? new Date(simpleFields.endAt) : undefined,
     },
   })
 
