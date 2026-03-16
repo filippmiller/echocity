@@ -605,7 +605,7 @@ model Payment {
   userId            String
   subscriptionId    String?
   provider          String        @default("YOKASSA")
-  externalPaymentId String?
+  externalPaymentId String?       @unique
   amount            Int // kopecks
   currency          String        @default("RUB")
   status            PaymentStatus @default(PENDING)
@@ -619,7 +619,6 @@ model Payment {
   subscription UserSubscription? @relation(fields: [subscriptionId], references: [id])
 
   @@index([userId])
-  @@index([externalPaymentId])
 }
 
 model Offer {
@@ -775,6 +774,8 @@ model Redemption {
   @@index([merchantId])
   @@index([branchId])
   @@index([redeemedAt])
+  @@index([offerId, status, redeemedAt])
+  @@index([userId, offerId, status])
 }
 
 model RedemptionEvent {

@@ -1,5 +1,16 @@
 import { prisma } from '@/lib/prisma'
 import { logger } from '@/lib/logger'
+import crypto from 'crypto'
+
+function addOneMonth(date: Date): Date {
+  const result = new Date(date)
+  const day = result.getDate()
+  result.setMonth(result.getMonth() + 1)
+  if (result.getDate() < day) {
+    result.setDate(0) // last day of previous month
+  }
+  return result
+}
 
 const YOKASSA_SHOP_ID = process.env.YOKASSA_SHOP_ID || ''
 const YOKASSA_SECRET_KEY = process.env.YOKASSA_SECRET_KEY || ''
@@ -73,18 +84,41 @@ export async function createRecurringPayment(savedPaymentMethodId: string, amoun
   return res.json()
 }
 
-export async function handleWebhookEvent(body: any) {
+export async function handleWebhookEvent(body: any, rawBody?: string) {
+  // Optional signature verification (only in production with secret key)
+  if (process.env.YOKASSA_WEBHOOK_SECRET && rawBody) {
+    const expectedSignature = crypto
+      .createHmac('sha256', process.env.YOKASSA_WEBHOOK_SECRET)
+      .update(rawBody)
+      .digest('hex')
+    const receivedSignature = body._signature
+    if (receivedSignature && receivedSignature !== expectedSignature) {
+      logger.warn('ЮKassa webhook: invalid signature')
+      return
+    }
+  }
+
   const event = body.event
   const payment = body.object
 
-  if (!payment?.id || !payment?.metadata) {
-    logger.warn('ЮKassa webhook: missing payment data')
+  // Validate required fields
+  if (!event || !payment?.id || !payment?.metadata?.userId) {
+    logger.warn('ЮKassa webhook: missing required fields (event, object.id, object.metadata.userId)')
     return
   }
 
   const { userId, planCode, subscriptionId } = payment.metadata
 
   if (event === 'payment.succeeded') {
+    // Idempotency: skip if payment already recorded
+    const existingPayment = await prisma.payment.findFirst({
+      where: { externalPaymentId: payment.id },
+    })
+    if (existingPayment) {
+      logger.info('ЮKassa webhook: duplicate payment, skipping', { paymentId: payment.id })
+      return
+    }
+
     // Record payment
     await prisma.payment.create({
       data: {
@@ -106,8 +140,7 @@ export async function handleWebhookEvent(body: any) {
       const plan = await prisma.subscriptionPlan.findUnique({ where: { code: planCode } })
       if (plan) {
         const now = new Date()
-        const endAt = new Date(now)
-        endAt.setMonth(endAt.getMonth() + 1)
+        const endAt = addOneMonth(now)
 
         await prisma.userSubscription.create({
           data: {
@@ -123,12 +156,11 @@ export async function handleWebhookEvent(body: any) {
       }
     }
 
-    // If renewal, extend subscription
+    // If renewal, extend subscription (only if subscription is ACTIVE or PAST_DUE)
     if (subscriptionId) {
       const sub = await prisma.userSubscription.findUnique({ where: { id: subscriptionId } })
-      if (sub) {
-        const newEnd = new Date(sub.endAt)
-        newEnd.setMonth(newEnd.getMonth() + 1)
+      if (sub && (sub.status === 'ACTIVE' || sub.status === 'PAST_DUE')) {
+        const newEnd = addOneMonth(new Date(sub.endAt))
         await prisma.userSubscription.update({
           where: { id: subscriptionId },
           data: { status: 'ACTIVE', endAt: newEnd },
@@ -140,6 +172,15 @@ export async function handleWebhookEvent(body: any) {
   }
 
   if (event === 'payment.canceled') {
+    // Idempotency: skip if payment already recorded
+    const existingPayment = await prisma.payment.findFirst({
+      where: { externalPaymentId: payment.id },
+    })
+    if (existingPayment) {
+      logger.info('ЮKassa webhook: duplicate canceled payment, skipping', { paymentId: payment.id })
+      return
+    }
+
     await prisma.payment.create({
       data: {
         userId,

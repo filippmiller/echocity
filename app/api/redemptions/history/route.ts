@@ -6,8 +6,8 @@ export async function GET(req: NextRequest) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const limit = parseInt(req.nextUrl.searchParams.get('limit') || '20')
-  const offset = parseInt(req.nextUrl.searchParams.get('offset') || '0')
+  const limit = Math.min(Math.max(parseInt(req.nextUrl.searchParams.get('limit') || '20') || 20, 1), 100)
+  const offset = Math.max(parseInt(req.nextUrl.searchParams.get('offset') || '0') || 0, 0)
 
   const redemptions = await prisma.redemption.findMany({
     where: { userId: session.userId },

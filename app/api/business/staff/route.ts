@@ -31,10 +31,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { email, merchantId, branchId, staffRole } = await req.json()
+  const { email, merchantId, branchId, staffRole: rawStaffRole } = await req.json()
   if (!email || !merchantId) {
     return NextResponse.json({ error: 'email and merchantId required' }, { status: 400 })
   }
+
+  // Validate staffRole enum — default to CASHIER if invalid
+  const validStaffRoles = ['CASHIER', 'MANAGER'] as const
+  const staffRole = validStaffRoles.includes(rawStaffRole) ? rawStaffRole : 'CASHIER'
 
   // Verify merchant ownership
   const business = await prisma.business.findFirst({

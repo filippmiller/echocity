@@ -1,6 +1,16 @@
 import { prisma } from '@/lib/prisma'
 import type { UserSubscriptionStatus } from './types'
 
+function addOneMonth(date: Date): Date {
+  const result = new Date(date)
+  const day = result.getDate()
+  result.setMonth(result.getMonth() + 1)
+  if (result.getDate() < day) {
+    result.setDate(0) // last day of previous month
+  }
+  return result
+}
+
 export async function getPlans() {
   return prisma.subscriptionPlan.findMany({
     where: { isActive: true },
@@ -31,8 +41,7 @@ export async function createSubscription(userId: string, planCode: string, exter
   if (plan.code === 'free') throw new Error('Cannot subscribe to free plan')
 
   const now = new Date()
-  const endAt = new Date(now)
-  endAt.setMonth(endAt.getMonth() + 1)
+  const endAt = addOneMonth(now)
 
   const trialEndAt = plan.trialDays > 0
     ? new Date(now.getTime() + plan.trialDays * 24 * 60 * 60 * 1000)

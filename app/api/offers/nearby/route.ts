@@ -7,7 +7,9 @@ export async function GET(req: NextRequest) {
   const radius = parseFloat(req.nextUrl.searchParams.get('radius') || '5')
   const city = req.nextUrl.searchParams.get('city') || 'Санкт-Петербург'
 
-  if (!lat || !lng) return NextResponse.json({ error: 'lat and lng required' }, { status: 400 })
+  if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+    return NextResponse.json({ error: 'Invalid lat/lng: lat must be -90..90, lng must be -180..180' }, { status: 400 })
+  }
 
   const offers = await getNearbyOffers(lat, lng, radius, city)
   return NextResponse.json({ offers })
