@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { generateSessionToken, generateShortCode } from './tokens'
 import { validateOfferForRedemption } from '@/modules/offers/service'
+import { checkRedemptionFraud } from '@/modules/moderation/fraud'
 
 const SESSION_TTL_MS = 60 * 1000 // 60 seconds
 
@@ -136,6 +137,16 @@ export async function validateAndRedeem(input: { sessionToken?: string; shortCod
 
     return r
   })
+
+  // Non-blocking fraud check
+  checkRedemptionFraud({
+    id: redemption.id,
+    userId: session.userId,
+    offerId: session.offerId,
+    merchantId: session.offer.merchantId,
+    branchId: session.offer.branchId,
+    scannedByUserId: scannedByUserId ?? null,
+  }).catch(() => {})
 
   return {
     success: true,
