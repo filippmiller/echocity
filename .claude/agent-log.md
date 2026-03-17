@@ -9,6 +9,45 @@ Each entry tracks: timestamp, area, files changed, functions/symbols used, datab
 
 ---
 
+## 2026-03-17 — Full V2 Sprint: 15 Features, 25 Security Fixes, 200+ Tests
+
+**Area:** Full-Stack / V2 Features + Security + Quality + Testing
+**Type:** feature + bugfix + test
+
+### Files Changed (100+ files across 15 commits)
+- `prisma/schema.prisma` — 16 new models, 6 new enums, 3 modified models
+- `modules/` — 6 new service modules (stories, gamification, recommendations, reservations, bundles, demand)
+- `app/api/` — 30+ new API routes across all features
+- `app/(consumer)/` — 8 new pages (missions, tourist, family, bundles, reservations, reserve)
+- `app/business/` — 6 new pages (demand, analytics, stories, bundles, reservations-manage, tables)
+- `app/admin/` — 2 new pages (analytics, bundles)
+- `components/` — 12 new components (StoriesBar, StoryViewer, MissionsCard, BadgesGrid, OfferReviews, ForYouSection, SimilarOffers, BundleCard, etc.)
+- `modules/auth/session.ts` — HMAC-signed cookies (was plain JSON)
+- `modules/payments/yokassa.ts` — webhook signature enforcement
+- `tests/` — 10 Vitest files + 7 Playwright specs + setup/mocks
+- `vitest.config.ts`, `playwright.config.ts` — test infrastructure
+
+### Functions/Symbols Modified
+- `createSession/getSession` — HMAC signing/verification (auth/session.ts)
+- `handleWebhookEvent` — mandatory signature check (payments/yokassa.ts)
+- `addXP` — atomic increment (gamification/service.ts)
+- `getPersonalizedOffers` — 6-signal scoring algorithm (recommendations/engine.ts)
+- `createReservation` — auto-table-assignment (reservations/service.ts)
+- `OfferWizard` — expanded 3→7 steps with schedules, limits, rules, preview
+- `validateAndRedeem` — added gamification + push notification hooks
+
+### Database Tables
+- 16 new: Story, StoryView, Mission, UserMission, Badge, UserBadge, UserXP, OfferReview, DemandResponse, FamilyPlan, FamilyMember, TableConfig, Reservation, Bundle, BundleItem, BundleRedemption
+- 3 modified: Offer (+redemptionChannel, onlineUrl, promoCode), User (+12 relations), Place (+3 relations)
+
+### Summary
+Marathon session implementing the entire V2 feature set from the product spec. Started with gap analysis of 17,955-line ideas.txt, implemented 15 major features (stories, gamification, offer reviews, demand inbox, analytics, tourist mode, family plans, online stores, nearby offers, AI personalization, table reservations, cross-merchant bundles, ЮKassa payments, full offer wizard, paywall nudge). Ran code review (fixed 10 issues) and critic audit (fixed 15 issues) including critical security hardening (HMAC sessions, webhook signatures, admin auth guard). Built comprehensive test suite: 153 Vitest tests (all passing) + 48 Playwright E2E tests. Fixed DB schema sync issue (prisma db push) and route slug conflict. All pushed to main across 15 commits.
+
+### Session Notes
+→ `.claude/sessions/2026-03-17-full-session.md`
+
+---
+
 ## 2026-03-17 — Closing Gaps: Payments, Wizard, Paywall (commits: c7b51a5)
 
 **Area:** Payments / Offer Creation / UX
