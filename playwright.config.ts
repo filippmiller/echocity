@@ -9,9 +9,18 @@ export default defineConfig({
   reporter: 'html',
   timeout: 30000,
   use: {
-    baseURL: process.env.BASE_URL || 'http://localhost:3010',
+    baseURL: process.env.BASE_URL || 'http://localhost:3013',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
+    storageState: {
+      cookies: [],
+      origins: [{
+        origin: process.env.BASE_URL || 'http://localhost:3013',
+        localStorage: [
+          { name: 'echocity_onboarded', value: '1' },
+        ],
+      }],
+    },
   },
   projects: [
     {
