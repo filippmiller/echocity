@@ -9,6 +9,34 @@ Each entry tracks: timestamp, area, files changed, functions/symbols used, datab
 
 ---
 
+## 2026-03-17 — Deep Re-Audit & 4 Missing Features (commit: e0a3f4a)
+
+**Area:** Full-Stack / Feature Gaps from Ideas.txt
+**Type:** feature
+**Status:** Completed
+
+### Context
+Full re-audit of 18,000-line ideas.txt against codebase. Found 4 concrete gaps in the MVP scope.
+
+### Features Implemented
+1. **Tourist Mode** (`/tourist`) — Best deals for visitors, sorted by value, no subscription needed
+2. **Nearby Offers API** — Haversine geo-sorting with radius filter, favorite status
+3. **Family Subscription Plans** — FamilyPlan + FamilyMember models, invite by email, Plus=2/Premium=4 members
+4. **Online Store Support** — RedemptionChannel enum (IN_STORE/ONLINE/BOTH), promoCode, onlineUrl on offers + UI badges
+
+### Files Created
+- `app/(consumer)/tourist/page.tsx`, `app/(consumer)/family/page.tsx`
+- `app/api/family/route.ts`, `app/api/family/members/route.ts`
+
+### Files Modified
+- `prisma/schema.prisma` — FamilyPlan, FamilyMember, RedemptionChannel
+- `app/page.tsx` — tourist category link
+- `app/api/offers/nearby/route.ts` — full rewrite with geo-sorting
+- `components/OfferCard.tsx` — online badge
+- `app/(consumer)/offers/[id]/page.tsx` — promo code display
+
+---
+
 ## 2026-03-17 — Gap Audit & Final Fixes (1 commit: f72b769)
 
 **Area:** Full-Stack / Gap Closure
