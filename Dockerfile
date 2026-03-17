@@ -14,7 +14,10 @@ COPY . .
 RUN npx prisma generate
 
 ENV NEXT_TELEMETRY_DISABLED=1
+# SESSION_SECRET needed at build time for Next.js page data collection
+ENV SESSION_SECRET=build-time-placeholder
 RUN npm run build
+ENV SESSION_SECRET=
 
 RUN addgroup -S app && adduser -S -G app app
 RUN chown -R app:app /app
