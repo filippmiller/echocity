@@ -18,6 +18,8 @@ import {
   MessageSquare,
   BarChart3,
   Film,
+  CalendarCheck,
+  TableProperties,
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -39,6 +41,8 @@ const SIDEBAR_ITEMS = [
   { href: '/business/demand', icon: MessageSquare, label: 'Запросы' },
   { href: '/business/analytics', icon: BarChart3, label: 'Аналитика' },
   { href: '/business/stories', icon: Film, label: 'Истории' },
+  { href: '/business/reservations-manage', icon: CalendarCheck, label: 'Бронирования' },
+  { href: '/business/tables', icon: TableProperties, label: 'Столы' },
 ]
 
 export function BusinessShell({ children }: { children: React.ReactNode }) {

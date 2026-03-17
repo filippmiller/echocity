@@ -259,6 +259,7 @@ model User {
   offerReviews         OfferReview[]
   familyPlanOwned      FamilyPlan?     @relation("FamilyPlanOwner")
   familyMemberships    FamilyMember[]  @relation("FamilyMemberUser")
+  reservations         Reservation[]
 
   @@index([email])
   @@index([role])
@@ -393,6 +394,8 @@ model Place {
   merchantStaff      MerchantStaff[]
   demandRequests     DemandRequest[]
   stories            Story[]
+  tableConfigs       TableConfig[]
+  reservations       Reservation[]
 
   @@index([businessAccountId])
   @@index([businessId])
@@ -1342,4 +1345,60 @@ model FamilyMember {
 
   @@unique([familyPlanId, userId])
   @@index([userId])
+}
+
+// ==============================
+// TABLE RESERVATIONS
+// ==============================
+
+enum ReservationStatus {
+  PENDING
+  CONFIRMED
+  CANCELED
+  NO_SHOW
+  COMPLETED
+}
+
+model TableConfig {
+  id          String  @id @default(cuid())
+  placeId     String
+  tableNumber String  // "1", "2", "A1", "Терраса"
+  seats       Int     // number of seats
+  zone        String? // "main", "terrace", "vip", "bar"
+  isActive    Boolean @default(true)
+
+  place        Place         @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  reservations Reservation[]
+
+  @@unique([placeId, tableNumber])
+  @@index([placeId, isActive])
+}
+
+model Reservation {
+  id            String            @id @default(cuid())
+  placeId       String
+  tableId       String?
+  userId        String
+  guestName     String
+  guestPhone    String?
+  partySize     Int
+  date          DateTime          // date only (YYYY-MM-DD)
+  timeSlot      String            // "19:00"
+  durationMin   Int               @default(90) // default 1.5h
+  status        ReservationStatus @default(PENDING)
+  note          String?
+  confirmedAt   DateTime?
+  canceledAt    DateTime?
+  cancelReason  String?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  place Place        @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  table TableConfig? @relation(fields: [tableId], references: [id], onDelete: SetNull)
+  user  User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([placeId, date, status])
+  @@index([userId])
+  @@index([tableId])
+  @@index([date, timeSlot])
 }

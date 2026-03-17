@@ -3,6 +3,7 @@ import { expireOffers, activateScheduledOffers } from '@/modules/offers/service'
 import { expireSessions } from '@/modules/redemptions/service'
 import { expireSubscriptions } from '@/modules/subscriptions/service'
 import { expireStories } from '@/modules/stories/service'
+import { completeExpiredReservations } from '@/modules/reservations/service'
 import { logger } from '@/lib/logger'
 
 let initialized = false
@@ -41,6 +42,14 @@ export function initCronJobs() {
       const count = await expireStories()
       if (count > 0) logger.info(`Expired ${count} stories`)
     } catch (e) { logger.error('Cron expireStories failed', { error: String(e) }) }
+  })
+
+  // Every hour: complete past reservations
+  cron.schedule('30 * * * *', async () => {
+    try {
+      const count = await completeExpiredReservations()
+      if (count > 0) logger.info(`Completed ${count} expired reservations`)
+    } catch (e) { logger.error('Cron completeExpiredReservations failed', { error: String(e) }) }
   })
 
   // Daily at 3am: expire subscriptions

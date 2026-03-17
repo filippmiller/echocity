@@ -302,6 +302,8 @@ export default function ProfilePage() {
           />
           <div className="h-px bg-gray-100 ml-12" />
           <MenuLink href="/family" icon={Users} label="Семейный план" />
+          <div className="h-px bg-gray-100 ml-12" />
+          <MenuLink href="/reservations" icon={CalendarDays} label="Мои бронирования" />
         </div>
 
         {/* Referral section */}
