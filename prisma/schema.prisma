@@ -245,6 +245,11 @@ model User {
   invitedByReferral    Referral?       @relation("InvitedByReferral")
   savings              UserSavings[]   @relation("UserSavingsHistory")
   pushSubscriptions    PushSubscription[]
+  storyViews           StoryView[]
+  userMissions         UserMission[]
+  userBadges           UserBadge[]
+  userXp               UserXP?
+  offerReviews         OfferReview[]
 
   @@index([email])
   @@index([role])
@@ -317,8 +322,10 @@ model Business {
   places        Place[]
   offers        Offer[]
   redemptions   Redemption[]
-  staff         MerchantStaff[]
-  billingEvents MerchantBillingEvent[]
+  staff           MerchantStaff[]
+  billingEvents   MerchantBillingEvent[]
+  stories         Story[]
+  demandResponses DemandResponse[]
 
   @@index([ownerId])
   @@index([status])
@@ -376,6 +383,7 @@ model Place {
   branchRedemptions  Redemption[]        @relation("RedemptionBranch")
   merchantStaff      MerchantStaff[]
   demandRequests     DemandRequest[]
+  stories            Story[]
 
   @@index([businessAccountId])
   @@index([businessId])
@@ -656,14 +664,17 @@ model Offer {
   branch    Place    @relation(fields: [branchId], references: [id])
   createdBy User     @relation("OfferCreator", fields: [createdByUserId], references: [id])
 
-  schedules      OfferSchedule[]
-  blackoutDates  OfferBlackoutDate[]
-  rules          OfferRule[]
-  limits         OfferLimit?
-  sessions       RedemptionSession[]
-  redemptions    Redemption[]
-  demandRequests DemandRequest[]
-  billingEvents  MerchantBillingEvent[]
+  schedules       OfferSchedule[]
+  blackoutDates   OfferBlackoutDate[]
+  rules           OfferRule[]
+  limits          OfferLimit?
+  sessions        RedemptionSession[]
+  redemptions     Redemption[]
+  demandRequests  DemandRequest[]
+  billingEvents   MerchantBillingEvent[]
+  stories         Story[]
+  offerReviews    OfferReview[]
+  demandResponses DemandResponse[] @relation("DemandResponseOffer")
 
   @@index([merchantId])
   @@index([branchId])
@@ -774,6 +785,7 @@ model Redemption {
 
   events        RedemptionEvent[]
   billingEvents MerchantBillingEvent[]
+  offerReview   OfferReview?
 
   @@index([userId])
   @@index([offerId])
@@ -858,7 +870,8 @@ model DemandRequest {
   category ServiceCategory? @relation(fields: [categoryId], references: [id])
   city     City             @relation(fields: [cityId], references: [id])
 
-  supports DemandSupport[]
+  supports  DemandSupport[]
+  responses DemandResponse[]
 
   @@index([placeId])
   @@index([cityId])
@@ -1085,4 +1098,203 @@ model PushSubscription {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+// ==============================
+// V2: STORIES SYSTEM
+// ==============================
+
+enum StoryMediaType {
+  IMAGE
+  VIDEO
+}
+
+model Story {
+  id          String         @id @default(cuid())
+  merchantId  String
+  branchId    String
+  mediaUrl    String
+  mediaType   StoryMediaType @default(IMAGE)
+  caption     String?
+  linkOfferId String?        // optional link to an offer
+  viewCount   Int            @default(0)
+  isActive    Boolean        @default(true)
+  expiresAt   DateTime       // auto-expire after 24h
+  createdAt   DateTime       @default(now())
+
+  merchant Business @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  branch   Place    @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  offer    Offer?   @relation(fields: [linkOfferId], references: [id], onDelete: SetNull)
+
+  views StoryView[]
+
+  @@index([merchantId])
+  @@index([branchId])
+  @@index([isActive, expiresAt])
+  @@index([createdAt])
+}
+
+model StoryView {
+  id        String   @id @default(cuid())
+  storyId   String
+  userId    String
+  viewedAt  DateTime @default(now())
+
+  story Story @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([storyId, userId])
+  @@index([storyId])
+  @@index([userId])
+}
+
+// ==============================
+// V2: GAMIFICATION — MISSIONS & BADGES
+// ==============================
+
+enum MissionType {
+  FIRST_REDEMPTION
+  REDEEM_COUNT
+  VISIT_PLACES
+  REFER_FRIENDS
+  WRITE_REVIEWS
+  STREAK_DAYS
+  SAVE_AMOUNT
+  EXPLORE_CATEGORIES
+}
+
+enum MissionStatus {
+  ACTIVE
+  COMPLETED
+  EXPIRED
+}
+
+model Mission {
+  id          String      @id @default(cuid())
+  code        String      @unique
+  title       String
+  description String
+  iconEmoji   String      @default("🎯")
+  type        MissionType
+  targetValue Int         // e.g. "redeem 5 times" → 5
+  xpReward    Int         @default(10)
+  isActive    Boolean     @default(true)
+  sortOrder   Int         @default(0)
+  expiresAt   DateTime?   // null = permanent mission
+  createdAt   DateTime    @default(now())
+
+  userMissions UserMission[]
+
+  @@index([isActive])
+  @@index([type])
+}
+
+model UserMission {
+  id            String        @id @default(cuid())
+  userId        String
+  missionId     String
+  currentValue  Int           @default(0)
+  status        MissionStatus @default(ACTIVE)
+  completedAt   DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mission Mission @relation(fields: [missionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, missionId])
+  @@index([userId, status])
+  @@index([missionId])
+}
+
+model Badge {
+  id          String @id @default(cuid())
+  code        String @unique
+  title       String
+  description String
+  iconEmoji   String @default("🏅")
+  category    String @default("general") // general, loyalty, social, explorer
+  sortOrder   Int    @default(0)
+  isActive    Boolean @default(true)
+
+  userBadges UserBadge[]
+
+  @@index([isActive])
+  @@index([category])
+}
+
+model UserBadge {
+  id        String   @id @default(cuid())
+  userId    String
+  badgeId   String
+  earnedAt  DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, badgeId])
+  @@index([userId])
+}
+
+model UserXP {
+  id        String @id @default(cuid())
+  userId    String @unique
+  totalXp   Int    @default(0)
+  level     Int    @default(1)
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ==============================
+// V2: OFFER REVIEWS (post-redemption)
+// ==============================
+
+model OfferReview {
+  id           String   @id @default(cuid())
+  offerId      String
+  userId       String
+  redemptionId String   @unique // one review per redemption
+  rating       Int      // 1-5
+  comment      String?  @db.Text
+  isPublished  Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  offer      Offer      @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  redemption Redemption @relation(fields: [redemptionId], references: [id], onDelete: Cascade)
+
+  @@index([offerId])
+  @@index([userId])
+  @@index([offerId, isPublished])
+}
+
+// ==============================
+// V2: DEMAND RESPONSE (Merchant → User)
+// ==============================
+
+enum DemandResponseStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+model DemandResponse {
+  id              String               @id @default(cuid())
+  demandRequestId String
+  merchantId      String
+  offerId         String?              // linked offer created in response
+  message         String?              @db.Text
+  status          DemandResponseStatus @default(PENDING)
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  demandRequest DemandRequest @relation(fields: [demandRequestId], references: [id], onDelete: Cascade)
+  merchant      Business      @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  offer         Offer?        @relation("DemandResponseOffer", fields: [offerId], references: [id], onDelete: SetNull)
+
+  @@unique([demandRequestId, merchantId])
+  @@index([demandRequestId])
+  @@index([merchantId])
 }

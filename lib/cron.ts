@@ -2,6 +2,7 @@ import cron from 'node-cron'
 import { expireOffers, activateScheduledOffers } from '@/modules/offers/service'
 import { expireSessions } from '@/modules/redemptions/service'
 import { expireSubscriptions } from '@/modules/subscriptions/service'
+import { expireStories } from '@/modules/stories/service'
 import { logger } from '@/lib/logger'
 
 let initialized = false
@@ -32,6 +33,14 @@ export function initCronJobs() {
       const count = await expireOffers()
       if (count > 0) logger.info(`Expired ${count} offers`)
     } catch (e) { logger.error('Cron expireOffers failed', { error: String(e) }) }
+  })
+
+  // Every 15 minutes: expire stories (24h TTL)
+  cron.schedule('*/15 * * * *', async () => {
+    try {
+      const count = await expireStories()
+      if (count > 0) logger.info(`Expired ${count} stories`)
+    } catch (e) { logger.error('Cron expireStories failed', { error: String(e) }) }
   })
 
   // Daily at 3am: expire subscriptions

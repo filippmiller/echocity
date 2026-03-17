@@ -15,6 +15,9 @@ import {
   ChevronRight,
   Menu,
   X,
+  MessageSquare,
+  BarChart3,
+  Film,
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -32,6 +35,9 @@ const SIDEBAR_ITEMS = [
   { href: '/business/scanner', icon: ScanLine, label: 'Сканер QR' },
   { href: '/business/staff', icon: Users, label: 'Сотрудники' },
   { href: '/business/redemptions', icon: History, label: 'История' },
+  { href: '/business/demand', icon: MessageSquare, label: 'Запросы' },
+  { href: '/business/analytics', icon: BarChart3, label: 'Аналитика' },
+  { href: '/business/stories', icon: Film, label: 'Истории' },
 ]
 
 export function BusinessShell({ children }: { children: React.ReactNode }) {
