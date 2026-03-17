@@ -8,6 +8,8 @@ import { MapPin, Clock, Shield, ChevronLeft, Flag } from 'lucide-react'
 import { ComplaintSheet } from '@/components/ComplaintSheet'
 import { AuthPrompt } from '@/components/AuthPrompt'
 import { useAuthPrompt } from '@/lib/useAuthPrompt'
+import OfferReviews from '@/components/OfferReviews'
+import { FavoriteButton } from '@/components/FavoriteButton'
 
 interface OfferDetail {
   id: string
@@ -132,7 +134,10 @@ export default function OfferDetailPage() {
       </div>
 
       {/* Title */}
-      <h1 className="text-2xl font-bold text-gray-900 mb-1">{offer.title}</h1>
+      <div className="flex items-start justify-between gap-2 mb-1">
+        <h1 className="text-2xl font-bold text-gray-900">{offer.title}</h1>
+        <FavoriteButton entityType="OFFER" entityId={offer.id} size="md" className="shrink-0 mt-1" />
+      </div>
       {offer.subtitle && <p className="text-gray-600 mb-4">{offer.subtitle}</p>}
 
       {/* Branch info */}
@@ -214,6 +219,11 @@ export default function OfferDetailPage() {
           onClose={() => setShowComplaint(false)}
         />
       )}
+
+      {/* Reviews */}
+      <div className="mb-6">
+        <OfferReviews offerId={offer.id} />
+      </div>
 
       {/* CTA */}
       <div className="fixed bottom-16 md:bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4 md:static md:border-0 md:p-0 z-40">

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/modules/auth/session'
 import { prisma } from '@/lib/prisma'
+import { checkAndProgressMissions, checkBadgeEligibility } from '@/modules/gamification/service'
 
 /**
  * GET /api/offers/[id]/reviews — list published reviews for an offer (public, paginated)
@@ -140,6 +141,10 @@ export async function POST(
       user: { select: { firstName: true, lastName: true } },
     },
   })
+
+  // Non-blocking gamification progress
+  checkAndProgressMissions(session.userId, 'review').catch(() => {})
+  checkBadgeEligibility(session.userId).catch(() => {})
 
   return NextResponse.json(
     {

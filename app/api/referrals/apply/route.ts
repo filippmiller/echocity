@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/modules/auth/session'
 import { prisma } from '@/lib/prisma'
+import { checkAndProgressMissions, checkBadgeEligibility } from '@/modules/gamification/service'
 
 export async function POST(req: NextRequest) {
   const session = await getSession()
@@ -47,6 +48,10 @@ export async function POST(req: NextRequest) {
       status: 'PENDING',
     },
   })
+
+  // Non-blocking gamification progress for the referrer
+  checkAndProgressMissions(referralCode.userId, 'referral').catch(() => {})
+  checkBadgeEligibility(referralCode.userId).catch(() => {})
 
   return NextResponse.json({ success: true, referralId: referral.id })
 }

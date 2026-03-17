@@ -5,6 +5,7 @@ import { checkRedemptionFraud } from '@/modules/moderation/fraud'
 import { trackSaving } from '@/modules/savings/track'
 import { validateGeoProximity } from './geo'
 import { checkAndProgressMissions, checkBadgeEligibility } from '@/modules/gamification/service'
+import { sendPushNotification } from '@/modules/notifications/push'
 
 const SESSION_TTL_MS = 60 * 1000 // 60 seconds
 
@@ -211,6 +212,13 @@ export async function validateAndRedeem(input: { sessionToken?: string; shortCod
   // Non-blocking gamification progress
   checkAndProgressMissions(session.userId, 'redemption').catch(() => {})
   checkBadgeEligibility(session.userId).catch(() => {})
+
+  // Non-blocking push notification
+  sendPushNotification(session.userId, {
+    title: 'Скидка активирована!',
+    body: `Вы использовали "${session.offer.title}"`,
+    url: '/history',
+  }).catch(() => {})
 
   return {
     success: true,
