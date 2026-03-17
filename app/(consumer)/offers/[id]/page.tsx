@@ -10,6 +10,7 @@ import { AuthPrompt } from '@/components/AuthPrompt'
 import { useAuthPrompt } from '@/lib/useAuthPrompt'
 import OfferReviews from '@/components/OfferReviews'
 import { FavoriteButton } from '@/components/FavoriteButton'
+import { SimilarOffers } from '@/components/SimilarOffers'
 
 interface OfferDetail {
   id: string
@@ -262,6 +263,9 @@ export default function OfferDetailPage() {
           onClose={() => setShowComplaint(false)}
         />
       )}
+
+      {/* Similar Offers */}
+      <SimilarOffers offerId={offer.id} />
 
       {/* Reviews */}
       <div className="mb-6">

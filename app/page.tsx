@@ -5,6 +5,7 @@ import { Footer } from "@/components/Footer"
 import { SavingsCounter } from "@/components/SavingsCounter"
 import { CollectionCard } from "@/components/CollectionCard"
 import { HomeStoriesBar } from "@/components/HomeStoriesBar"
+import { ForYouSection } from "@/components/ForYouSection"
 
 const CATEGORIES = [
   { name: 'Кофе', slug: 'coffee', emoji: '☕', types: ['CAFE'] },
@@ -159,6 +160,9 @@ export default async function Home() {
 
       {/* Stories bar */}
       <HomeStoriesBar />
+
+      {/* Personalized / Trending section */}
+      <ForYouSection />
 
       {/* Categories — horizontal scroll with emojis */}
       <section className="py-5 px-4 border-b border-gray-100">
