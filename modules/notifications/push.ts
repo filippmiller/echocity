@@ -8,7 +8,6 @@
  * Also needs @types/web-push for TypeScript (`npm i -D @types/web-push`).
  */
 
-// @ts-ignore -- web-push must be installed: npm i web-push @types/web-push
 import webpush from 'web-push'
 import { prisma } from '@/lib/prisma'
 import { logger } from '@/lib/logger'

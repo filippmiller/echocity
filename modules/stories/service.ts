@@ -42,10 +42,10 @@ export async function createStory(
 /**
  * Get active (non-expired) stories, optionally filtered by city or branch
  */
-export async function getActiveStories(filter?: { city?: string; branchId?: string }) {
+export async function getActiveStories(filter?: { city?: string; branchId?: string; userId?: string }) {
   const now = new Date()
 
-  return prisma.story.findMany({
+  const stories = await prisma.story.findMany({
     where: {
       isActive: true,
       expiresAt: { gt: now },
@@ -56,10 +56,25 @@ export async function getActiveStories(filter?: { city?: string; branchId?: stri
       branch: { select: { id: true, title: true, address: true, city: true } },
       merchant: { select: { id: true, name: true } },
       offer: { select: { id: true, title: true } },
-      views: { select: { userId: true } },
     },
     orderBy: { createdAt: 'desc' },
   })
+
+  // Batch-fetch viewed status for the current user instead of loading all views
+  let viewedStoryIds = new Set<string>()
+  if (filter?.userId && stories.length > 0) {
+    const storyIds = stories.map((s) => s.id)
+    const views = await prisma.storyView.findMany({
+      where: { storyId: { in: storyIds }, userId: filter.userId },
+      select: { storyId: true },
+    })
+    viewedStoryIds = new Set(views.map((v) => v.storyId))
+  }
+
+  return stories.map((s) => ({
+    ...s,
+    viewed: viewedStoryIds.has(s.id),
+  }))
 }
 
 /**

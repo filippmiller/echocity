@@ -25,7 +25,8 @@ const NAV_ITEMS = [
   { href: '/business/dashboard', icon: LayoutDashboard, label: 'Панель' },
   { href: '/business/offers', icon: Tag, label: 'Акции' },
   { href: '/business/scanner', icon: ScanLine, label: 'Сканер' },
-  { href: '/business/staff', icon: Users, label: 'Команда' },
+  { href: '/business/demand', icon: MessageSquare, label: 'Запросы' },
+  { href: '/business/analytics', icon: BarChart3, label: 'Аналитика' },
 ]
 
 const SIDEBAR_ITEMS = [

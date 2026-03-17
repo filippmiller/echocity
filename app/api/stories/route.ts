@@ -6,11 +6,15 @@ export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl
   const city = searchParams.get('city') || undefined
   const branchId = searchParams.get('branchId') || undefined
-
-  const stories = await getActiveStories({ city, branchId })
   const session = await getSession()
 
-  // Group stories by merchant, attach viewed status for logged-in user
+  const stories = await getActiveStories({
+    city,
+    branchId,
+    userId: session?.userId,
+  })
+
+  // Group stories by merchant
   const merchantMap = new Map<string, {
     merchantId: string
     merchantName: string
@@ -31,10 +35,6 @@ export async function GET(req: NextRequest) {
       })
     }
 
-    const viewed = session
-      ? story.views.some((v) => v.userId === session.userId)
-      : false
-
     merchantMap.get(key)!.stories.push({
       id: story.id,
       mediaUrl: story.mediaUrl,
@@ -42,8 +42,8 @@ export async function GET(req: NextRequest) {
       caption: story.caption,
       linkOfferId: story.linkOfferId,
       offerTitle: story.offer?.title || null,
-      viewCount: story.views.length,
-      viewed,
+      viewCount: story.viewCount,
+      viewed: story.viewed,
       expiresAt: story.expiresAt.toISOString(),
       createdAt: story.createdAt.toISOString(),
     })
@@ -53,8 +53,8 @@ export async function GET(req: NextRequest) {
 
   // Sort: merchants with unseen stories first
   grouped.sort((a, b) => {
-    const aHasUnseen = a.stories.some((s) => !s.viewed)
-    const bHasUnseen = b.stories.some((s) => !s.viewed)
+    const aHasUnseen = a.stories.some((s: any) => !s.viewed)
+    const bHasUnseen = b.stories.some((s: any) => !s.viewed)
     if (aHasUnseen && !bHasUnseen) return -1
     if (!aHasUnseen && bHasUnseen) return 1
     return 0

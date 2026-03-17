@@ -63,27 +63,40 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  // Verify the demand's place belongs to this merchant
+  // Determine which merchant should respond
+  let merchantId: string = merchantIds[0]
+
   if (demandRequest.placeId) {
+    // Place-level demand: verify the place belongs to this merchant
     const place = await prisma.place.findFirst({
       where: {
         id: demandRequest.placeId,
         businessId: { in: merchantIds },
       },
+      select: { businessId: true },
     })
 
-    if (!place) {
+    if (!place || !place.businessId) {
       return NextResponse.json(
         { error: 'This demand is not for your place' },
         { status: 403 }
       )
     }
+    merchantId = place.businessId
+  } else {
+    // City/category-level demand — require explicit merchantId in body or use first business
+    const requestedMerchantId = (body as any).merchantId
+    if (requestedMerchantId && merchantIds.includes(requestedMerchantId)) {
+      merchantId = requestedMerchantId
+    } else {
+      merchantId = merchantIds[0]
+    }
   }
 
-  // If offerId provided, verify it belongs to this merchant
+  // If offerId provided, verify it belongs to this specific merchant
   if (offerId) {
     const offer = await prisma.offer.findFirst({
-      where: { id: offerId, merchantId: { in: merchantIds } },
+      where: { id: offerId, merchantId },
     })
     if (!offer) {
       return NextResponse.json(
@@ -92,9 +105,6 @@ export async function POST(req: NextRequest) {
       )
     }
   }
-
-  // Use the first matching merchant ID (the one that owns the place)
-  const merchantId = merchantIds[0]
 
   // Check for existing response from this merchant
   const existingResponse = await prisma.demandResponse.findUnique({

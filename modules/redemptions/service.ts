@@ -4,6 +4,7 @@ import { validateOfferForRedemption } from '@/modules/offers/service'
 import { checkRedemptionFraud } from '@/modules/moderation/fraud'
 import { trackSaving } from '@/modules/savings/track'
 import { validateGeoProximity } from './geo'
+import { checkAndProgressMissions, checkBadgeEligibility } from '@/modules/gamification/service'
 
 const SESSION_TTL_MS = 60 * 1000 // 60 seconds
 
@@ -206,6 +207,10 @@ export async function validateAndRedeem(input: { sessionToken?: string; shortCod
     const savedKopecks = Math.round(Number(session.offer.benefitValue) * 100)
     trackSaving(session.userId, redemption.id, savedKopecks).catch(() => {})
   }
+
+  // Non-blocking gamification progress
+  checkAndProgressMissions(session.userId, 'redemption').catch(() => {})
+  checkBadgeEligibility(session.userId).catch(() => {})
 
   return {
     success: true,

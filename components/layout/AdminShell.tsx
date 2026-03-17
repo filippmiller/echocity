@@ -12,6 +12,7 @@ import {
   Store,
   Users,
   ArrowLeft,
+  BarChart3,
 } from 'lucide-react'
 
 const NAV_ITEMS = [
@@ -23,6 +24,7 @@ const NAV_ITEMS = [
   { href: '/admin/franchises', icon: Building2, label: 'Франшизы' },
   { href: '/admin/users', icon: Users, label: 'Пользователи' },
   { href: '/admin/fraud', icon: ShieldAlert, label: 'Фрод' },
+  { href: '/admin/analytics', icon: BarChart3, label: 'Аналитика' },
 ]
 
 function isActive(href: string, pathname: string) {

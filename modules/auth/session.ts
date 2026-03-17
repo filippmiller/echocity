@@ -6,6 +6,9 @@ const SESSION_COOKIE_NAME = 'cityecho_session'
 const SESSION_MAX_AGE = 60 * 60 * 24 * 7 // 7 days
 
 // Session secret — MUST be set in production
+if (!process.env.SESSION_SECRET && process.env.NODE_ENV === 'production') {
+  throw new Error('SESSION_SECRET environment variable is required in production')
+}
 const SESSION_SECRET = process.env.SESSION_SECRET || 'dev-session-secret-change-in-production'
 
 export interface SessionData {
@@ -32,7 +35,9 @@ function verifyAndParse(cookieValue: string): SessionData | null {
   const signature = cookieValue.slice(dotIndex + 1)
 
   const expectedSignature = sign(payload)
-  if (!crypto.timingSafeEqual(Buffer.from(signature, 'hex'), Buffer.from(expectedSignature, 'hex'))) {
+  const sigBuf = Buffer.from(signature, 'hex')
+  const expectedBuf = Buffer.from(expectedSignature, 'hex')
+  if (sigBuf.length !== expectedBuf.length || !crypto.timingSafeEqual(sigBuf, expectedBuf)) {
     return null // tampered
   }
 
