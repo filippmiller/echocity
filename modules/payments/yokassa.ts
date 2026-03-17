@@ -85,17 +85,25 @@ export async function createRecurringPayment(savedPaymentMethodId: string, amoun
 }
 
 export async function handleWebhookEvent(body: any, rawBody?: string) {
-  // Optional signature verification (only in production with secret key)
-  if (process.env.YOKASSA_WEBHOOK_SECRET && rawBody) {
+  // Signature verification — mandatory in production
+  const webhookSecret = process.env.YOKASSA_WEBHOOK_SECRET
+  if (webhookSecret) {
+    if (!rawBody) {
+      logger.warn('ЮKassa webhook: rawBody required for signature verification')
+      throw new Error('Webhook signature verification failed: no rawBody')
+    }
     const expectedSignature = crypto
-      .createHmac('sha256', process.env.YOKASSA_WEBHOOK_SECRET)
+      .createHmac('sha256', webhookSecret)
       .update(rawBody)
       .digest('hex')
     const receivedSignature = body._signature
-    if (receivedSignature && receivedSignature !== expectedSignature) {
-      logger.warn('ЮKassa webhook: invalid signature')
-      return
+    if (!receivedSignature || receivedSignature !== expectedSignature) {
+      logger.warn('ЮKassa webhook: invalid or missing signature')
+      throw new Error('Webhook signature verification failed')
     }
+  } else if (process.env.NODE_ENV === 'production') {
+    logger.error('ЮKassa webhook: YOKASSA_WEBHOOK_SECRET not set in production')
+    throw new Error('Webhook secret not configured')
   }
 
   const event = body.event

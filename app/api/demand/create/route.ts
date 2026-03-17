@@ -26,12 +26,11 @@ export async function POST(req: NextRequest) {
   }
 
   if (!cityId) {
-    // Fallback to SPB
-    const spb = await prisma.city.findFirst({ where: { slug: 'spb' }, select: { id: true } })
-    cityId = spb?.id || ''
+    return NextResponse.json(
+      { error: 'Could not resolve city. Please provide cityId or select a place with a known city.' },
+      { status: 400 }
+    )
   }
-
-  if (!cityId) return NextResponse.json({ error: 'Could not resolve city' }, { status: 400 })
 
   const result = await createDemandRequest(session.userId, { ...body, cityId })
   return NextResponse.json({ result }, { status: 201 })

@@ -1,5 +1,7 @@
 import { AdminShell } from '@/components/layout/AdminShell'
+import { requireAdmin } from '@/lib/admin-guard'
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  await requireAdmin()
   return <AdminShell>{children}</AdminShell>
 }

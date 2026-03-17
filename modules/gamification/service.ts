@@ -27,24 +27,29 @@ export async function getOrCreateUserXP(userId: string) {
 
 /**
  * Add XP to a user and recalculate their level.
+ * Uses atomic increment to prevent race conditions.
  */
 export async function addXP(userId: string, amount: number) {
-  const current = await getOrCreateUserXP(userId)
-  const newTotal = current.totalXp + amount
-  const newLevel = calculateLevel(newTotal)
+  await getOrCreateUserXP(userId) // ensure record exists
 
   const updated = await prisma.userXP.update({
     where: { userId },
-    data: { totalXp: newTotal, level: newLevel },
+    data: { totalXp: { increment: amount } },
   })
 
-  if (newLevel > current.level) {
+  const newLevel = calculateLevel(updated.totalXp)
+  if (newLevel !== updated.level) {
+    await prisma.userXP.update({
+      where: { userId },
+      data: { level: newLevel },
+    })
     logger.info('gamification.level_up', {
       userId,
-      oldLevel: current.level,
+      oldLevel: updated.level,
       newLevel,
-      totalXp: newTotal,
+      totalXp: updated.totalXp,
     })
+    updated.level = newLevel
   }
 
   return updated

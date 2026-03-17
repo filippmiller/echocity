@@ -4,8 +4,9 @@ import { logger } from '@/lib/logger'
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json()
-    await handleWebhookEvent(body)
+    const rawBody = await req.text()
+    const body = JSON.parse(rawBody)
+    await handleWebhookEvent(body, rawBody)
     return NextResponse.json({ success: true })
   } catch (e) {
     logger.error('ЮKassa webhook processing error', { error: String(e) })

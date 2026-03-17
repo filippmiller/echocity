@@ -4,16 +4,26 @@ import { prisma } from '@/lib/prisma'
 
 export async function GET() {
   const session = await getSession()
-  if (!session || session.role !== 'BUSINESS_OWNER') {
+  if (!session || (session.role !== 'BUSINESS_OWNER' && session.role !== 'MERCHANT_STAFF')) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const businesses = await prisma.business.findMany({
-    where: { ownerId: session.userId },
-    select: { id: true },
-  })
+  let merchantIds: string[] = []
 
-  const merchantIds = businesses.map((b) => b.id)
+  if (session.role === 'BUSINESS_OWNER') {
+    const businesses = await prisma.business.findMany({
+      where: { ownerId: session.userId },
+      select: { id: true },
+    })
+    merchantIds = businesses.map((b) => b.id)
+  } else {
+    // MERCHANT_STAFF — get businesses they're staff of
+    const staffRecords = await prisma.merchantStaff.findMany({
+      where: { userId: session.userId, isActive: true },
+      select: { merchantId: true },
+    })
+    merchantIds = staffRecords.map((s) => s.merchantId)
+  }
 
   if (merchantIds.length === 0) {
     return NextResponse.json({

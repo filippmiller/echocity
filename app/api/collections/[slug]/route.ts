@@ -20,12 +20,18 @@ export async function GET(
     return NextResponse.json({ error: 'Collection not found' }, { status: 404 })
   }
 
-  // Populate items with actual entity data
-  const populatedItems = await Promise.all(
-    collection.items.map(async (item) => {
-      if (item.entityType === 'place') {
-        const place = await prisma.place.findUnique({
-          where: { id: item.entityId },
+  // Batch-fetch entities by type to avoid N+1 queries
+  const placeIds = collection.items
+    .filter((i) => i.entityType === 'place')
+    .map((i) => i.entityId)
+  const offerIds = collection.items
+    .filter((i) => i.entityType === 'offer')
+    .map((i) => i.entityId)
+
+  const [places, offers] = await Promise.all([
+    placeIds.length > 0
+      ? prisma.place.findMany({
+          where: { id: { in: placeIds } },
           select: {
             id: true,
             title: true,
@@ -34,12 +40,10 @@ export async function GET(
             placeType: true,
           },
         })
-        return { ...item, entity: place }
-      }
-
-      if (item.entityType === 'offer') {
-        const offer = await prisma.offer.findUnique({
-          where: { id: item.entityId },
+      : Promise.resolve([]),
+    offerIds.length > 0
+      ? prisma.offer.findMany({
+          where: { id: { in: offerIds } },
           select: {
             id: true,
             title: true,
@@ -53,12 +57,21 @@ export async function GET(
             branch: { select: { id: true, title: true, address: true } },
           },
         })
-        return { ...item, entity: offer }
-      }
+      : Promise.resolve([]),
+  ])
 
-      return { ...item, entity: null }
-    })
-  )
+  const placeMap = new Map(places.map((p) => [p.id, p]))
+  const offerMap = new Map(offers.map((o) => [o.id, o]))
+
+  const populatedItems = collection.items.map((item) => {
+    const entity =
+      item.entityType === 'place'
+        ? placeMap.get(item.entityId) || null
+        : item.entityType === 'offer'
+          ? offerMap.get(item.entityId) || null
+          : null
+    return { ...item, entity }
+  })
 
   return NextResponse.json({
     collection: {

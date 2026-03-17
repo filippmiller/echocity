@@ -66,20 +66,24 @@ export async function getActiveStories(filter?: { city?: string; branchId?: stri
  * Record a story view (upsert — one view per user per story)
  */
 export async function recordView(storyId: string, userId: string) {
+  // Check if this is a first view to increment counter
+  const existing = await prisma.storyView.findUnique({
+    where: { storyId_userId: { storyId, userId } },
+  })
+
   const view = await prisma.storyView.upsert({
-    where: {
-      storyId_userId: { storyId, userId },
-    },
+    where: { storyId_userId: { storyId, userId } },
     create: { storyId, userId },
     update: { viewedAt: new Date() },
   })
 
-  // Increment view count (only on first view = create)
-  // We use a raw increment to avoid race conditions
-  await prisma.story.update({
-    where: { id: storyId },
-    data: { viewCount: { increment: 0 } }, // viewCount tracked via StoryView count
-  })
+  // Increment view count only on first view
+  if (!existing) {
+    await prisma.story.update({
+      where: { id: storyId },
+      data: { viewCount: { increment: 1 } },
+    })
+  }
 
   return view
 }

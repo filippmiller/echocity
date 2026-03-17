@@ -1,8 +1,12 @@
 import { cookies } from 'next/headers'
+import crypto from 'crypto'
 import type { Role } from '@prisma/client'
 
 const SESSION_COOKIE_NAME = 'cityecho_session'
 const SESSION_MAX_AGE = 60 * 60 * 24 * 7 // 7 days
+
+// Session secret — MUST be set in production
+const SESSION_SECRET = process.env.SESSION_SECRET || 'dev-session-secret-change-in-production'
 
 export interface SessionData {
   userId: string
@@ -11,15 +15,44 @@ export interface SessionData {
 }
 
 /**
- * Create session cookie
+ * Create HMAC signature for session payload
+ */
+function sign(payload: string): string {
+  return crypto.createHmac('sha256', SESSION_SECRET).update(payload).digest('hex')
+}
+
+/**
+ * Verify HMAC signature and return parsed data
+ */
+function verifyAndParse(cookieValue: string): SessionData | null {
+  const dotIndex = cookieValue.lastIndexOf('.')
+  if (dotIndex === -1) return null
+
+  const payload = cookieValue.slice(0, dotIndex)
+  const signature = cookieValue.slice(dotIndex + 1)
+
+  const expectedSignature = sign(payload)
+  if (!crypto.timingSafeEqual(Buffer.from(signature, 'hex'), Buffer.from(expectedSignature, 'hex'))) {
+    return null // tampered
+  }
+
+  try {
+    return JSON.parse(Buffer.from(payload, 'base64url').toString('utf-8')) as SessionData
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Create session cookie (HMAC-signed)
  */
 export async function createSession(data: SessionData): Promise<void> {
   const cookieStore = await cookies()
-  
-  // In production, use JWT or encrypted session token
-  // For now, simple JSON encoding (not secure for production!)
-  const sessionValue = JSON.stringify(data)
-  
+
+  const payload = Buffer.from(JSON.stringify(data)).toString('base64url')
+  const signature = sign(payload)
+  const sessionValue = `${payload}.${signature}`
+
   cookieStore.set(SESSION_COOKIE_NAME, sessionValue, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -30,21 +63,17 @@ export async function createSession(data: SessionData): Promise<void> {
 }
 
 /**
- * Get current session
+ * Get current session (verified)
  */
 export async function getSession(): Promise<SessionData | null> {
   const cookieStore = await cookies()
   const sessionCookie = cookieStore.get(SESSION_COOKIE_NAME)
-  
+
   if (!sessionCookie?.value) {
     return null
   }
-  
-  try {
-    return JSON.parse(sessionCookie.value) as SessionData
-  } catch {
-    return null
-  }
+
+  return verifyAndParse(sessionCookie.value)
 }
 
 /**
@@ -54,4 +83,3 @@ export async function deleteSession(): Promise<void> {
   const cookieStore = await cookies()
   cookieStore.delete(SESSION_COOKIE_NAME)
 }
-
