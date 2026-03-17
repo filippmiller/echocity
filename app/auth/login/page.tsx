@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
@@ -10,6 +10,8 @@ import YandexSignInButton from '@/components/YandexSignInButton'
 
 export default function LoginPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirectTo = searchParams.get('redirect')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -40,8 +42,10 @@ export default function LoginPage() {
 
       toast.success('Добро пожаловать!')
 
-      // Redirect based on role
-      if (data.user.role === 'CITIZEN') {
+      // Redirect to the page the user came from, or role-based default
+      if (redirectTo) {
+        router.push(redirectTo)
+      } else if (data.user.role === 'CITIZEN') {
         router.push('/map')
       } else if (data.user.role === 'BUSINESS_OWNER') {
         router.push('/business/places')

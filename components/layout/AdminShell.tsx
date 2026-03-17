@@ -8,12 +8,16 @@ import {
   MapPin,
   Building2,
   ShieldAlert,
+  MessageSquareWarning,
+  Store,
   ArrowLeft,
 } from 'lucide-react'
 
 const NAV_ITEMS = [
   { href: '/admin', icon: LayoutDashboard, label: 'Дашборд' },
   { href: '/admin/offers', icon: Tag, label: 'Офферы' },
+  { href: '/admin/businesses', icon: Store, label: 'Бизнесы' },
+  { href: '/admin/complaints', icon: MessageSquareWarning, label: 'Жалобы' },
   { href: '/admin/cities', icon: MapPin, label: 'Города' },
   { href: '/admin/franchises', icon: Building2, label: 'Франшизы' },
   { href: '/admin/fraud', icon: ShieldAlert, label: 'Фрод' },
@@ -88,7 +92,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         <div className="flex items-center justify-around h-14">
-          {NAV_ITEMS.slice(0, 4).map((item) => {
+          {NAV_ITEMS.slice(0, 5).map((item) => {
             const Icon = item.icon
             const active = isActive(item.href, pathname)
             return (

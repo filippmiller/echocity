@@ -116,6 +116,8 @@ async function main() {
       hasSockets: true,
       isSpecialtyCoffee: true,
       isActive: true,
+      isPublished: true,
+      isApproved: true,
       averageCheck: 350,
     },
   })
@@ -135,6 +137,8 @@ async function main() {
       placeType: 'CAFE',
       hasWifi: true,
       isActive: true,
+      isPublished: true,
+      isApproved: true,
       averageCheck: 400,
     },
   })
@@ -185,6 +189,8 @@ async function main() {
       phone: '+79004567890',
       placeType: 'BEAUTY',
       isActive: true,
+      isPublished: true,
+      isApproved: true,
       averageCheck: 2500,
     },
   })
@@ -235,6 +241,8 @@ async function main() {
       placeType: 'RESTAURANT',
       hasWifi: true,
       isActive: true,
+      isPublished: true,
+      isApproved: true,
       averageCheck: 1200,
     },
   })
@@ -551,6 +559,8 @@ async function main() {
       lng: 30.3555,
       placeType: 'BAR',
       isActive: true,
+      isPublished: true,
+      isApproved: true,
     },
   })
 

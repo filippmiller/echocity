@@ -3,6 +3,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/Toaster";
 import { Navbar } from "@/components/Navbar";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
+import { ClientProviders } from "@/components/ClientProviders";
 
 export const metadata: Metadata = {
   title: "ГдеСейчас — скидки рядом с вами",
@@ -26,6 +27,7 @@ export default function RootLayout({
           {children}
         </div>
         <MobileBottomNav />
+        <ClientProviders />
         <Toaster />
       </body>
     </html>

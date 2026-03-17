@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/auth-client'
 import { useRouter, usePathname } from 'next/navigation'
 import { useState } from 'react'
 import { Search, LogOut, Settings, LayoutDashboard, Shield } from 'lucide-react'
+import { CitySelector } from '@/components/CitySelector'
 
 export function Navbar() {
   const { user, loading } = useAuth()
@@ -24,10 +25,13 @@ export function Navbar() {
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-gray-100">
       <div className="flex items-center justify-between h-14 px-4 max-w-7xl mx-auto">
-        {/* Logo */}
-        <Link href="/" className="text-lg font-bold text-gray-900 shrink-0">
-          ГдеСейчас
-        </Link>
+        {/* Logo + City */}
+        <div className="flex items-center gap-2 shrink-0">
+          <Link href="/" className="text-lg font-bold text-gray-900">
+            ГдеСейчас
+          </Link>
+          <CitySelector />
+        </div>
 
         {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-1">

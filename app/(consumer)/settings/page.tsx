@@ -4,6 +4,8 @@ import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Upload, X, Check, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { ReferralCard } from '@/components/ReferralCard'
+import { SavingsCounter } from '@/components/SavingsCounter'
 
 interface UserProfile {
   id: string
@@ -265,6 +267,16 @@ export default function SettingsPage() {
     <div className="py-6">
       <div className="max-w-2xl mx-auto px-4">
         <h1 className="text-2xl font-bold text-gray-900 mb-6">Настройки профиля</h1>
+
+        {/* Savings Counter */}
+        <div className="mb-6">
+          <SavingsCounter variant="profile" />
+        </div>
+
+        {/* Referral Card */}
+        <div className="mb-6">
+          <ReferralCard />
+        </div>
 
         {/* Avatar Section */}
         <div className="bg-white shadow rounded-lg p-6 mb-6">

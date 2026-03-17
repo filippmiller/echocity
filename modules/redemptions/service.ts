@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { generateSessionToken, generateShortCode } from './tokens'
 import { validateOfferForRedemption } from '@/modules/offers/service'
 import { checkRedemptionFraud } from '@/modules/moderation/fraud'
+import { trackSaving } from '@/modules/savings/track'
 
 const SESSION_TTL_MS = 60 * 1000 // 60 seconds
 
@@ -147,6 +148,12 @@ export async function validateAndRedeem(input: { sessionToken?: string; shortCod
     branchId: session.offer.branchId,
     scannedByUserId: scannedByUserId ?? null,
   }).catch(() => {})
+
+  // Non-blocking savings tracking
+  if (session.offer.benefitValue) {
+    const savedKopecks = Math.round(Number(session.offer.benefitValue) * 100)
+    trackSaving(session.userId, redemption.id, savedKopecks).catch(() => {})
+  }
 
   return {
     success: true,

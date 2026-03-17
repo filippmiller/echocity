@@ -239,6 +239,11 @@ model User {
   merchantStaff        MerchantStaff[]
   demandRequests       DemandRequest[]
   demandSupports       DemandSupport[]
+  favorites            Favorite[]
+  complaints           Complaint[]     @relation("UserComplaints")
+  referralCode         ReferralCode?   @relation("UserReferralCode")
+  invitedByReferral    Referral?       @relation("InvitedByReferral")
+  savings              UserSavings[]   @relation("UserSavingsHistory")
 
   @@index([email])
   @@index([role])
@@ -885,4 +890,181 @@ model FraudFlag {
 
   @@index([entityType, entityId])
   @@index([status])
+}
+
+// ==============================
+// FAVORITES / BOOKMARKS
+// ==============================
+
+enum FavoriteEntityType {
+  PLACE
+  OFFER
+}
+
+model Favorite {
+  id         String             @id @default(cuid())
+  userId     String
+  entityType FavoriteEntityType
+  entityId   String
+  createdAt  DateTime           @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, entityType, entityId])
+  @@index([userId, entityType])
+  @@index([entityId])
+}
+
+// ==============================
+// COMPLAINTS / REPORTS
+// ==============================
+
+enum ComplaintType {
+  OFFER_NOT_HONORED
+  RUDE_STAFF
+  FALSE_ADVERTISING
+  WRONG_DISCOUNT
+  FRAUD
+  CONTENT_ISSUE
+  OTHER
+}
+
+enum ComplaintStatus {
+  OPEN
+  IN_REVIEW
+  RESOLVED
+  DISMISSED
+}
+
+enum ComplaintPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+model Complaint {
+  id           String            @id @default(cuid())
+  userId       String
+  placeId      String?
+  offerId      String?
+  redemptionId String?
+  type         ComplaintType
+  description  String            @db.Text
+  status       ComplaintStatus   @default(OPEN)
+  priority     ComplaintPriority @default(MEDIUM)
+  adminNote    String?           @db.Text
+  resolvedAt   DateTime?
+  resolvedById String?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  user User @relation("UserComplaints", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([placeId])
+  @@index([offerId])
+  @@index([priority, status])
+}
+
+// ==============================
+// REFERRAL SYSTEM
+// ==============================
+
+enum ReferralStatus {
+  PENDING
+  COMPLETED
+  EXPIRED
+  REWARDED
+}
+
+model ReferralCode {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  code      String   @unique
+  createdAt DateTime @default(now())
+
+  user      User       @relation("UserReferralCode", fields: [userId], references: [id], onDelete: Cascade)
+  referrals Referral[]
+
+  @@index([code])
+}
+
+model Referral {
+  id             String         @id @default(cuid())
+  referralCodeId String
+  invitedUserId  String         @unique
+  status         ReferralStatus @default(PENDING)
+  rewardGranted  Boolean        @default(false)
+  completedAt    DateTime?
+  createdAt      DateTime       @default(now())
+
+  referralCode ReferralCode @relation(fields: [referralCodeId], references: [id], onDelete: Cascade)
+  invitedUser  User         @relation("InvitedByReferral", fields: [invitedUserId], references: [id], onDelete: Cascade)
+
+  @@index([referralCodeId])
+  @@index([status])
+}
+
+// ==============================
+// COLLECTIONS / CURATED LISTS
+// ==============================
+
+enum CollectionType {
+  EDITORIAL
+  ALGORITHMIC
+  USER_GENERATED
+}
+
+model Collection {
+  id          String         @id @default(cuid())
+  title       String
+  slug        String         @unique
+  description String?        @db.Text
+  coverUrl    String?
+  type        CollectionType @default(EDITORIAL)
+  cityId      String?
+  isFeatured  Boolean        @default(false)
+  isActive    Boolean        @default(true)
+  sortOrder   Int            @default(0)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  items CollectionItem[]
+
+  @@index([isFeatured, isActive])
+  @@index([cityId])
+  @@index([slug])
+}
+
+model CollectionItem {
+  id           String @id @default(cuid())
+  collectionId String
+  entityType   String // "place" or "offer"
+  entityId     String
+  sortOrder    Int    @default(0)
+
+  collection Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+
+  @@unique([collectionId, entityType, entityId])
+  @@index([collectionId])
+}
+
+// ==============================
+// SAVINGS TRACKING
+// ==============================
+
+model UserSavings {
+  id             String   @id @default(cuid())
+  userId         String
+  redemptionId   String   @unique
+  savedAmount    Int // in kopecks
+  currency       String   @default("RUB")
+  savedAt        DateTime @default(now())
+
+  user User @relation("UserSavingsHistory", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, savedAt])
 }

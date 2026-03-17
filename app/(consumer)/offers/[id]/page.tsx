@@ -4,7 +4,10 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-client'
 import Link from 'next/link'
-import { MapPin, Clock, Shield, ChevronLeft } from 'lucide-react'
+import { MapPin, Clock, Shield, ChevronLeft, Flag } from 'lucide-react'
+import { ComplaintSheet } from '@/components/ComplaintSheet'
+import { AuthPrompt } from '@/components/AuthPrompt'
+import { useAuthPrompt } from '@/lib/useAuthPrompt'
 
 interface OfferDetail {
   id: string
@@ -57,6 +60,8 @@ export default function OfferDetailPage() {
   const router = useRouter()
   const [offer, setOffer] = useState<OfferDetail | null>(null)
   const [loading, setLoading] = useState(true)
+  const [showComplaint, setShowComplaint] = useState(false)
+  const { authPromptProps, showAuthPrompt } = useAuthPrompt()
 
   useEffect(() => {
     fetch(`/api/offers/${id}`)
@@ -188,7 +193,27 @@ export default function OfferDetailPage() {
       )}
 
       {/* Visibility label */}
-      <p className="text-xs text-gray-400 mb-6">{getVisibilityLabel(offer.visibility)}</p>
+      <p className="text-xs text-gray-400 mb-4">{getVisibilityLabel(offer.visibility)}</p>
+
+      {/* Report link */}
+      {user && (
+        <button
+          onClick={() => setShowComplaint(true)}
+          className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors mb-6"
+        >
+          <Flag className="w-3.5 h-3.5" />
+          Пожаловаться
+        </button>
+      )}
+
+      {/* Complaint Sheet */}
+      {showComplaint && (
+        <ComplaintSheet
+          offerId={offer.id}
+          placeId={offer.branch.id}
+          onClose={() => setShowComplaint(false)}
+        />
+      )}
 
       {/* CTA */}
       <div className="fixed bottom-16 md:bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4 md:static md:border-0 md:p-0 z-40">
@@ -198,12 +223,12 @@ export default function OfferDetailPage() {
               Загрузка...
             </div>
           ) : !user ? (
-            <Link
-              href="/auth/login"
-              className="block w-full text-center bg-brand-600 text-white py-3.5 rounded-xl font-semibold hover:bg-brand-700 transition-colors"
+            <button
+              onClick={() => showAuthPrompt('Войдите, чтобы активировать скидку и получить QR-код', `/offers/${id}`)}
+              className="w-full text-center bg-brand-600 text-white py-3.5 rounded-xl font-semibold hover:bg-brand-700 transition-colors"
             >
               Войдите, чтобы активировать
-            </Link>
+            </button>
           ) : isMembersOnly ? (
             <Link
               href="/subscription"
@@ -221,6 +246,9 @@ export default function OfferDetailPage() {
           )}
         </div>
       </div>
+
+      {/* Auth prompt for guests */}
+      <AuthPrompt {...authPromptProps} />
     </div>
   )
 }

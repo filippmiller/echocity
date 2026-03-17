@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { Clock, Users, Flame } from 'lucide-react'
+import { FavoriteButton } from '@/components/FavoriteButton'
 
 interface OfferCardProps {
   id: string
@@ -77,10 +78,15 @@ export function OfferCard({
 
           {/* Plus badge */}
           {isMembersOnly && (
-            <div className="absolute top-2 right-2 bg-deal-premium text-white px-2 py-0.5 rounded text-xs font-semibold badge">
+            <div className="absolute top-2 right-10 bg-deal-premium text-white px-2 py-0.5 rounded text-xs font-semibold badge">
               Plus
             </div>
           )}
+
+          {/* Favorite button */}
+          <div className="absolute top-1.5 right-1.5 z-10">
+            <FavoriteButton entityType="OFFER" entityId={id} size="sm" />
+          </div>
 
           {/* Urgency bar */}
           {(timeLeft || isAlmostGone) && (

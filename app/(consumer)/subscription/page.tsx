@@ -48,7 +48,7 @@ export default function SubscriptionPage() {
       setPlans(plansData.plans || [])
       setStatus(statusData)
       setLoading(false)
-    })
+    }).catch(() => setLoading(false))
   }, [user])
 
   const handleSubscribe = async (planCode: string) => {

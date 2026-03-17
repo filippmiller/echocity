@@ -2,6 +2,8 @@ import Link from "next/link"
 import { prisma } from "@/lib/prisma"
 import { OfferCard } from "@/components/OfferCard"
 import { Footer } from "@/components/Footer"
+import { SavingsCounter } from "@/components/SavingsCounter"
+import { CollectionCard } from "@/components/CollectionCard"
 
 const CATEGORIES = [
   { name: 'Кофе', slug: 'coffee', emoji: '☕', types: ['CAFE'] },
@@ -16,7 +18,7 @@ const CATEGORIES = [
 async function getHomeData() {
   const now = new Date()
 
-  const [freeOffers, memberOffers, flashOffers, allActive, demandCount, placeCount] = await Promise.all([
+  const [freeOffers, memberOffers, flashOffers, allActive, demandCount, placeCount, collections] = await Promise.all([
     // Free deals
     prisma.offer.findMany({
       where: {
@@ -77,9 +79,16 @@ async function getHomeData() {
     prisma.place.count({
       where: { isActive: true },
     }),
+    // Featured collections (graceful fallback if model not yet available)
+    (prisma.collection?.findMany({
+      where: { isActive: true, isFeatured: true },
+      include: { items: { select: { id: true } } },
+      orderBy: { sortOrder: 'asc' },
+      take: 10,
+    }) ?? Promise.resolve([])).catch(() => []),
   ])
 
-  return { freeOffers, memberOffers, flashOffers, allActive, demandCount, placeCount }
+  return { freeOffers, memberOffers, flashOffers, allActive, demandCount, placeCount, collections: collections ?? [] }
 }
 
 function mapOfferToCard(offer: any) {
@@ -101,7 +110,7 @@ function mapOfferToCard(offer: any) {
 }
 
 export default async function Home() {
-  const { freeOffers, memberOffers, flashOffers, allActive, demandCount, placeCount } = await getHomeData()
+  const { freeOffers, memberOffers, flashOffers, allActive, demandCount, placeCount, collections } = await getHomeData()
 
   return (
     <main className="min-h-screen bg-white">
@@ -138,6 +147,11 @@ export default async function Home() {
             <span><strong className="text-white">{allActive}</strong> скидок</span>
             <span><strong className="text-white">{demandCount}</strong> запросов</span>
           </div>
+
+          {/* Savings counter */}
+          <div className="mt-4">
+            <SavingsCounter variant="hero" />
+          </div>
         </div>
       </section>
 
@@ -158,6 +172,32 @@ export default async function Home() {
           </div>
         </div>
       </section>
+
+      {/* Collections */}
+      {collections.length > 0 && (
+        <section className="py-6 px-4">
+          <div className="max-w-5xl mx-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-bold text-gray-900 flex items-center gap-2">
+                <span className="text-lg">&#x1F4DA;</span>
+                Подборки
+              </h2>
+            </div>
+            <div className="flex gap-4 overflow-x-auto hide-scrollbar pb-2">
+              {collections.map((col: any) => (
+                <CollectionCard
+                  key={col.id}
+                  slug={col.slug}
+                  title={col.title}
+                  description={col.description}
+                  coverUrl={col.coverUrl}
+                  itemCount={col.items.length}
+                />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Flash Deals */}
       {flashOffers.length > 0 && (
