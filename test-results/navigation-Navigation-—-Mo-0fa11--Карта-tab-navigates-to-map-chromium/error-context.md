@@ -1,0 +1,75 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - link "ГдеСейчас" [ref=e5] [cursor=pointer]:
+          - /url: /
+        - button "СПб" [ref=e7] [cursor=pointer]:
+          - img [ref=e8]
+          - generic [ref=e11]: СПб
+          - img [ref=e12]
+      - link [ref=e15] [cursor=pointer]:
+        - /url: /search
+        - img [ref=e16]
+  - generic [ref=e21]:
+    - generic [ref=e23]:
+      - heading "Скидки" [level=1] [ref=e24]
+      - paragraph [ref=e25]: Все актуальные предложения в вашем городе
+    - generic [ref=e27]:
+      - generic [ref=e28]:
+        - combobox [ref=e29]:
+          - option "Санкт-Петербург" [selected]
+          - option "Москва"
+        - generic [ref=e30]:
+          - button "Все" [ref=e31] [cursor=pointer]
+          - button "Бесплатные" [ref=e32] [cursor=pointer]
+          - button "Plus" [ref=e33] [cursor=pointer]
+      - generic [ref=e34]:
+        - button "🔥 Все категории" [ref=e35] [cursor=pointer]:
+          - generic [ref=e36]: 🔥
+          - text: Все категории
+        - button "☕ Кофе" [ref=e37] [cursor=pointer]:
+          - generic [ref=e38]: ☕
+          - text: Кофе
+        - button "🍔 Еда" [ref=e39] [cursor=pointer]:
+          - generic [ref=e40]: 🍔
+          - text: Еда
+        - button "🍺 Бары" [ref=e41] [cursor=pointer]:
+          - generic [ref=e42]: 🍺
+          - text: Бары
+        - button "💅 Красота" [ref=e43] [cursor=pointer]:
+          - generic [ref=e44]: 💅
+          - text: Красота
+        - button "🔧 Услуги" [ref=e45] [cursor=pointer]:
+          - generic [ref=e46]: 🔧
+          - text: Услуги
+  - navigation [ref=e98]:
+    - generic [ref=e99]:
+      - link "Главная" [ref=e100] [cursor=pointer]:
+        - /url: /
+        - img [ref=e101]
+        - generic [ref=e104]: Главная
+      - link "Скидки" [ref=e105] [cursor=pointer]:
+        - /url: /offers
+        - img [ref=e106]
+        - generic [ref=e109]: Скидки
+      - link "Карта" [active] [ref=e110] [cursor=pointer]:
+        - /url: /map
+        - img [ref=e111]
+        - generic [ref=e114]: Карта
+      - link "Избранное" [ref=e115] [cursor=pointer]:
+        - /url: "#"
+        - img [ref=e116]
+        - generic [ref=e118]: Избранное
+      - link "Профиль" [ref=e119] [cursor=pointer]:
+        - /url: "#"
+        - img [ref=e120]
+        - generic [ref=e123]: Профиль
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e129] [cursor=pointer]:
+    - img [ref=e130]
+  - alert [ref=e133]
+```

@@ -1,0 +1,85 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - link "ГдеСейчас" [ref=e5] [cursor=pointer]:
+          - /url: /
+        - button "Санкт-Петербург" [ref=e7] [cursor=pointer]:
+          - img [ref=e8]
+          - generic [ref=e11]: Санкт-Петербург
+          - img [ref=e12]
+      - navigation [ref=e14]:
+        - link "Скидки" [ref=e15] [cursor=pointer]:
+          - /url: /offers
+        - link "Карта" [ref=e16] [cursor=pointer]:
+          - /url: /map
+        - link "Поиск" [ref=e17] [cursor=pointer]:
+          - /url: /search
+        - link "Избранное" [ref=e18] [cursor=pointer]:
+          - /url: /favorites
+  - generic [ref=e22]:
+    - generic [ref=e24]:
+      - heading "Скидки" [level=1] [ref=e25]
+      - paragraph [ref=e26]: Все актуальные предложения в вашем городе
+    - generic [ref=e28]:
+      - generic [ref=e29]:
+        - combobox [ref=e30]:
+          - option "Санкт-Петербург" [selected]
+          - option "Москва"
+        - generic [ref=e31]:
+          - button "Все" [ref=e32] [cursor=pointer]
+          - button "Бесплатные" [ref=e33] [cursor=pointer]
+          - button "Plus" [ref=e34] [cursor=pointer]
+      - generic [ref=e35]:
+        - button "🔥 Все категории" [ref=e36] [cursor=pointer]:
+          - generic [ref=e37]: 🔥
+          - text: Все категории
+        - button "☕ Кофе" [ref=e38] [cursor=pointer]:
+          - generic [ref=e39]: ☕
+          - text: Кофе
+        - button "🍔 Еда" [ref=e40] [cursor=pointer]:
+          - generic [ref=e41]: 🍔
+          - text: Еда
+        - button "🍺 Бары" [ref=e42] [cursor=pointer]:
+          - generic [ref=e43]: 🍺
+          - text: Бары
+        - button "💅 Красота" [ref=e44] [cursor=pointer]:
+          - generic [ref=e45]: 💅
+          - text: Красота
+        - button "🔧 Услуги" [ref=e46] [cursor=pointer]:
+          - generic [ref=e47]: 🔧
+          - text: Услуги
+    - contentinfo [ref=e99]:
+      - generic [ref=e100]:
+        - generic [ref=e101]:
+          - heading "ГдеСейчас" [level=3] [ref=e102]
+          - paragraph [ref=e103]: Лучшие скидки в кафе, ресторанах и салонах вашего города
+        - generic [ref=e104]:
+          - heading "Пользователям" [level=4] [ref=e105]
+          - generic [ref=e106]:
+            - link "Все скидки" [ref=e107] [cursor=pointer]:
+              - /url: /offers
+            - link "Карта" [ref=e108] [cursor=pointer]:
+              - /url: /map
+            - link "Подписка" [ref=e109] [cursor=pointer]:
+              - /url: /subscription
+        - generic [ref=e110]:
+          - heading "Для бизнеса" [level=4] [ref=e111]
+          - generic [ref=e112]:
+            - link "Подключить заведение" [ref=e113] [cursor=pointer]:
+              - /url: /business/register
+            - link "Войти в кабинет" [ref=e114] [cursor=pointer]:
+              - /url: /auth/login
+        - generic [ref=e115]:
+          - heading "Контакты" [level=4] [ref=e116]
+          - generic [ref=e117]:
+            - generic [ref=e118]: Санкт-Петербург
+            - link "info@gdesejchas.ru" [ref=e119] [cursor=pointer]:
+              - /url: mailto:info@gdesejchas.ru
+      - generic [ref=e120]: © 2026 ГдеСейчас. Все права защищены.
+  - region "Notifications alt+T"
+  - alert [ref=e121]
+```

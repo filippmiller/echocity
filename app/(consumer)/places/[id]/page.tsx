@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
@@ -219,4 +220,3 @@ export default async function PlacePage({ params }: PageProps) {
     </div>
   )
 }
-

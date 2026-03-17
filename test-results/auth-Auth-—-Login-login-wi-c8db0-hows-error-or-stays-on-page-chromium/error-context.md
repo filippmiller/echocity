@@ -1,0 +1,46 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - generic [ref=e5]:
+        - link "На главную" [ref=e6] [cursor=pointer]:
+          - /url: /
+          - img [ref=e7]
+          - generic [ref=e9]: На главную
+        - link "ГдеСейчас" [ref=e10] [cursor=pointer]:
+          - /url: /
+    - main [ref=e11]:
+      - generic [ref=e13]:
+        - generic [ref=e14]:
+          - heading "Вход в аккаунт" [level=1] [ref=e15]
+          - paragraph [ref=e16]: Войдите, чтобы видеть скидки рядом с вами
+        - generic [ref=e17]:
+          - generic [ref=e18]:
+            - generic [ref=e19]:
+              - generic [ref=e20]: Email
+              - textbox "Email" [ref=e21]:
+                - /placeholder: you@example.com
+                - text: nonexistent@test.com
+            - generic [ref=e22]:
+              - generic [ref=e23]: Пароль
+              - generic [ref=e25]:
+                - textbox "Пароль" [active] [ref=e26]: WrongPassword123!
+                - button "Показать пароль" [ref=e27] [cursor=pointer]:
+                  - img [ref=e28]
+            - button "Войти" [ref=e31] [cursor=pointer]
+          - generic [ref=e36]: или
+          - button "Я Войти через Яндекс" [ref=e37] [cursor=pointer]:
+            - generic [ref=e38]: Я
+            - generic [ref=e39]: Войти через Яндекс
+        - paragraph [ref=e40]:
+          - text: Нет аккаунта?
+          - link "Зарегистрироваться" [ref=e41] [cursor=pointer]:
+            - /url: /auth/register
+    - contentinfo [ref=e42]: © 2024-2026 ГдеСейчас
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e48] [cursor=pointer]:
+    - img [ref=e49]
+  - alert [ref=e52]
+```

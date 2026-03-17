@@ -1,0 +1,243 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - link "ГдеСейчас" [ref=e5] [cursor=pointer]:
+          - /url: /
+        - button "Санкт-Петербург" [ref=e7] [cursor=pointer]:
+          - img [ref=e8]
+          - generic [ref=e11]: Санкт-Петербург
+          - img [ref=e12]
+      - navigation [ref=e14]:
+        - link "Скидки" [ref=e15] [cursor=pointer]:
+          - /url: /offers
+        - link "Карта" [ref=e16] [cursor=pointer]:
+          - /url: /map
+        - link "Поиск" [ref=e17] [cursor=pointer]:
+          - /url: /search
+        - link "Избранное" [ref=e18] [cursor=pointer]:
+          - /url: /favorites
+  - main [ref=e22]:
+    - generic [ref=e24]:
+      - generic [ref=e25]: Санкт-Петербург · 7 скидок
+      - heading "Скидки рядом с вами" [level=1] [ref=e27]
+      - paragraph [ref=e28]: Находите предложения, активируйте через QR и экономьте каждый день
+      - link "Найти скидку, заведение..." [ref=e30] [cursor=pointer]:
+        - /url: /offers
+        - img [ref=e31]
+        - text: Найти скидку, заведение...
+      - generic [ref=e33]:
+        - generic [ref=e34]:
+          - strong [ref=e35]: "5"
+          - text: заведений
+        - generic [ref=e36]:
+          - strong [ref=e37]: "7"
+          - text: скидок
+        - generic [ref=e38]:
+          - strong [ref=e39]: "1"
+          - text: запросов
+    - generic [ref=e86]:
+      - link "☕ Кофе" [ref=e87] [cursor=pointer]:
+        - /url: /offers?category=coffee
+        - generic [ref=e88]: ☕
+        - generic [ref=e89]: Кофе
+      - link "🍔 Еда" [ref=e90] [cursor=pointer]:
+        - /url: /offers?category=food
+        - generic [ref=e91]: 🍔
+        - generic [ref=e92]: Еда
+      - link "🍺 Бары" [ref=e93] [cursor=pointer]:
+        - /url: /offers?category=bars
+        - generic [ref=e94]: 🍺
+        - generic [ref=e95]: Бары
+      - link "💅 Красота" [ref=e96] [cursor=pointer]:
+        - /url: /offers?category=beauty
+        - generic [ref=e97]: 💅
+        - generic [ref=e98]: Красота
+      - link "🔧 Услуги" [ref=e99] [cursor=pointer]:
+        - /url: /offers?category=services
+        - generic [ref=e100]: 🔧
+        - generic [ref=e101]: Услуги
+      - link "🎭 Развлечения" [ref=e102] [cursor=pointer]:
+        - /url: /offers?category=entertainment
+        - generic [ref=e103]: 🎭
+        - generic [ref=e104]: Развлечения
+      - link "🛍 Магазины" [ref=e105] [cursor=pointer]:
+        - /url: /offers?category=shops
+        - generic [ref=e106]: 🛍
+        - generic [ref=e107]: Магазины
+      - link "🌍 Туристам" [active] [ref=e108] [cursor=pointer]:
+        - /url: /tourist
+        - generic [ref=e109]: 🌍
+        - generic [ref=e110]: Туристам
+    - generic [ref=e112]:
+      - heading "📚 Подборки" [level=2] [ref=e114]:
+        - generic [ref=e115]: 📚
+        - text: Подборки
+      - generic [ref=e116]:
+        - link "Лучшие кофейни Топовые кофейни города со скидками 2 места" [ref=e117] [cursor=pointer]:
+          - /url: /collections/luchshie-kofejni
+          - generic [ref=e121]:
+            - heading "Лучшие кофейни" [level=3] [ref=e122]
+            - paragraph [ref=e123]: Топовые кофейни города со скидками
+            - paragraph [ref=e124]: 2 места
+        - link "Flash-скидки сегодня Горящие предложения — не упустите 0 места" [ref=e125] [cursor=pointer]:
+          - /url: /collections/flash-skidki-segodnya
+          - generic [ref=e129]:
+            - heading "Flash-скидки сегодня" [level=3] [ref=e130]
+            - paragraph [ref=e131]: Горящие предложения — не упустите
+            - paragraph [ref=e132]: 0 места
+        - link "Новые на платформе Свежие предложения, только что появились 3 места" [ref=e133] [cursor=pointer]:
+          - /url: /collections/novye-na-platforme
+          - generic [ref=e137]:
+            - heading "Новые на платформе" [level=3] [ref=e138]
+            - paragraph [ref=e139]: Свежие предложения, только что появились
+            - paragraph [ref=e140]: 3 места
+    - generic [ref=e142]:
+      - generic [ref=e143]:
+        - generic [ref=e144]:
+          - generic [ref=e145]: 🎁
+          - heading "Бесплатные предложения" [level=2] [ref=e146]
+        - link "Все →" [ref=e147] [cursor=pointer]:
+          - /url: /offers?visibility=FREE_FOR_ALL
+      - generic [ref=e148]:
+        - link "% -30% Добавить в избранное -30% на 90 минут! Flash-скидка на Петроградской Coffee House — Петроградская" [ref=e149] [cursor=pointer]:
+          - /url: /offers/offer-flash-coffee
+          - generic [ref=e150]:
+            - generic [ref=e151]:
+              - generic [ref=e153]: "%"
+              - generic [ref=e154]:
+                - img [ref=e155]
+                - text: "-30%"
+              - button "Добавить в избранное" [ref=e158]:
+                - img [ref=e159]
+            - generic [ref=e161]:
+              - heading "-30% на 90 минут!" [level=3] [ref=e162]
+              - paragraph [ref=e163]: Flash-скидка на Петроградской
+              - generic [ref=e165]: Coffee House — Петроградская
+        - link "% -25% Добавить в избранное -25% на первый визит Маникюр, педикюр или уход за лицом Beauty Studio — Литейный" [ref=e166] [cursor=pointer]:
+          - /url: /offers/offer-beauty-first
+          - generic [ref=e167]:
+            - generic [ref=e168]:
+              - generic [ref=e170]: "%"
+              - generic [ref=e171]: "-25%"
+              - button "Добавить в избранное" [ref=e173]:
+                - img [ref=e174]
+            - generic [ref=e176]:
+              - heading "-25% на первый визит" [level=3] [ref=e177]
+              - paragraph [ref=e178]: Маникюр, педикюр или уход за лицом
+              - generic [ref=e180]: Beauty Studio — Литейный
+        - link "% -20% Добавить в избранное -20% на весь кофе Любой кофейный напиток со скидкой Coffee House — Невский" [ref=e181] [cursor=pointer]:
+          - /url: /offers/offer-coffee-20
+          - generic [ref=e182]:
+            - generic [ref=e183]:
+              - generic [ref=e185]: "%"
+              - generic [ref=e186]: "-20%"
+              - button "Добавить в избранное" [ref=e188]:
+                - img [ref=e189]
+            - generic [ref=e191]:
+              - heading "-20% на весь кофе" [level=3] [ref=e192]
+              - paragraph [ref=e193]: Любой кофейный напиток со скидкой
+              - generic [ref=e195]: Coffee House — Невский
+    - generic [ref=e197]:
+      - generic [ref=e198]:
+        - generic [ref=e199]:
+          - generic [ref=e200]: 👑
+          - heading "Для подписчиков" [level=2] [ref=e201]
+          - generic [ref=e202]: Plus
+        - link "Все →" [ref=e203] [cursor=pointer]:
+          - /url: /offers?visibility=MEMBERS_ONLY
+      - generic [ref=e204]:
+        - link "% Комплект Plus Добавить в избранное 2 кофе по цене 1 Приходите с другом Coffee House — Невский" [ref=e206] [cursor=pointer]:
+          - /url: /offers/offer-bundle-coffee
+          - generic [ref=e207]:
+            - generic [ref=e208]:
+              - generic [ref=e210]: "%"
+              - generic [ref=e211]: Комплект
+              - generic [ref=e212]: Plus
+              - button "Добавить в избранное" [ref=e214]:
+                - img [ref=e215]
+            - generic [ref=e217]:
+              - heading "2 кофе по цене 1" [level=3] [ref=e218]
+              - paragraph [ref=e219]: Приходите с другом
+              - generic [ref=e221]: Coffee House — Невский
+        - link "% -20% Plus Добавить в избранное -20% в непиковые часы Скидка на всё меню Пн-Чт 14:00-17:00 Гастро-паб «Петербург» — Рубинштейна" [ref=e223] [cursor=pointer]:
+          - /url: /offers/offer-offpeak-gastro
+          - generic [ref=e224]:
+            - generic [ref=e225]:
+              - generic [ref=e227]: "%"
+              - generic [ref=e228]: "-20%"
+              - generic [ref=e229]: Plus
+              - button "Добавить в избранное" [ref=e231]:
+                - img [ref=e232]
+            - generic [ref=e234]:
+              - heading "-20% в непиковые часы" [level=3] [ref=e235]
+              - paragraph [ref=e236]: Скидка на всё меню Пн-Чт 14:00-17:00
+              - generic [ref=e238]: Гастро-паб «Петербург» — Рубинштейна
+        - link "% Бесплатно Plus Добавить в избранное Бесплатный десерт К любому напитку от 300₽ Coffee House — Невский" [ref=e240] [cursor=pointer]:
+          - /url: /offers/offer-free-dessert
+          - generic [ref=e241]:
+            - generic [ref=e242]:
+              - generic [ref=e244]: "%"
+              - generic [ref=e245]: Бесплатно
+              - generic [ref=e246]: Plus
+              - button "Добавить в избранное" [ref=e248]:
+                - img [ref=e249]
+            - generic [ref=e251]:
+              - heading "Бесплатный десерт" [level=3] [ref=e252]
+              - paragraph [ref=e253]: К любому напитку от 300₽
+              - generic [ref=e255]: Coffee House — Невский
+      - link "Подписка от 199₽/мес — попробуйте 7 дней бесплатно →" [ref=e257] [cursor=pointer]:
+        - /url: /subscription
+    - generic [ref=e260]:
+      - heading "Нет скидки? Запросите!" [level=2] [ref=e261]
+      - paragraph [ref=e262]: Нажмите «Хочу скидку» на странице заведения — когда наберётся достаточно запросов, мы договоримся о скидке
+      - paragraph [ref=e263]: 1 активный запрос от пользователей
+      - link "Смотреть заведения" [ref=e264] [cursor=pointer]:
+        - /url: /offers
+    - generic [ref=e266]:
+      - generic [ref=e267]:
+        - heading "Для бизнеса" [level=2] [ref=e268]
+        - paragraph [ref=e269]: Привлекайте новых клиентов через скидки и отслеживайте результаты
+        - link "Подключить заведение" [ref=e270] [cursor=pointer]:
+          - /url: /business/register
+      - generic [ref=e271]:
+        - heading "Подписка Plus" [level=2] [ref=e272]
+        - paragraph [ref=e273]: Эксклюзивные скидки от лучших заведений. 7 дней бесплатно.
+        - link "Попробовать бесплатно" [ref=e274] [cursor=pointer]:
+          - /url: /subscription
+    - generic [ref=e275]:
+      - generic [ref=e276]:
+        - generic [ref=e277]:
+          - heading "ГдеСейчас" [level=3] [ref=e278]
+          - paragraph [ref=e279]: Лучшие скидки в кафе, ресторанах и салонах вашего города
+        - generic [ref=e280]:
+          - heading "Пользователям" [level=4] [ref=e281]
+          - generic [ref=e282]:
+            - link "Все скидки" [ref=e283] [cursor=pointer]:
+              - /url: /offers
+            - link "Карта" [ref=e284] [cursor=pointer]:
+              - /url: /map
+            - link "Подписка" [ref=e285] [cursor=pointer]:
+              - /url: /subscription
+        - generic [ref=e286]:
+          - heading "Для бизнеса" [level=4] [ref=e287]
+          - generic [ref=e288]:
+            - link "Подключить заведение" [ref=e289] [cursor=pointer]:
+              - /url: /business/register
+            - link "Войти в кабинет" [ref=e290] [cursor=pointer]:
+              - /url: /auth/login
+        - generic [ref=e291]:
+          - heading "Контакты" [level=4] [ref=e292]
+          - generic [ref=e293]:
+            - generic [ref=e294]: Санкт-Петербург
+            - link "info@gdesejchas.ru" [ref=e295] [cursor=pointer]:
+              - /url: mailto:info@gdesejchas.ru
+      - generic [ref=e296]: © 2026 ГдеСейчас. Все права защищены.
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e302] [cursor=pointer]:
+    - img [ref=e303]
+  - alert [ref=e306]
+```
