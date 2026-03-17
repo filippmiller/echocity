@@ -9,6 +9,29 @@ Each entry tracks: timestamp, area, files changed, functions/symbols used, datab
 
 ---
 
+## 2026-03-17 — Closing Gaps: Payments, Wizard, Paywall (commits: c7b51a5)
+
+**Area:** Payments / Offer Creation / UX
+**Type:** feature
+**Status:** Completed
+
+### Gaps Closed
+1. **ЮKassa payment flow** — subscribe route now creates real ЮKassa payment, redirects to payment form, polls for webhook confirmation. Trial plans still bypass payment.
+2. **Offer wizard** — expanded from 3 to 7 steps: +schedule picker, +limits config, +rules/online store, +preview
+3. **Paywall nudge** — MEMBERS_ONLY offers now show pricing (от 199₽/мес — 7 дней бесплатно)
+4. **Family plan nav** — link added to profile menu
+5. **Subscription Suspense** — wrapped for useSearchParams compatibility
+
+### Files Modified
+- `app/api/subscriptions/subscribe/route.ts` — full rewrite with ЮKassa integration
+- `app/(consumer)/subscription/page.tsx` — payment redirect + success polling + Suspense
+- `components/OfferWizard.tsx` — 3→7 steps (schedules, limits, rules, online, preview)
+- `modules/offers/service.ts`, `types.ts`, `validation.ts` — online store fields
+- `app/(consumer)/offers/[id]/page.tsx` — paywall pricing hint
+- `app/(consumer)/profile/page.tsx` — family plan link
+
+---
+
 ## 2026-03-17 — Deep Re-Audit & 4 Missing Features (commit: e0a3f4a)
 
 **Area:** Full-Stack / Feature Gaps from Ideas.txt
