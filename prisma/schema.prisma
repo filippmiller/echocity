@@ -260,6 +260,8 @@ model User {
   familyPlanOwned      FamilyPlan?     @relation("FamilyPlanOwner")
   familyMemberships    FamilyMember[]  @relation("FamilyMemberUser")
   reservations         Reservation[]
+  createdBundles       Bundle[]        @relation("BundleCreator")
+  bundleRedemptions    BundleRedemption[]
 
   @@index([email])
   @@index([role])
@@ -336,6 +338,7 @@ model Business {
   billingEvents   MerchantBillingEvent[]
   stories         Story[]
   demandResponses DemandResponse[]
+  bundleItems     BundleItem[]
 
   @@index([ownerId])
   @@index([status])
@@ -396,6 +399,7 @@ model Place {
   stories            Story[]
   tableConfigs       TableConfig[]
   reservations       Reservation[]
+  bundleItems        BundleItem[]
 
   @@index([businessAccountId])
   @@index([businessId])
@@ -436,6 +440,7 @@ model City {
   franchise       Franchise?      @relation(fields: [franchiseId], references: [id], onDelete: SetNull)
   places          Place[]         @relation("CityPlaces")
   demandRequests  DemandRequest[]
+  bundles         Bundle[]
 
   @@index([slug])
   @@index([franchiseId])
@@ -691,6 +696,7 @@ model Offer {
   stories         Story[]
   offerReviews    OfferReview[]
   demandResponses DemandResponse[] @relation("DemandResponseOffer")
+  bundleItems     BundleItem[]
 
   @@index([merchantId])
   @@index([branchId])
@@ -1401,4 +1407,77 @@ model Reservation {
   @@index([userId])
   @@index([tableId])
   @@index([date, timeSlot])
+}
+
+// ==============================
+// CROSS-MERCHANT BUNDLES
+// ==============================
+
+enum BundleStatus {
+  DRAFT
+  PENDING_PARTNERS   // waiting for all merchants to accept
+  ACTIVE
+  PAUSED
+  EXPIRED
+}
+
+model Bundle {
+  id              String          @id @default(cuid())
+  title           String          // "Свидание: ужин + кино"
+  subtitle        String?
+  description     String?         @db.Text
+  imageUrl        String?
+  totalPrice      Int?            // bundle fixed price in kopecks (optional)
+  discountPercent Int?            // or % off combined total
+  visibility      OfferVisibility @default(PUBLIC)
+  status          BundleStatus    @default(DRAFT)
+  cityId          String?
+  createdByUserId String          // admin or merchant who initiated
+  validFrom       DateTime
+  validUntil      DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  createdBy   User               @relation("BundleCreator", fields: [createdByUserId], references: [id])
+  city        City?              @relation(fields: [cityId], references: [id])
+  items       BundleItem[]
+  redemptions BundleRedemption[]
+
+  @@index([status])
+  @@index([cityId])
+  @@index([createdByUserId])
+}
+
+model BundleItem {
+  id         String  @id @default(cuid())
+  bundleId   String
+  offerId    String? // link to existing offer (optional)
+  placeId    String
+  merchantId String
+  itemTitle  String  // "Ужин в Ресторане X"
+  itemValue  Int?    // item price contribution in kopecks
+  sortOrder  Int     @default(0)
+  accepted   Boolean @default(false) // merchant accepted participation
+
+  bundle   Bundle   @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+  offer    Offer?   @relation(fields: [offerId], references: [id], onDelete: SetNull)
+  place    Place    @relation(fields: [placeId], references: [id])
+  merchant Business @relation(fields: [merchantId], references: [id])
+
+  @@index([bundleId])
+  @@index([merchantId])
+  @@index([placeId])
+}
+
+model BundleRedemption {
+  id         String   @id @default(cuid())
+  bundleId   String
+  userId     String
+  redeemedAt DateTime @default(now())
+
+  bundle Bundle @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([bundleId])
+  @@index([userId])
 }

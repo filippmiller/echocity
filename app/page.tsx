@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { prisma } from "@/lib/prisma"
 import { OfferCard } from "@/components/OfferCard"
+import { BundleCard } from "@/components/BundleCard"
 import { Footer } from "@/components/Footer"
 import { SavingsCounter } from "@/components/SavingsCounter"
 import { CollectionCard } from "@/components/CollectionCard"
@@ -21,7 +22,7 @@ const CATEGORIES = [
 async function getHomeData() {
   const now = new Date()
 
-  const [freeOffers, memberOffers, flashOffers, allActive, demandCount, placeCount, collections] = await Promise.all([
+  const [freeOffers, memberOffers, flashOffers, allActive, demandCount, placeCount, collections, activeBundles] = await Promise.all([
     // Free deals
     prisma.offer.findMany({
       where: {
@@ -89,9 +90,29 @@ async function getHomeData() {
       orderBy: { sortOrder: 'asc' },
       take: 10,
     }) ?? Promise.resolve([])).catch(() => []),
+    // Active bundles
+    (prisma.bundle?.findMany({
+      where: {
+        status: 'ACTIVE',
+        validFrom: { lte: now },
+        OR: [{ validUntil: null }, { validUntil: { gt: now } }],
+      },
+      include: {
+        items: {
+          include: {
+            place: { select: { id: true, title: true, address: true, city: true } },
+            merchant: { select: { id: true, name: true } },
+          },
+          orderBy: { sortOrder: 'asc' },
+        },
+        _count: { select: { redemptions: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 6,
+    }) ?? Promise.resolve([])).catch(() => []),
   ])
 
-  return { freeOffers, memberOffers, flashOffers, allActive, demandCount, placeCount, collections: collections ?? [] }
+  return { freeOffers, memberOffers, flashOffers, allActive, demandCount, placeCount, collections: collections ?? [], activeBundles: activeBundles ?? [] }
 }
 
 function mapOfferToCard(offer: any) {
@@ -113,7 +134,7 @@ function mapOfferToCard(offer: any) {
 }
 
 export default async function Home() {
-  const { freeOffers, memberOffers, flashOffers, allActive, demandCount, placeCount, collections } = await getHomeData()
+  const { freeOffers, memberOffers, flashOffers, allActive, demandCount, placeCount, collections, activeBundles } = await getHomeData()
 
   return (
     <main className="min-h-screen bg-white">
@@ -228,6 +249,43 @@ export default async function Home() {
               {flashOffers.map((offer) => (
                 <div key={offer.id} className="w-[260px] shrink-0">
                   <OfferCard {...mapOfferToCard(offer)} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Bundles — cross-merchant combos */}
+      {activeBundles.length > 0 && (
+        <section className="py-6 px-4 bg-gradient-to-r from-indigo-50 to-purple-50">
+          <div className="max-w-5xl mx-auto">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">&#x1F381;</span>
+                <h2 className="font-bold text-gray-900">Комбо</h2>
+                <span className="text-xs bg-indigo-600 text-white px-2 py-0.5 rounded-full font-medium badge">
+                  Несколько заведений
+                </span>
+              </div>
+              <Link href="/bundles" className="text-sm text-brand-600 font-medium hover:underline">
+                Все &rarr;
+              </Link>
+            </div>
+            <div className="flex gap-4 overflow-x-auto hide-scrollbar pb-2">
+              {activeBundles.map((bundle: any) => (
+                <div key={bundle.id} className="w-[280px] shrink-0">
+                  <BundleCard
+                    id={bundle.id}
+                    title={bundle.title}
+                    subtitle={bundle.subtitle}
+                    imageUrl={bundle.imageUrl}
+                    totalPrice={bundle.totalPrice}
+                    discountPercent={bundle.discountPercent}
+                    items={bundle.items}
+                    validUntil={bundle.validUntil?.toISOString()}
+                    redemptionCount={bundle._count.redemptions}
+                  />
                 </div>
               ))}
             </div>
