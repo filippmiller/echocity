@@ -3,6 +3,7 @@ import { generateSessionToken, generateShortCode } from './tokens'
 import { validateOfferForRedemption } from '@/modules/offers/service'
 import { checkRedemptionFraud } from '@/modules/moderation/fraud'
 import { trackSaving } from '@/modules/savings/track'
+import { validateGeoProximity } from './geo'
 
 const SESSION_TTL_MS = 60 * 1000 // 60 seconds
 
@@ -95,6 +96,57 @@ export async function validateAndRedeem(input: { sessionToken?: string; shortCod
     return { success: false, error: validation.errorCode, message: validation.errorMessage }
   }
 
+  // Geo-radius enforcement
+  const offerWithRules = await prisma.offer.findUnique({
+    where: { id: session.offerId },
+    include: {
+      rules: { where: { ruleType: 'GEO_RADIUS' } },
+      branch: { select: { lat: true, lng: true } },
+    },
+  })
+
+  const geoRule = offerWithRules?.rules[0]
+  let geoWarning: string | undefined
+
+  if (geoRule && offerWithRules?.branch) {
+    const maxRadius = typeof geoRule.value === 'object' && geoRule.value !== null
+      ? (geoRule.value as { meters?: number }).meters ?? Number(geoRule.value)
+      : Number(geoRule.value)
+
+    const branchLat = offerWithRules.branch.lat
+    const branchLng = offerWithRules.branch.lng
+
+    if (session.userLat != null && session.userLng != null && branchLat != null && branchLng != null) {
+      const geo = validateGeoProximity(session.userLat, session.userLng, branchLat, branchLng, maxRadius)
+
+      if (!geo.valid) {
+        await prisma.redemptionEvent.create({
+          data: {
+            sessionId: session.id,
+            eventType: 'GEO_FAILED',
+            actorType: 'SYSTEM',
+            metadata: {
+              userLat: session.userLat,
+              userLng: session.userLng,
+              branchLat,
+              branchLng,
+              distanceMeters: geo.distanceMeters,
+              maxRadiusMeters: maxRadius,
+            },
+          },
+        })
+        return {
+          success: false,
+          error: 'GEO_TOO_FAR',
+          message: `Вы слишком далеко от заведения (${geo.distanceMeters}м, макс. ${maxRadius}м)`,
+        }
+      }
+    } else if (session.userLat == null || session.userLng == null) {
+      // User denied location — allow with warning, do not block
+      geoWarning = 'Местоположение не предоставлено. Гео-проверка пропущена.'
+    }
+  }
+
   // Create redemption + mark session used in transaction
   const redemption = await prisma.$transaction(async (tx) => {
     await tx.redemptionSession.update({ where: { id: session.id }, data: { status: 'USED' } })
@@ -157,6 +209,7 @@ export async function validateAndRedeem(input: { sessionToken?: string; shortCod
 
   return {
     success: true,
+    geoWarning,
     redemption: {
       id: redemption.id,
       offerTitle: session.offer.title,

@@ -1,11 +1,20 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { ChevronDown } from 'lucide-react'
 
 interface WizardProps {
   merchantId: string
   branches: Array<{ id: string; title: string; address: string }>
+}
+
+interface CategoryData {
+  id: string
+  name: string
+  slug: string
+  icon: string | null
+  serviceTypes: Array<{ id: string; name: string; slug: string }>
 }
 
 const OFFER_TYPES = [
@@ -38,6 +47,26 @@ export function OfferWizard({ merchantId, branches }: WizardProps) {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // Category restriction state
+  const [categories, setCategories] = useState<CategoryData[]>([])
+  const [categoriesOpen, setCategoriesOpen] = useState(false)
+  const [appliesToAll, setAppliesToAll] = useState(true)
+  const [categoryMode, setCategoryMode] = useState<'allowed' | 'excluded'>('allowed')
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([])
+
+  useEffect(() => {
+    fetch('/api/categories')
+      .then((r) => r.json())
+      .then((d) => setCategories(d.categories ?? []))
+      .catch(() => {})
+  }, [])
+
+  const toggleCategory = (id: string) => {
+    setSelectedCategoryIds((prev) =>
+      prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]
+    )
+  }
+
   const [form, setForm] = useState({
     branchId: branches[0]?.id || '',
     title: '',
@@ -57,6 +86,16 @@ export function OfferWizard({ merchantId, branches }: WizardProps) {
   const handleSubmit = async () => {
     setSubmitting(true)
     setError(null)
+
+    // Build category rules if restrictions are set
+    const rules: Array<{ ruleType: string; value: unknown }> = []
+    if (!appliesToAll && selectedCategoryIds.length > 0) {
+      rules.push({
+        ruleType: categoryMode === 'allowed' ? 'ALLOWED_CATEGORIES' : 'EXCLUDED_CATEGORIES',
+        value: { categoryIds: selectedCategoryIds },
+      })
+    }
+
     const res = await fetch('/api/business/offers', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -66,6 +105,7 @@ export function OfferWizard({ merchantId, branches }: WizardProps) {
         benefitValue: Number(form.benefitValue),
         startAt: new Date(form.startAt).toISOString(),
         endAt: form.endAt ? new Date(form.endAt).toISOString() : undefined,
+        ...(rules.length > 0 ? { rules } : {}),
       }),
     })
     if (res.ok) {
@@ -151,6 +191,88 @@ export function OfferWizard({ merchantId, branches }: WizardProps) {
         <label className="block text-sm font-medium text-gray-700 mb-1">Условия</label>
         <textarea value={form.termsText} onChange={(e) => updateField('termsText', e.target.value)}
           className="w-full border rounded-lg p-2 text-sm" rows={2} />
+      </div>
+
+      {/* Category restrictions - collapsible */}
+      <div className="border rounded-lg overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setCategoriesOpen(!categoriesOpen)}
+          className="w-full flex items-center justify-between p-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+        >
+          <span>Ограничения по категориям</span>
+          <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${categoriesOpen ? 'rotate-180' : ''}`} />
+        </button>
+
+        {categoriesOpen && (
+          <div className="px-3 pb-3 space-y-3 border-t">
+            <label className="flex items-center gap-2 pt-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={appliesToAll}
+                onChange={(e) => {
+                  setAppliesToAll(e.target.checked)
+                  if (e.target.checked) setSelectedCategoryIds([])
+                }}
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span className="text-sm text-gray-700">Скидка действует на все</span>
+            </label>
+
+            {!appliesToAll && (
+              <>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => { setCategoryMode('allowed'); setSelectedCategoryIds([]) }}
+                    className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${categoryMode === 'allowed' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-600'}`}
+                  >
+                    Только для категорий
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setCategoryMode('excluded'); setSelectedCategoryIds([]) }}
+                    className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${categoryMode === 'excluded' ? 'border-red-500 bg-red-50 text-red-700' : 'border-gray-200 text-gray-600'}`}
+                  >
+                    Не действует на
+                  </button>
+                </div>
+
+                <div className="flex flex-wrap gap-1.5">
+                  {categories.map((cat) => {
+                    const isSelected = selectedCategoryIds.includes(cat.id)
+                    return (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => toggleCategory(cat.id)}
+                        className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                          isSelected
+                            ? categoryMode === 'allowed'
+                              ? 'border-blue-500 bg-blue-50 text-blue-700'
+                              : 'border-red-500 bg-red-50 text-red-700'
+                            : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                        }`}
+                      >
+                        {cat.icon ? `${cat.icon} ` : ''}{cat.name}
+                      </button>
+                    )
+                  })}
+                  {categories.length === 0 && (
+                    <p className="text-xs text-gray-400">Нет доступных категорий</p>
+                  )}
+                </div>
+
+                {selectedCategoryIds.length > 0 && (
+                  <p className="text-xs text-gray-500">
+                    {categoryMode === 'allowed' ? 'Скидка только для: ' : 'Не действует на: '}
+                    {selectedCategoryIds.length} кат.
+                  </p>
+                )}
+              </>
+            )}
+          </div>
+        )}
       </div>
     </div>,
   ]

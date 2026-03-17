@@ -6,6 +6,7 @@ import { Upload, X, Check, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { ReferralCard } from '@/components/ReferralCard'
 import { SavingsCounter } from '@/components/SavingsCounter'
+import { NotificationSettings } from '@/components/NotificationSettings'
 
 interface UserProfile {
   id: string
@@ -392,34 +393,6 @@ export default function SettingsPage() {
               />
             </div>
 
-            <div className="flex items-center gap-4">
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={formData.notificationsEnabled}
-                  onChange={(e) =>
-                    setFormData({ ...formData, notificationsEnabled: e.target.checked })
-                  }
-                  className="mr-2"
-                />
-                Уведомления включены
-              </label>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={formData.emailNotifications}
-                  onChange={(e) =>
-                    setFormData({ ...formData, emailNotifications: e.target.checked })
-                  }
-                  className="mr-2"
-                />
-                Email уведомления
-              </label>
-            </div>
-
             <button
               type="submit"
               disabled={saving}
@@ -435,6 +408,12 @@ export default function SettingsPage() {
               )}
             </button>
           </form>
+        </div>
+
+        {/* Notification Settings */}
+        <div className="bg-white shadow rounded-lg p-6 mb-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Уведомления</h2>
+          <NotificationSettings />
         </div>
 
         {/* Photo Gallery */}

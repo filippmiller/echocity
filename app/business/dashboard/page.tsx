@@ -3,6 +3,13 @@ import { getSession } from '@/modules/auth/session'
 import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
 
+const DAY_NAMES_RU = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб']
+
+function formatRubles(kopecks: number): string {
+  const rubles = Math.floor(kopecks / 100)
+  return rubles.toLocaleString('ru-RU') + ' \u20BD'
+}
+
 export default async function BusinessDashboardPage() {
   const session = await getSession()
 
@@ -24,16 +31,81 @@ export default async function BusinessDashboardPage() {
   const todayStart = new Date()
   todayStart.setHours(0, 0, 0, 0)
 
-  const todayRedemptions = await prisma.redemption.count({
-    where: { merchantId: { in: merchantIds }, redeemedAt: { gte: todayStart } },
-  })
-
   const weekStart = new Date(todayStart)
   weekStart.setDate(weekStart.getDate() - 7)
-  const weeklyUniqueUsers = await prisma.redemption.groupBy({
-    by: ['userId'],
-    where: { merchantId: { in: merchantIds }, redeemedAt: { gte: weekStart } },
-  })
+
+  const monthStart = new Date(todayStart.getFullYear(), todayStart.getMonth(), 1)
+
+  // Run all analytics queries in parallel
+  const [
+    todayRedemptions,
+    weeklyUniqueUsers,
+    avgOrderResult,
+    monthlyRedemptions,
+    allRedemptionsMonth,
+  ] = await Promise.all([
+    prisma.redemption.count({
+      where: { merchantId: { in: merchantIds }, redeemedAt: { gte: todayStart } },
+    }),
+    prisma.redemption.groupBy({
+      by: ['userId'],
+      where: { merchantId: { in: merchantIds }, redeemedAt: { gte: weekStart } },
+    }),
+    // Average order amount (only where orderAmount is set)
+    prisma.redemption.aggregate({
+      _avg: { orderAmount: true },
+      _count: true,
+      where: {
+        merchantId: { in: merchantIds },
+        orderAmount: { not: null },
+        status: 'SUCCESS',
+      },
+    }),
+    // Monthly redemptions with userId for repeat analysis
+    prisma.redemption.groupBy({
+      by: ['userId'],
+      _count: { userId: true },
+      where: {
+        merchantId: { in: merchantIds },
+        redeemedAt: { gte: monthStart },
+        status: 'SUCCESS',
+      },
+    }),
+    // All redemptions this month with day of week for peak day analysis
+    prisma.redemption.findMany({
+      where: {
+        merchantId: { in: merchantIds },
+        redeemedAt: { gte: monthStart },
+        status: 'SUCCESS',
+      },
+      select: { redeemedAt: true },
+    }),
+  ])
+
+  // Average check calculation
+  const avgCheck = avgOrderResult._avg.orderAmount
+    ? Math.round(Number(avgOrderResult._avg.orderAmount) * 100) // convert to kopecks
+    : 0
+
+  // New vs repeat customers this month
+  const newCustomers = monthlyRedemptions.filter((r) => r._count.userId === 1).length
+  const repeatCustomers = monthlyRedemptions.filter((r) => r._count.userId > 1).length
+
+  // Peak day of week
+  const dayCountMap: Record<number, number> = {}
+  for (const r of allRedemptionsMonth) {
+    const day = r.redeemedAt.getDay()
+    dayCountMap[day] = (dayCountMap[day] || 0) + 1
+  }
+  let peakDay = -1
+  let peakCount = 0
+  for (const [day, count] of Object.entries(dayCountMap)) {
+    if (count > peakCount) {
+      peakDay = Number(day)
+      peakCount = count
+    }
+  }
+  const peakDayName = peakDay >= 0 ? DAY_NAMES_RU[peakDay] : null
 
   return (
     <div className="px-4 py-6 sm:px-6">
@@ -58,6 +130,68 @@ export default async function BusinessDashboardPage() {
           <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">За неделю</p>
           <p className="text-2xl font-bold text-brand-600 mt-1">{weeklyUniqueUsers.length}</p>
           <p className="text-xs text-gray-400 mt-0.5">уник. клиентов</p>
+        </div>
+      </div>
+
+      {/* Enhanced analytics */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+        {/* Average check */}
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Средний чек</p>
+          <p className="text-2xl font-bold text-gray-900 mt-1">
+            {avgCheck > 0 ? formatRubles(avgCheck) : '\u2014'}
+          </p>
+          {avgOrderResult._count > 0 && (
+            <p className="text-xs text-gray-400 mt-0.5">
+              на основе {avgOrderResult._count} заказов
+            </p>
+          )}
+        </div>
+
+        {/* New vs repeat */}
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Клиенты за месяц</p>
+          <div className="flex items-baseline gap-2 mt-1">
+            <span className="text-2xl font-bold text-gray-900">{newCustomers}</span>
+            <span className="text-sm text-gray-400">новых</span>
+          </div>
+          <div className="flex items-baseline gap-2 mt-0.5">
+            <span className="text-lg font-bold text-brand-600">{repeatCustomers}</span>
+            <span className="text-sm text-gray-400">повторных</span>
+          </div>
+        </div>
+
+        {/* Peak day */}
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Конверсия по дням</p>
+          {peakDayName ? (
+            <>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{peakDayName}</p>
+              <p className="text-xs text-gray-400 mt-0.5">
+                самый активный день ({peakCount} исп.)
+              </p>
+            </>
+          ) : (
+            <p className="text-lg text-gray-400 mt-1">{'\u2014'}</p>
+          )}
+          {allRedemptionsMonth.length > 0 && (
+            <div className="flex gap-1 mt-2">
+              {DAY_NAMES_RU.map((name, idx) => {
+                const count = dayCountMap[idx] || 0
+                const maxCount = Math.max(...Object.values(dayCountMap), 1)
+                const height = Math.max(4, Math.round((count / maxCount) * 24))
+                return (
+                  <div key={idx} className="flex flex-col items-center gap-0.5 flex-1">
+                    <div
+                      className={`w-full rounded-sm ${idx === peakDay ? 'bg-brand-500' : 'bg-gray-200'}`}
+                      style={{ height: `${height}px` }}
+                    />
+                    <span className="text-[10px] text-gray-400">{name}</span>
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
       </div>
 

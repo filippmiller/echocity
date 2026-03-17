@@ -17,6 +17,20 @@ interface SessionData {
   expiresAt: string
 }
 
+function getUserLocation(): Promise<{ lat: number; lng: number } | null> {
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) {
+      resolve(null)
+      return
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => resolve(null),
+      { enableHighAccuracy: true, timeout: 5000, maximumAge: 30000 }
+    )
+  })
+}
+
 export function QRRedeemScreen({ offerId, offerTitle }: QRRedeemScreenProps) {
   const [session, setSession] = useState<SessionData | null>(null)
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
@@ -24,15 +38,23 @@ export function QRRedeemScreen({ offerId, offerTitle }: QRRedeemScreenProps) {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [redeemed, setRedeemed] = useState(false)
+  const [geoStatus, setGeoStatus] = useState<'pending' | 'granted' | 'denied'>('pending')
 
   const createSession = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
+      // Request geolocation for proximity verification
+      const location = await getUserLocation()
+      setGeoStatus(location ? 'granted' : 'denied')
+
       const res = await fetch('/api/redemptions/create-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ offerId }),
+        body: JSON.stringify({
+          offerId,
+          ...(location ? { lat: location.lat, lng: location.lng } : {}),
+        }),
       })
       const data = await res.json()
       if (!res.ok) {
@@ -185,6 +207,12 @@ export function QRRedeemScreen({ offerId, offerTitle }: QRRedeemScreenProps) {
       <div className={`text-sm font-semibold ${secondsLeft <= 10 ? 'text-deal-discount' : 'text-gray-500'}`}>
         {secondsLeft > 0 ? `${secondsLeft}с` : 'Истёк'}
       </div>
+
+      {geoStatus === 'denied' && (
+        <p className="text-xs text-amber-600 text-center max-w-[260px]">
+          Геолокация не предоставлена. Для подтверждения скидки рядом с заведением разрешите доступ к местоположению.
+        </p>
+      )}
 
       {secondsLeft === 0 && (
         <button

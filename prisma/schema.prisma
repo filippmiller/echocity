@@ -244,6 +244,7 @@ model User {
   referralCode         ReferralCode?   @relation("UserReferralCode")
   invitedByReferral    Referral?       @relation("InvitedByReferral")
   savings              UserSavings[]   @relation("UserSavingsHistory")
+  pushSubscriptions    PushSubscription[]
 
   @@index([email])
   @@index([role])
@@ -1067,4 +1068,21 @@ model UserSavings {
 
   @@index([userId])
   @@index([userId, savedAt])
+}
+
+// ==============================
+// PUSH NOTIFICATIONS
+// ==============================
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
