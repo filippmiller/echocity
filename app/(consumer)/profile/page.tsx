@@ -19,6 +19,7 @@ import {
   Copy,
   Check,
   Trophy,
+  Users,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -299,6 +300,8 @@ export default function ProfilePage() {
             label="Подписка"
             badge={stats.subscription ? stats.subscription.planName : null}
           />
+          <div className="h-px bg-gray-100 ml-12" />
+          <MenuLink href="/family" icon={Users} label="Семейный план" />
         </div>
 
         {/* Referral section */}

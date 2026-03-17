@@ -17,6 +17,9 @@ export const createOfferSchema = z.object({
   endAt: z.string().datetime().optional(),
   termsText: z.string().max(1000).optional(),
   imageUrl: z.string().url().optional(),
+  redemptionChannel: z.enum(['IN_STORE', 'ONLINE', 'BOTH']).default('IN_STORE'),
+  onlineUrl: z.string().url().optional(),
+  promoCode: z.string().max(100).optional(),
   schedules: z.array(z.object({
     weekday: z.number().min(0).max(6),
     startTime: z.string().regex(/^\d{2}:\d{2}$/),

@@ -43,6 +43,9 @@ export type CreateOfferInput = {
   endAt?: string
   termsText?: string
   imageUrl?: string
+  redemptionChannel?: string
+  onlineUrl?: string
+  promoCode?: string
   schedules?: Array<{ weekday: number; startTime: string; endTime: string }>
   blackoutDates?: Array<{ date: string; reason?: string }>
   rules?: Array<{ ruleType: string; operator?: string; value?: unknown }>

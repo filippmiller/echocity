@@ -283,12 +283,17 @@ export default function OfferDetailPage() {
               Войдите, чтобы активировать
             </button>
           ) : isMembersOnly ? (
-            <Link
-              href="/subscription"
-              className="block w-full text-center bg-deal-premium text-white py-3.5 rounded-xl font-semibold hover:opacity-90 transition-opacity"
-            >
-              Подпишитесь для доступа
-            </Link>
+            <div className="space-y-2">
+              <Link
+                href="/subscription"
+                className="block w-full text-center bg-deal-premium text-white py-3.5 rounded-xl font-semibold hover:opacity-90 transition-opacity"
+              >
+                Подпишитесь для доступа
+              </Link>
+              <p className="text-xs text-center text-gray-400">
+                От 199 ₽/мес — 7 дней бесплатно
+              </p>
+            </div>
           ) : (
             <button
               onClick={() => router.push(`/offers/${id}/redeem`)}

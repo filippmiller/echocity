@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { useAuth } from '@/lib/auth-client'
-import { Check, X, Crown, Zap, Star } from 'lucide-react'
+import { Check, X, Crown, Zap, Star, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { Footer } from '@/components/Footer'
 
@@ -34,11 +35,49 @@ const FEATURE_MATRIX = [
 ]
 
 export default function SubscriptionPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-brand-600" /></div>}>
+      <SubscriptionContent />
+    </Suspense>
+  )
+}
+
+function SubscriptionContent() {
   const { user } = useAuth()
+  const searchParams = useSearchParams()
   const [plans, setPlans] = useState<Plan[]>([])
   const [status, setStatus] = useState<SubStatus | null>(null)
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
+
+  const refreshStatus = async () => {
+    if (!user) return
+    const statusRes = await fetch('/api/subscriptions/status')
+    setStatus(await statusRes.json())
+  }
+
+  // Handle ?status=success from ЮKassa redirect
+  useEffect(() => {
+    if (searchParams.get('status') === 'success') {
+      setSuccessMessage('Оплата прошла успешно! Подписка будет активирована в течение нескольких секунд.')
+      // Poll for subscription activation (webhook may take a moment)
+      let attempts = 0
+      const poll = setInterval(async () => {
+        attempts++
+        const res = await fetch('/api/subscriptions/status')
+        const data = await res.json()
+        if (data?.isSubscribed) {
+          setStatus(data)
+          setSuccessMessage('Подписка активирована!')
+          clearInterval(poll)
+        }
+        if (attempts >= 10) clearInterval(poll)
+      }, 2000)
+      return () => clearInterval(poll)
+    }
+  }, [searchParams])
 
   useEffect(() => {
     Promise.all([
@@ -53,14 +92,39 @@ export default function SubscriptionPage() {
 
   const handleSubscribe = async (planCode: string) => {
     setActionLoading(true)
-    const res = await fetch('/api/subscriptions/subscribe', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ planCode }),
-    })
-    if (res.ok) {
-      const statusRes = await fetch('/api/subscriptions/status')
-      setStatus(await statusRes.json())
+    setError(null)
+    try {
+      const res = await fetch('/api/subscriptions/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planCode }),
+      })
+      const data = await res.json()
+
+      if (!res.ok) {
+        setError(data.error || 'Не удалось оформить подписку')
+        setActionLoading(false)
+        return
+      }
+
+      // Trial — subscription created directly, just refresh status
+      if (data.trial) {
+        await refreshStatus()
+        setSuccessMessage('Пробный период активирован!')
+        setActionLoading(false)
+        return
+      }
+
+      // Payment required — redirect to ЮKassa
+      if (data.confirmationUrl) {
+        window.location.href = data.confirmationUrl
+        return // keep actionLoading true while redirecting
+      }
+
+      // Fallback: refresh status
+      await refreshStatus()
+    } catch {
+      setError('Произошла ошибка. Попробуйте позже.')
     }
     setActionLoading(false)
   }
@@ -98,6 +162,26 @@ export default function SubscriptionPage() {
       </div>
 
       <div className="max-w-4xl mx-auto px-4 -mt-6">
+        {/* Success message */}
+        {successMessage && (
+          <div className="bg-deal-savings/10 border border-deal-savings/30 rounded-xl p-4 mb-4 flex items-center justify-between">
+            <p className="text-deal-savings font-medium text-sm">{successMessage}</p>
+            <button onClick={() => setSuccessMessage(null)} className="text-deal-savings/60 hover:text-deal-savings text-btn ml-3">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
+        {/* Error message */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4 flex items-center justify-between">
+            <p className="text-red-600 font-medium text-sm">{error}</p>
+            <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600 text-btn ml-3">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
         {/* Current subscription status */}
         {status?.isSubscribed && (
           <div className="bg-deal-savings/10 border border-deal-savings/20 rounded-xl p-4 mb-6">

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/modules/auth/session'
-import { createSubscription } from '@/modules/subscriptions/service'
+import { prisma } from '@/lib/prisma'
+import { createPayment } from '@/modules/payments/yokassa'
 
 export async function POST(req: NextRequest) {
   const session = await getSession()
@@ -9,11 +10,44 @@ export async function POST(req: NextRequest) {
   const { planCode } = await req.json()
   if (!planCode) return NextResponse.json({ error: 'planCode required' }, { status: 400 })
 
-  try {
-    // Phase 1: stub — creates subscription directly (real payment in ЮKassa integration)
+  // Check plan exists
+  const plan = await prisma.subscriptionPlan.findUnique({ where: { code: planCode } })
+  if (!plan) return NextResponse.json({ error: 'Plan not found' }, { status: 404 })
+  if (plan.code === 'free') return NextResponse.json({ error: 'Cannot subscribe to free plan' }, { status: 400 })
+
+  // Check if user already has active subscription
+  const existing = await prisma.userSubscription.findFirst({
+    where: { userId: session.userId, status: { in: ['ACTIVE', 'TRIALING'] } },
+  })
+  if (existing) return NextResponse.json({ error: 'Already subscribed' }, { status: 409 })
+
+  // If plan has trial days, create subscription directly (no payment needed for trial)
+  if (plan.trialDays > 0) {
+    const { createSubscription } = await import('@/modules/subscriptions/service')
     const subscription = await createSubscription(session.userId, planCode)
-    return NextResponse.json({ subscription }, { status: 201 })
+    return NextResponse.json({ subscription, trial: true }, { status: 201 })
+  }
+
+  // Create ЮKassa payment
+  try {
+    const origin = req.headers.get('origin') || req.nextUrl.origin
+    const payment = await createPayment({
+      amount: plan.monthlyPrice,
+      currency: plan.currency,
+      description: `Подписка ${plan.name} — ${plan.monthlyPrice / 100} ₽/мес`,
+      returnUrl: `${origin}/subscription?status=success`,
+      metadata: {
+        userId: session.userId,
+        planCode: plan.code,
+      },
+      savePaymentMethod: true,
+    })
+
+    return NextResponse.json({
+      confirmationUrl: payment.confirmation?.confirmation_url,
+      paymentId: payment.id,
+    })
   } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 400 })
+    return NextResponse.json({ error: 'Payment creation failed: ' + e.message }, { status: 500 })
   }
 }
