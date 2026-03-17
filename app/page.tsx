@@ -14,6 +14,7 @@ const CATEGORIES = [
   { name: 'Услуги', slug: 'services', emoji: '🔧', types: ['DRYCLEANING', 'OTHER'] },
   { name: 'Развлечения', slug: 'entertainment', emoji: '🎭', types: [] },
   { name: 'Магазины', slug: 'shops', emoji: '🛍', types: [] },
+  { name: 'Туристам', slug: 'tourist', emoji: '🌍', types: [] },
 ]
 
 async function getHomeData() {
@@ -166,7 +167,7 @@ export default async function Home() {
             {CATEGORIES.map((cat) => (
               <Link
                 key={cat.slug}
-                href={`/offers?category=${cat.slug}`}
+                href={cat.slug === 'tourist' ? '/tourist' : `/offers?category=${cat.slug}`}
                 className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 rounded-full hover:bg-gray-100 shrink-0 transition-colors"
               >
                 <span className="text-lg">{cat.emoji}</span>

@@ -73,6 +73,13 @@ enum PaymentType {
   REFUND
 }
 
+// === OFFER CHANNEL ENUMS ===
+enum RedemptionChannel {
+  IN_STORE
+  ONLINE
+  BOTH
+}
+
 // === OFFER ENUMS ===
 enum OfferType {
   PERCENT_DISCOUNT
@@ -250,6 +257,8 @@ model User {
   userBadges           UserBadge[]
   userXp               UserXP?
   offerReviews         OfferReview[]
+  familyPlanOwned      FamilyPlan?     @relation("FamilyPlanOwner")
+  familyMemberships    FamilyMember[]  @relation("FamilyMemberUser")
 
   @@index([email])
   @@index([role])
@@ -606,9 +615,10 @@ model UserSubscription {
   createdAt              DateTime           @default(now())
   updatedAt              DateTime           @updatedAt
 
-  user     User             @relation(fields: [userId], references: [id])
-  plan     SubscriptionPlan @relation(fields: [planId], references: [id])
-  payments Payment[]
+  user       User             @relation(fields: [userId], references: [id])
+  plan       SubscriptionPlan @relation(fields: [planId], references: [id])
+  payments   Payment[]
+  familyPlan FamilyPlan?
 
   @@index([userId])
   @@index([status])
@@ -656,6 +666,9 @@ model Offer {
   termsText         String?
   imageUrl          String?
   rejectionReason   String?
+  redemptionChannel RedemptionChannel    @default(IN_STORE)
+  onlineUrl         String?
+  promoCode         String?
   createdByUserId   String
   createdAt         DateTime             @default(now())
   updatedAt         DateTime             @updatedAt
@@ -1297,4 +1310,36 @@ model DemandResponse {
   @@unique([demandRequestId, merchantId])
   @@index([demandRequestId])
   @@index([merchantId])
+}
+
+// ==============================
+// FAMILY / GROUP SUBSCRIPTION PLANS
+// ==============================
+
+model FamilyPlan {
+  id              String   @id @default(cuid())
+  ownerUserId     String
+  subscriptionId  String   @unique
+  maxMembers      Int      @default(2) // +1 plan = 2 total
+  createdAt       DateTime @default(now())
+
+  owner        User             @relation("FamilyPlanOwner", fields: [ownerUserId], references: [id], onDelete: Cascade)
+  subscription UserSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  members      FamilyMember[]
+
+  @@unique([ownerUserId])
+  @@index([ownerUserId])
+}
+
+model FamilyMember {
+  id           String   @id @default(cuid())
+  familyPlanId String
+  userId       String
+  addedAt      DateTime @default(now())
+
+  familyPlan FamilyPlan @relation(fields: [familyPlanId], references: [id], onDelete: Cascade)
+  user       User       @relation("FamilyMemberUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([familyPlanId, userId])
+  @@index([userId])
 }

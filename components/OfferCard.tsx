@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Clock, Users, Flame } from 'lucide-react'
+import { Clock, Users, Flame, Globe } from 'lucide-react'
 import { FavoriteButton } from '@/components/FavoriteButton'
 
 interface OfferCardProps {
@@ -20,6 +20,7 @@ interface OfferCardProps {
   redemptionCount?: number
   maxRedemptions?: number | null
   isFlash?: boolean
+  redemptionChannel?: string
 }
 
 function getBenefitBadge(benefitType: string, benefitValue: number) {
@@ -46,6 +47,7 @@ export function OfferCard({
   id, title, subtitle, benefitType, benefitValue, visibility,
   imageUrl, branchName, branchAddress, distance,
   expiresAt, redemptionCount, maxRedemptions, isFlash,
+  redemptionChannel,
 }: OfferCardProps) {
   const badge = getBenefitBadge(benefitType, benefitValue)
   const isMembersOnly = visibility === 'MEMBERS_ONLY'
@@ -80,6 +82,14 @@ export function OfferCard({
           {isMembersOnly && (
             <div className="absolute top-2 right-10 bg-deal-premium text-white px-2 py-0.5 rounded text-xs font-semibold badge">
               Plus
+            </div>
+          )}
+
+          {/* Online badge */}
+          {(redemptionChannel === 'ONLINE' || redemptionChannel === 'BOTH') && (
+            <div className={`absolute ${isMembersOnly ? 'top-8' : 'top-2'} right-10 bg-blue-500 text-white px-2 py-0.5 rounded text-xs font-semibold badge flex items-center gap-0.5`}>
+              <Globe className="w-3 h-3" />
+              Online
             </div>
           )}
 

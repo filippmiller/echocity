@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-client'
 import Link from 'next/link'
-import { MapPin, Clock, Shield, ChevronLeft, Flag } from 'lucide-react'
+import { MapPin, Clock, Shield, ChevronLeft, Flag, Globe, Copy } from 'lucide-react'
 import { ComplaintSheet } from '@/components/ComplaintSheet'
 import { AuthPrompt } from '@/components/AuthPrompt'
 import { useAuthPrompt } from '@/lib/useAuthPrompt'
@@ -28,6 +28,9 @@ interface OfferDetail {
   termsText: string | null
   imageUrl: string | null
   lifecycleStatus: string
+  redemptionChannel?: string
+  onlineUrl?: string | null
+  promoCode?: string | null
   branch: { id: string; title: string; address: string; city: string }
   merchant: { id: string; name: string }
   schedules: Array<{ weekday: number; startTime: string; endTime: string }>
@@ -169,6 +172,46 @@ export default function OfferDetailPage() {
               </span>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Online redemption */}
+      {(offer.redemptionChannel === 'ONLINE' || offer.redemptionChannel === 'BOTH') && (
+        <div className="mb-4 bg-blue-50 rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Globe className="w-4 h-4 text-blue-600" />
+            <h3 className="text-sm font-semibold text-gray-700">Использовать онлайн</h3>
+          </div>
+          {offer.promoCode && (
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-sm text-gray-600">Промокод:</span>
+              <code className="bg-white border border-blue-200 px-3 py-1 rounded-lg text-sm font-mono font-bold text-blue-700 select-all">
+                {offer.promoCode}
+              </code>
+              <button
+                onClick={() => { navigator.clipboard.writeText(offer.promoCode!); }}
+                className="text-blue-500 hover:text-blue-700 p-1"
+                title="Скопировать"
+              >
+                <Copy className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+          {offer.onlineUrl && (
+            <a
+              href={offer.onlineUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block text-sm text-blue-600 hover:text-blue-800 font-medium hover:underline"
+            >
+              Перейти на сайт &rarr;
+            </a>
+          )}
+          {offer.redemptionChannel === 'BOTH' && (
+            <p className="text-xs text-gray-500 mt-2">
+              Также можно использовать в заведении.
+            </p>
+          )}
         </div>
       )}
 
