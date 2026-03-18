@@ -95,15 +95,15 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 md:hidden"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
-        <div className="flex items-center justify-around h-14">
-          {NAV_ITEMS.slice(0, 5).map((item) => {
+        <div className="flex items-stretch gap-1 h-14 overflow-x-auto hide-scrollbar px-2">
+          {NAV_ITEMS.map((item) => {
             const Icon = item.icon
             const active = isActive(item.href, pathname)
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex flex-col items-center justify-center gap-0.5 w-full h-full transition-colors ${
+                className={`flex flex-col items-center justify-center gap-0.5 min-w-[72px] h-full px-2 transition-colors ${
                   active ? 'text-brand-600' : 'text-gray-400 active:text-gray-600'
                 }`}
               >

@@ -152,13 +152,26 @@ export default function ProfilePage() {
   const [stats, setStats] = useState<UserStats | null>(null)
   const [referral, setReferral] = useState<ReferralData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [authRequired, setAuthRequired] = useState(false)
   const [loggingOut, setLoggingOut] = useState(false)
   const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     Promise.all([
-      fetch('/api/user/stats').then((r) => (r.ok ? r.json() : null)),
-      fetch('/api/referrals').then((r) => (r.ok ? r.json() : null)),
+      fetch('/api/user/stats').then(async (r) => {
+        if (r.status === 401) {
+          setAuthRequired(true)
+          return null
+        }
+        return r.ok ? r.json() : null
+      }),
+      fetch('/api/referrals').then(async (r) => {
+        if (r.status === 401) {
+          setAuthRequired(true)
+          return null
+        }
+        return r.ok ? r.json() : null
+      }),
     ])
       .then(([statsData, referralData]) => {
         setStats(statsData)
@@ -201,16 +214,29 @@ export default function ProfilePage() {
     )
   }
 
-  if (!stats) {
+  if (authRequired || !stats) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center gap-4 px-4">
-        <p className="text-gray-500 text-sm">Не удалось загрузить профиль</p>
-        <Link
-          href="/auth/login"
-          className="px-5 py-2.5 bg-brand-600 text-white rounded-xl text-sm font-medium"
-        >
-          Войти
-        </Link>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <div className="w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-sm">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Войдите в аккаунт</h1>
+          <p className="text-sm text-gray-500 mb-6">
+            Профиль и персональная статистика доступны только авторизованным пользователям.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Link
+              href="/auth/login?redirect=/profile"
+              className="inline-flex items-center justify-center px-5 py-2.5 bg-brand-600 text-white rounded-xl font-semibold text-sm hover:bg-brand-700 transition-colors"
+            >
+              Войти
+            </Link>
+            <Link
+              href="/auth/register?redirect=/profile"
+              className="inline-flex items-center justify-center px-5 py-2.5 border border-gray-200 text-gray-700 rounded-xl font-semibold text-sm hover:bg-gray-50 transition-colors"
+            >
+              Зарегистрироваться
+            </Link>
+          </div>
+        </div>
       </div>
     )
   }

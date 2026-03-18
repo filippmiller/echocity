@@ -17,6 +17,7 @@ export async function POST(req: NextRequest) {
     sessionToken,
     shortCode,
     scannedByUserId: session.userId,
+    scannedByRole: session.role,
   })
 
   if (!result.success) {

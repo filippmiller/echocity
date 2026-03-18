@@ -48,6 +48,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Business not found or not owned by you' }, { status: 403 })
   }
 
+  const branch = await prisma.place.findFirst({
+    where: {
+      id: parsed.data.branchId,
+      businessId: parsed.data.merchantId,
+      isActive: true,
+    },
+    select: { id: true },
+  })
+
+  if (!branch) {
+    return NextResponse.json({ error: 'Branch not found or does not belong to this business' }, { status: 403 })
+  }
+
   const offer = await createOffer(parsed.data, session.userId)
   return NextResponse.json({ offer }, { status: 201 })
 }

@@ -60,6 +60,34 @@ export async function createSubscription(userId: string, planCode: string, exter
   })
 }
 
+export async function switchSubscription(userId: string, targetPlanCode: string) {
+  const [plan, currentSubscription] = await Promise.all([
+    prisma.subscriptionPlan.findUnique({ where: { code: targetPlanCode } }),
+    prisma.userSubscription.findFirst({
+      where: { userId, status: { in: ['ACTIVE', 'TRIALING'] } },
+      orderBy: { createdAt: 'desc' },
+    }),
+  ])
+
+  if (!plan) throw new Error('Plan not found')
+  if (plan.code === 'free') throw new Error('Cannot switch to free plan')
+  if (!currentSubscription) throw new Error('No active subscription')
+  if (currentSubscription.planId === plan.id) throw new Error('Already on this plan')
+
+  return prisma.userSubscription.update({
+    where: { id: currentSubscription.id },
+    data: {
+      planId: plan.id,
+      status: currentSubscription.status === 'TRIALING' ? 'TRIALING' : 'ACTIVE',
+      autoRenew: true,
+      canceledAt: null,
+    },
+    include: {
+      plan: true,
+    },
+  })
+}
+
 export async function cancelSubscription(userId: string) {
   const sub = await prisma.userSubscription.findFirst({
     where: { userId, status: { in: ['ACTIVE', 'TRIALING'] } },

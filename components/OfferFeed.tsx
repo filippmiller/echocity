@@ -21,7 +21,7 @@ interface OfferData {
   isFlash?: boolean
 }
 
-export function OfferFeed({ city, visibility }: { city?: string; visibility?: string }) {
+export function OfferFeed({ city, visibility, category }: { city?: string; visibility?: string; category?: string }) {
   const [offers, setOffers] = useState<OfferData[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -29,6 +29,7 @@ export function OfferFeed({ city, visibility }: { city?: string; visibility?: st
     const params = new URLSearchParams()
     if (city) params.set('city', city)
     if (visibility) params.set('visibility', visibility)
+    if (category && category !== 'all') params.set('category', category)
 
     fetch(`/api/offers?${params}`)
       .then((r) => r.json())
@@ -37,7 +38,7 @@ export function OfferFeed({ city, visibility }: { city?: string; visibility?: st
         setLoading(false)
       })
       .catch(() => setLoading(false))
-  }, [city, visibility])
+  }, [city, visibility, category])
 
   if (loading) {
     return (

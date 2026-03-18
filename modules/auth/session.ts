@@ -1,9 +1,11 @@
 import { cookies } from 'next/headers'
 import crypto from 'crypto'
 import type { Role } from '@prisma/client'
+import { prisma } from '@/lib/prisma'
 
 const SESSION_COOKIE_NAME = 'cityecho_session'
 const SESSION_MAX_AGE = 60 * 60 * 24 * 7 // 7 days
+const SESSION_MAX_AGE_MS = SESSION_MAX_AGE * 1000
 
 // Session secret — MUST be set in production
 if (!process.env.SESSION_SECRET && process.env.NODE_ENV === 'production') {
@@ -17,6 +19,11 @@ export interface SessionData {
   role: Role
 }
 
+interface SessionPayload extends SessionData {
+  exp: number
+  iat: number
+}
+
 /**
  * Create HMAC signature for session payload
  */
@@ -27,7 +34,7 @@ function sign(payload: string): string {
 /**
  * Verify HMAC signature and return parsed data
  */
-function verifyAndParse(cookieValue: string): SessionData | null {
+function verifyAndParse(cookieValue: string): SessionPayload | null {
   const dotIndex = cookieValue.lastIndexOf('.')
   if (dotIndex === -1) return null
 
@@ -42,7 +49,7 @@ function verifyAndParse(cookieValue: string): SessionData | null {
   }
 
   try {
-    return JSON.parse(Buffer.from(payload, 'base64url').toString('utf-8')) as SessionData
+    return JSON.parse(Buffer.from(payload, 'base64url').toString('utf-8')) as SessionPayload
   } catch {
     return null
   }
@@ -54,7 +61,14 @@ function verifyAndParse(cookieValue: string): SessionData | null {
 export async function createSession(data: SessionData): Promise<void> {
   const cookieStore = await cookies()
 
-  const payload = Buffer.from(JSON.stringify(data)).toString('base64url')
+  const now = Date.now()
+  const payloadData: SessionPayload = {
+    ...data,
+    iat: now,
+    exp: now + SESSION_MAX_AGE_MS,
+  }
+
+  const payload = Buffer.from(JSON.stringify(payloadData)).toString('base64url')
   const signature = sign(payload)
   const sessionValue = `${payload}.${signature}`
 
@@ -78,7 +92,36 @@ export async function getSession(): Promise<SessionData | null> {
     return null
   }
 
-  return verifyAndParse(sessionCookie.value)
+  const parsed = verifyAndParse(sessionCookie.value)
+  if (!parsed) {
+    return null
+  }
+
+  if (parsed.exp <= Date.now()) {
+    await deleteSession()
+    return null
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: parsed.userId },
+    select: {
+      id: true,
+      email: true,
+      role: true,
+      isActive: true,
+    },
+  })
+
+  if (!user || !user.isActive) {
+    await deleteSession()
+    return null
+  }
+
+  return {
+    userId: user.id,
+    email: user.email,
+    role: user.role,
+  }
 }
 
 /**

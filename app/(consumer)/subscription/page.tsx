@@ -115,6 +115,13 @@ function SubscriptionContent() {
         return
       }
 
+      if (data.switched) {
+        await refreshStatus()
+        setSuccessMessage('План успешно изменён')
+        setActionLoading(false)
+        return
+      }
+
       // Payment required — redirect to ЮKassa
       if (data.confirmationUrl) {
         window.location.href = data.confirmationUrl
@@ -280,7 +287,11 @@ function SubscriptionContent() {
                           : 'bg-deal-premium text-white hover:opacity-90'
                       } disabled:opacity-50`}
                     >
-                      {plan.trialDays > 0 ? 'Попробовать бесплатно' : 'Подписаться'}
+                      {status?.isSubscribed
+                        ? 'Перейти на план'
+                        : plan.trialDays > 0
+                          ? 'Попробовать бесплатно'
+                          : 'Подписаться'}
                     </button>
                   ) : !isFree && !user ? (
                     <Link
@@ -305,7 +316,7 @@ function SubscriptionContent() {
             {[
               { q: 'Что входит в пробный период?', a: 'Полный доступ ко всем функциям выбранного плана на 7 дней. Отмена в любой момент.' },
               { q: 'Как работают скидки?', a: 'Найдите предложение, нажмите «Активировать», покажите QR-код кассиру — скидка применяется на месте.' },
-              { q: 'Можно ли сменить план?', a: 'Да, вы можете перейти на другой план в любое время. Разница будет пересчитана.' },
+              { q: 'Можно ли сменить план?', a: 'Да, вы можете перейти на другой план в любое время прямо на этой странице.' },
             ].map((item, i) => (
               <div key={i} className="bg-gray-50 rounded-xl p-4">
                 <h3 className="font-semibold text-gray-900 text-sm">{item.q}</h3>

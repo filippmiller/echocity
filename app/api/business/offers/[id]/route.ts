@@ -25,16 +25,100 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   const { schedules, blackoutDates, rules, limits, ...simpleFields } = parsed.data
-  const updated = await prisma.offer.update({
-    where: { id },
-    data: {
-      ...simpleFields,
-      offerType: simpleFields.offerType as any,
-      benefitType: simpleFields.benefitType as any,
-      visibility: simpleFields.visibility as any,
-      startAt: simpleFields.startAt ? new Date(simpleFields.startAt) : undefined,
-      endAt: simpleFields.endAt ? new Date(simpleFields.endAt) : undefined,
-    },
+  const updated = await prisma.$transaction(async (tx) => {
+    const baseOffer = await tx.offer.update({
+      where: { id },
+      data: {
+        ...simpleFields,
+        offerType: simpleFields.offerType as any,
+        benefitType: simpleFields.benefitType as any,
+        visibility: simpleFields.visibility as any,
+        startAt: simpleFields.startAt ? new Date(simpleFields.startAt) : undefined,
+        endAt: simpleFields.endAt ? new Date(simpleFields.endAt) : undefined,
+      },
+    })
+
+    if (schedules !== undefined) {
+      await tx.offerSchedule.deleteMany({ where: { offerId: id } })
+      if (schedules.length > 0) {
+        await tx.offerSchedule.createMany({
+          data: schedules.map((schedule) => ({
+            offerId: id,
+            weekday: schedule.weekday,
+            startTime: schedule.startTime,
+            endTime: schedule.endTime,
+          })),
+        })
+      }
+    }
+
+    if (blackoutDates !== undefined) {
+      await tx.offerBlackoutDate.deleteMany({ where: { offerId: id } })
+      if (blackoutDates.length > 0) {
+        await tx.offerBlackoutDate.createMany({
+          data: blackoutDates.map((blackout) => ({
+            offerId: id,
+            date: new Date(blackout.date),
+            reason: blackout.reason ?? null,
+          })),
+        })
+      }
+    }
+
+    if (rules !== undefined) {
+      await tx.offerRule.deleteMany({ where: { offerId: id } })
+      if (rules.length > 0) {
+        await tx.offerRule.createMany({
+          data: rules.map((rule) => ({
+            offerId: id,
+            ruleType: rule.ruleType as any,
+            operator: rule.operator ?? null,
+            value: rule.value as any,
+          })),
+        })
+      }
+    }
+
+    if (limits !== undefined) {
+      const hasLimits = Object.values(limits).some((value) => value !== undefined)
+      if (hasLimits) {
+        await tx.offerLimit.upsert({
+          where: { offerId: id },
+          update: {
+            dailyLimit: limits.dailyLimit ?? null,
+            weeklyLimit: limits.weeklyLimit ?? null,
+            monthlyLimit: limits.monthlyLimit ?? null,
+            totalLimit: limits.totalLimit ?? null,
+            perUserDailyLimit: limits.perUserDailyLimit ?? null,
+            perUserWeeklyLimit: limits.perUserWeeklyLimit ?? null,
+            perUserLifetimeLimit: limits.perUserLifetimeLimit ?? null,
+          },
+          create: {
+            offerId: id,
+            dailyLimit: limits.dailyLimit ?? null,
+            weeklyLimit: limits.weeklyLimit ?? null,
+            monthlyLimit: limits.monthlyLimit ?? null,
+            totalLimit: limits.totalLimit ?? null,
+            perUserDailyLimit: limits.perUserDailyLimit ?? null,
+            perUserWeeklyLimit: limits.perUserWeeklyLimit ?? null,
+            perUserLifetimeLimit: limits.perUserLifetimeLimit ?? null,
+          },
+        })
+      } else {
+        await tx.offerLimit.deleteMany({ where: { offerId: id } })
+      }
+    }
+
+    return tx.offer.findUniqueOrThrow({
+      where: { id: baseOffer.id },
+      include: {
+        schedules: true,
+        blackoutDates: true,
+        rules: true,
+        limits: true,
+        branch: { select: { id: true, title: true, address: true } },
+      },
+    })
   })
 
   return NextResponse.json({ offer: updated })

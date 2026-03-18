@@ -56,7 +56,7 @@ export default function YandexSignInButton({
       ) : (
         <>
           <span className="text-lg">Я</span>
-          <span>Войти через Яндекс</span>
+          <span>Продолжить с Яндексом</span>
         </>
       )}
     </button>

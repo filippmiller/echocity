@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import type { ReservationStatus } from '@prisma/client'
 
@@ -160,71 +161,89 @@ export async function getAvailableSlots(
 
 export async function createReservation(userId: string, input: CreateReservationInput) {
   const { placeId, date: dateStr, timeSlot, partySize, guestName, guestPhone, note } = input
+  const date = new Date(dateStr + 'T00:00:00Z')
+  const slotStart = parseTime(timeSlot)
+  const slotEnd = slotStart + 90
+  const dayStart = new Date(dateStr + 'T00:00:00Z')
+  const dayEnd = new Date(dateStr + 'T23:59:59Z')
 
-  // Verify slot is available
-  const { slots } = await getAvailableSlots(placeId, dateStr, partySize)
-  const slot = slots.find((s) => s.time === timeSlot)
-  if (!slot || !slot.available) {
-    throw new Error('Выбранное время недоступно')
-  }
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      return await prisma.$transaction(async (tx) => {
+        const tables = await tx.tableConfig.findMany({
+          where: { placeId, isActive: true, seats: { gte: partySize } },
+          orderBy: { seats: 'asc' },
+        })
 
-  // Try to auto-assign a table (smallest fitting free table)
-  let tableId: string | null = null
+        const existingReservations = await tx.reservation.findMany({
+          where: {
+            placeId,
+            date: { gte: dayStart, lte: dayEnd },
+            status: { in: ['PENDING', 'CONFIRMED'] },
+          },
+          select: { tableId: true, timeSlot: true, durationMin: true },
+        })
 
-  const tables = await prisma.tableConfig.findMany({
-    where: { placeId, isActive: true, seats: { gte: partySize } },
-    orderBy: { seats: 'asc' },
-  })
+        let tableId: string | null = null
 
-  if (tables.length > 0) {
-    const dayStart = new Date(dateStr + 'T00:00:00Z')
-    const dayEnd = new Date(dateStr + 'T23:59:59Z')
+        if (tables.length > 0) {
+          for (const table of tables) {
+            const isOccupied = existingReservations.some((r) => {
+              if (r.tableId !== table.id) return false
+              const rStart = parseTime(r.timeSlot)
+              const rEnd = rStart + (r.durationMin || 90)
+              return overlaps(slotStart, slotEnd, rStart, rEnd)
+            })
+            if (!isOccupied) {
+              tableId = table.id
+              break
+            }
+          }
 
-    const existingReservations = await prisma.reservation.findMany({
-      where: {
-        placeId,
-        date: { gte: dayStart, lte: dayEnd },
-        status: { in: ['PENDING', 'CONFIRMED'] },
-      },
-      select: { tableId: true, timeSlot: true, durationMin: true },
-    })
+          if (!tableId) {
+            throw new Error('Выбранное время недоступно')
+          }
+        } else {
+          const reservedCount = existingReservations.filter((r) => {
+            const rStart = parseTime(r.timeSlot)
+            const rEnd = rStart + (r.durationMin || 90)
+            return overlaps(slotStart, slotEnd, rStart, rEnd)
+          }).length
 
-    const slotStart = parseTime(timeSlot)
-    const slotEnd = slotStart + 90
+          if (reservedCount >= 20) {
+            throw new Error('Выбранное время недоступно')
+          }
+        }
 
-    for (const table of tables) {
-      const isOccupied = existingReservations.some((r) => {
-        if (r.tableId !== table.id) return false
-        const rStart = parseTime(r.timeSlot)
-        const rEnd = rStart + (r.durationMin || 90)
-        return overlaps(slotStart, slotEnd, rStart, rEnd)
+        return tx.reservation.create({
+          data: {
+            placeId,
+            tableId,
+            userId,
+            guestName,
+            guestPhone: guestPhone || null,
+            partySize,
+            date,
+            timeSlot,
+            note: note || null,
+          },
+          include: {
+            place: { select: { id: true, title: true, address: true } },
+            table: { select: { id: true, tableNumber: true, zone: true, seats: true } },
+          },
+        })
+      }, {
+        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
       })
-      if (!isOccupied) {
-        tableId = table.id
-        break
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034' && attempt < 2) {
+        continue
       }
+      throw error
     }
   }
 
-  const date = new Date(dateStr + 'T00:00:00Z')
-
-  return prisma.reservation.create({
-    data: {
-      placeId,
-      tableId,
-      userId,
-      guestName,
-      guestPhone: guestPhone || null,
-      partySize,
-      date,
-      timeSlot,
-      note: note || null,
-    },
-    include: {
-      place: { select: { id: true, title: true, address: true } },
-      table: { select: { id: true, tableNumber: true, zone: true, seats: true } },
-    },
-  })
+  throw new Error('Не удалось создать бронирование. Попробуйте ещё раз.')
 }
 
 // ── Confirm Reservation ────────────────────────────────

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/modules/auth/session'
 import { prisma } from '@/lib/prisma'
 import { createPayment } from '@/modules/payments/yokassa'
+import { switchSubscription } from '@/modules/subscriptions/service'
 
 export async function POST(req: NextRequest) {
   const session = await getSession()
@@ -18,8 +19,16 @@ export async function POST(req: NextRequest) {
   // Check if user already has active subscription
   const existing = await prisma.userSubscription.findFirst({
     where: { userId: session.userId, status: { in: ['ACTIVE', 'TRIALING'] } },
+    include: { plan: true },
   })
-  if (existing) return NextResponse.json({ error: 'Already subscribed' }, { status: 409 })
+  if (existing) {
+    if (existing.plan.code === plan.code) {
+      return NextResponse.json({ error: 'Already subscribed to this plan' }, { status: 409 })
+    }
+
+    const subscription = await switchSubscription(session.userId, plan.code)
+    return NextResponse.json({ subscription, switched: true }, { status: 200 })
+  }
 
   // If plan has trial days, create subscription directly (no payment needed for trial)
   if (plan.trialDays > 0) {

@@ -181,16 +181,10 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Stories bar */}
-      <HomeStoriesBar />
-
-      {/* Personalized / Trending section */}
-      <ForYouSection />
-
       {/* Categories — horizontal scroll with emojis */}
       <section className="py-5 px-4 border-b border-gray-100">
         <div className="max-w-5xl mx-auto">
-          <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
+          <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1 md:flex-wrap md:overflow-visible">
             {CATEGORIES.map((cat) => (
               <Link
                 key={cat.slug}
@@ -204,6 +198,12 @@ export default async function Home() {
           </div>
         </div>
       </section>
+
+      {/* Stories bar */}
+      <HomeStoriesBar />
+
+      {/* Personalized / Trending section */}
+      <ForYouSection />
 
       {/* Collections */}
       {collections.length > 0 && (

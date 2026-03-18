@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { Upload, X, Check, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { ReferralCard } from '@/components/ReferralCard'
@@ -43,6 +44,7 @@ export default function SettingsPage() {
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [photos, setPhotos] = useState<UserPhoto[]>([])
   const [loading, setLoading] = useState(true)
+  const [authRequired, setAuthRequired] = useState(false)
   const [saving, setSaving] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
@@ -72,8 +74,13 @@ export default function SettingsPage() {
   const loadProfile = async () => {
     try {
       const res = await fetch('/api/profile')
+      if (res.status === 401) {
+        setAuthRequired(true)
+        return
+      }
       if (res.ok) {
         const data = await res.json()
+        setAuthRequired(false)
         setProfile(data.profile)
         setFormData({
           fullName: data.profile.fullName || '',
@@ -98,6 +105,10 @@ export default function SettingsPage() {
   const loadPhotos = async () => {
     try {
       const res = await fetch('/api/profile/photos')
+      if (res.status === 401) {
+        setAuthRequired(true)
+        return
+      }
       if (res.ok) {
         const data = await res.json()
         setPhotos(data.photos || [])
@@ -260,6 +271,35 @@ export default function SettingsPage() {
     return (
       <div className="min-h-screen bg-gray-50 py-8 flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-brand-600" />
+      </div>
+    )
+  }
+
+  if (authRequired || !profile) {
+    return (
+      <div className="py-10">
+        <div className="max-w-md mx-auto px-4">
+          <div className="bg-white shadow rounded-2xl p-8 text-center">
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Войдите в аккаунт</h1>
+            <p className="text-sm text-gray-500 mb-6">
+              Настройки профиля доступны только авторизованным пользователям.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Link
+                href="/auth/login?redirect=/settings"
+                className="inline-flex items-center justify-center px-5 py-2.5 bg-brand-600 text-white rounded-xl font-semibold text-sm hover:bg-brand-700 transition-colors"
+              >
+                Войти
+              </Link>
+              <Link
+                href="/auth/register?redirect=/settings"
+                className="inline-flex items-center justify-center px-5 py-2.5 border border-gray-200 text-gray-700 rounded-xl font-semibold text-sm hover:bg-gray-50 transition-colors"
+              >
+                Зарегистрироваться
+              </Link>
+            </div>
+          </div>
+        </div>
       </div>
     )
   }

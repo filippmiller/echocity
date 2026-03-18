@@ -22,13 +22,14 @@ export default function RootLayout({
         <meta name="theme-color" content="#2563EB" />
       </head>
       <body>
-        <Navbar />
-        <div className="pb-safe md:pb-0">
-          {children}
-        </div>
-        <MobileBottomNav />
-        <ClientProviders />
-        <Toaster />
+        <ClientProviders>
+          <Navbar />
+          <div className="pb-safe md:pb-0">
+            {children}
+          </div>
+          <MobileBottomNav />
+          <Toaster />
+        </ClientProviders>
       </body>
     </html>
   );

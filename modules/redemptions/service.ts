@@ -63,8 +63,13 @@ export async function createRedemptionSession(userId: string, offerId: string, u
   return { success: true, session: { id: session.id, sessionToken, shortCode, expiresAt } }
 }
 
-export async function validateAndRedeem(input: { sessionToken?: string; shortCode?: string; scannedByUserId?: string }) {
-  const { sessionToken, shortCode, scannedByUserId } = input
+export async function validateAndRedeem(input: {
+  sessionToken?: string
+  shortCode?: string
+  scannedByUserId?: string
+  scannedByRole?: 'BUSINESS_OWNER' | 'MERCHANT_STAFF' | 'ADMIN' | 'CITIZEN'
+}) {
+  const { sessionToken, shortCode, scannedByUserId, scannedByRole } = input
 
   // Find session by token or code
   const session = await prisma.redemptionSession.findFirst({
@@ -81,6 +86,41 @@ export async function validateAndRedeem(input: { sessionToken?: string; shortCod
   if (session.expiresAt < new Date()) {
     await prisma.redemptionSession.update({ where: { id: session.id }, data: { status: 'EXPIRED' } })
     return { success: false, error: 'SESSION_EXPIRED', message: 'QR-код истёк. Попросите клиента обновить' }
+  }
+
+  if (scannedByUserId && scannedByRole && scannedByRole !== 'ADMIN') {
+    if (scannedByRole === 'BUSINESS_OWNER') {
+      if (session.offer.merchant.ownerId !== scannedByUserId) {
+        return {
+          success: false,
+          error: 'SCANNER_NOT_AUTHORIZED',
+          message: 'У вас нет доступа к активации этой скидки',
+        }
+      }
+    }
+
+    if (scannedByRole === 'MERCHANT_STAFF') {
+      const staffAssignment = await prisma.merchantStaff.findFirst({
+        where: {
+          userId: scannedByUserId,
+          merchantId: session.offer.merchantId,
+          isActive: true,
+          OR: [
+            { branchId: null },
+            { branchId: session.offer.branchId },
+          ],
+        },
+        select: { id: true },
+      })
+
+      if (!staffAssignment) {
+        return {
+          success: false,
+          error: 'SCANNER_NOT_AUTHORIZED',
+          message: 'У вас нет доступа к активации этой скидки',
+        }
+      }
+    }
   }
 
   // Re-validate the offer (limits might have changed)

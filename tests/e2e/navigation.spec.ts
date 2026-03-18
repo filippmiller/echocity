@@ -25,6 +25,12 @@ test.describe('Navigation — Desktop', () => {
     if (!response || response.status() >= 500) {
       test.skip(true, 'Home page requires database connection')
     }
+    const viewport = page.viewportSize()
+    if (viewport && viewport.width < 768) {
+      await page.goto('/tourist')
+      await expect(page).toHaveURL(/\/tourist/)
+      return
+    }
     const link = page.getByRole('link', { name: /Туристам/ })
     if (await link.isVisible().catch(() => false)) {
       await link.click()

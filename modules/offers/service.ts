@@ -2,6 +2,14 @@ import { prisma } from '@/lib/prisma'
 import type { OfferType, BenefitType, OfferVisibility, RedemptionChannel } from '@prisma/client'
 import type { CreateOfferInput, OfferValidationResult, OfferWithDetails } from './types'
 
+const CATEGORY_PLACE_TYPE_MAP: Record<string, string[]> = {
+  coffee: ['CAFE'],
+  food: ['RESTAURANT'],
+  bars: ['BAR'],
+  beauty: ['BEAUTY', 'NAILS', 'HAIR'],
+  services: ['DRYCLEANING', 'OTHER'],
+}
+
 export async function createOffer(input: CreateOfferInput, createdByUserId: string) {
   const { schedules, blackoutDates, rules, limits, ...offerData } = input
 
@@ -102,12 +110,27 @@ export async function getOfferById(offerId: string): Promise<OfferWithDetails | 
   }) as any
 }
 
-export async function getActiveOffersByCity(cityName: string, options?: { visibility?: string; limit?: number; offset?: number }) {
+export async function getActiveOffersByCity(
+  cityName: string,
+  options?: { visibility?: string; category?: string; limit?: number; offset?: number },
+) {
+  const now = new Date()
+  const placeTypes = options?.category ? CATEGORY_PLACE_TYPE_MAP[options.category] : undefined
+
   return prisma.offer.findMany({
     where: {
       lifecycleStatus: 'ACTIVE',
       approvalStatus: 'APPROVED',
-      branch: { city: cityName, isActive: true },
+      startAt: { lte: now },
+      OR: [
+        { endAt: null },
+        { endAt: { gt: now } },
+      ],
+      branch: {
+        city: cityName,
+        isActive: true,
+        ...(placeTypes?.length ? { placeType: { in: placeTypes as any } } : {}),
+      },
       ...(options?.visibility ? { visibility: options.visibility as any } : {}),
     },
     include: {
@@ -150,6 +173,12 @@ export async function validateOfferForRedemption(offerId: string, userId: string
 
   if (!offer) return { valid: false, errorCode: 'OFFER_NOT_FOUND', errorMessage: 'Предложение не найдено' }
   if (offer.lifecycleStatus !== 'ACTIVE') return { valid: false, errorCode: 'OFFER_NOT_ACTIVE', errorMessage: 'Предложение неактивно' }
+  if (offer.startAt > new Date()) {
+    return { valid: false, errorCode: 'OFFER_NOT_STARTED', errorMessage: 'Предложение ещё не началось' }
+  }
+  if (offer.endAt && offer.endAt <= new Date()) {
+    return { valid: false, errorCode: 'OFFER_EXPIRED', errorMessage: 'Срок действия предложения истёк' }
+  }
 
   // Check subscription for members-only
   if (offer.visibility === 'MEMBERS_ONLY') {

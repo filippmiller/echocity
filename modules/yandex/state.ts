@@ -9,6 +9,13 @@ import crypto from 'crypto'
 const STATE_COOKIE_NAME = 'yandex_oauth_state'
 const STATE_MAX_AGE = 60 * 10 // 10 minutes
 
+function sanitizeRedirect(redirectTo?: string | null): string | undefined {
+  if (!redirectTo) return undefined
+  if (!redirectTo.startsWith('/')) return undefined
+  if (redirectTo.startsWith('//')) return undefined
+  return redirectTo
+}
+
 /**
  * Generate and store OAuth state token
  */
@@ -18,7 +25,7 @@ export async function generateState(redirectTo?: string): Promise<string> {
 
   const stateData = {
     token: state,
-    redirectTo: redirectTo || null,
+    redirectTo: sanitizeRedirect(redirectTo) || null,
     timestamp: Date.now(),
   }
 
@@ -69,7 +76,7 @@ export async function verifyState(
 
     return {
       valid: true,
-      redirectTo: stateData.redirectTo || undefined,
+      redirectTo: sanitizeRedirect(stateData.redirectTo) || undefined,
     }
   } catch {
     return { valid: false }

@@ -46,6 +46,16 @@ export async function POST(req: NextRequest) {
   })
   if (!business) return NextResponse.json({ error: 'Business not found' }, { status: 403 })
 
+  if (branchId) {
+    const branch = await prisma.place.findFirst({
+      where: { id: branchId, businessId: merchantId, isActive: true },
+      select: { id: true },
+    })
+    if (!branch) {
+      return NextResponse.json({ error: 'Branch not found or does not belong to this business' }, { status: 403 })
+    }
+  }
+
   // Find user by email
   const user = await prisma.user.findUnique({ where: { email } })
   if (!user) return NextResponse.json({ error: 'User not found with this email' }, { status: 404 })

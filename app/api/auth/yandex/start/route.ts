@@ -3,6 +3,13 @@ import { getYandexAuthUrl, isYandexOAuthConfigured } from '@/modules/yandex/oaut
 import { generateState } from '@/modules/yandex/state'
 import { logger } from '@/lib/logger'
 
+function sanitizeRedirect(redirectTo?: string): string {
+  if (!redirectTo) return '/dashboard'
+  if (!redirectTo.startsWith('/')) return '/dashboard'
+  if (redirectTo.startsWith('//')) return '/dashboard'
+  return redirectTo
+}
+
 export async function POST(request: NextRequest) {
   try {
     if (!isYandexOAuthConfigured()) {
@@ -13,7 +20,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json().catch(() => ({}))
-    const redirectTo = body.redirectTo || '/dashboard'
+    const redirectTo = sanitizeRedirect(body.redirectTo)
 
     // Generate CSRF state token
     const state = await generateState(redirectTo)

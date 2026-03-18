@@ -15,7 +15,9 @@ export async function GET(req: NextRequest) {
   }
 
   const entityType = req.nextUrl.searchParams.get('entityType') as FavoriteEntityType | null
-  const limit = Math.min(Math.max(parseInt(req.nextUrl.searchParams.get('limit') || '50') || 50, 1), 100)
+  const idsOnly = req.nextUrl.searchParams.get('idsOnly') === '1'
+  const maxLimit = idsOnly ? 500 : 100
+  const limit = Math.min(Math.max(parseInt(req.nextUrl.searchParams.get('limit') || '50') || 50, 1), maxLimit)
   const offset = Math.max(parseInt(req.nextUrl.searchParams.get('offset') || '0') || 0, 0)
 
   const where: Record<string, unknown> = { userId: session.userId }
@@ -29,6 +31,12 @@ export async function GET(req: NextRequest) {
     take: limit,
     skip: offset,
   })
+
+  if (idsOnly) {
+    return NextResponse.json({
+      favoriteIds: favorites.map((favorite) => favorite.entityId),
+    })
+  }
 
   // Separate IDs by type for batch fetching
   const offerIds = favorites.filter(f => f.entityType === 'OFFER').map(f => f.entityId)

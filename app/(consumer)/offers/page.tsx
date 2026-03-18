@@ -1,10 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { OfferFeed } from '@/components/OfferFeed'
 import { Footer } from '@/components/Footer'
-
-const CITIES = ['Санкт-Петербург', 'Москва']
 
 const FILTER_CHIPS = [
   { key: 'all', label: 'Все' },
@@ -22,9 +21,46 @@ const CATEGORIES = [
 ]
 
 export default function OffersPage() {
-  const [city, setCity] = useState('Санкт-Петербург')
-  const [section, setSection] = useState('all')
-  const [category, setCategory] = useState('all')
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-white" />}>
+      <OffersContent />
+    </Suspense>
+  )
+}
+
+function OffersContent() {
+  const searchParams = useSearchParams()
+  const [availableCities, setAvailableCities] = useState<string[]>(['Санкт-Петербург', 'Москва'])
+  const [city, setCity] = useState(searchParams.get('city') || 'Санкт-Петербург')
+  const [section, setSection] = useState(searchParams.get('visibility') || 'all')
+  const [category, setCategory] = useState(searchParams.get('category') || 'all')
+
+  useEffect(() => {
+    const nextCity = searchParams.get('city') || 'Санкт-Петербург'
+    const nextSection = searchParams.get('visibility') || 'all'
+    const nextCategory = searchParams.get('category') || 'all'
+    setCity(nextCity)
+    setSection(nextSection)
+    setCategory(nextCategory)
+  }, [searchParams])
+
+  useEffect(() => {
+    fetch('/api/public/cities')
+      .then((res) => res.json())
+      .then((data) => {
+        const cityNames = Array.isArray(data.cities)
+          ? data.cities.map((item: { name: string }) => item.name).filter(Boolean)
+          : []
+
+        if (cityNames.length > 0) {
+          setAvailableCities(cityNames)
+          if (!cityNames.includes(city)) {
+            setCity(cityNames[0])
+          }
+        }
+      })
+      .catch(() => {})
+  }, [])
 
   return (
     <div className="min-h-screen bg-white">
@@ -45,7 +81,7 @@ export default function OffersPage() {
               onChange={(e) => setCity(e.target.value)}
               className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-700 shrink-0"
             >
-              {CITIES.map((c) => <option key={c} value={c}>{c}</option>)}
+              {availableCities.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
 
             <div className="flex gap-2 overflow-x-auto hide-scrollbar">
@@ -88,7 +124,11 @@ export default function OffersPage() {
       {/* Feed */}
       <div className="px-4 py-6">
         <div className="max-w-7xl mx-auto">
-          <OfferFeed city={city} visibility={section === 'all' ? undefined : section} />
+          <OfferFeed
+            city={city}
+            visibility={section === 'all' ? undefined : section}
+            category={category === 'all' ? undefined : category}
+          />
         </div>
       </div>
 
