@@ -1,14 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getYandexAuthUrl, isYandexOAuthConfigured } from '@/modules/yandex/oauth'
 import { generateState } from '@/modules/yandex/state'
+import { sanitizeYandexRedirect } from '@/modules/yandex/redirect'
 import { logger } from '@/lib/logger'
-
-function sanitizeRedirect(redirectTo?: string): string {
-  if (!redirectTo) return '/dashboard'
-  if (!redirectTo.startsWith('/')) return '/dashboard'
-  if (redirectTo.startsWith('//')) return '/dashboard'
-  return redirectTo
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,7 +14,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json().catch(() => ({}))
-    const redirectTo = sanitizeRedirect(body.redirectTo)
+    const redirectTo = sanitizeYandexRedirect(body.redirectTo)
 
     // Generate CSRF state token
     const state = await generateState(redirectTo)
