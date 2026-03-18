@@ -45,9 +45,9 @@ test.describe('Mobile — Bottom navigation', () => {
     await page.goto('/offers')
     // Instead of testing categories on home page (which needs DB),
     // verify the filter chips on the offers page which is client-rendered
-    await expect(page.getByText('Все', { exact: true }).first()).toBeVisible()
-    await expect(page.getByText('Бесплатные')).toBeVisible()
-    await expect(page.getByText('Plus')).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Все', exact: true })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Бесплатные' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Plus' })).toBeVisible()
   })
 })
 
