@@ -123,9 +123,11 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  // Create response and update demand status in a transaction
-  const [response] = await prisma.$transaction([
-    prisma.demandResponse.create({
+  // OPEN and COLLECTING are both valid active states. If the request is already
+  // COLLECTING, we should still accept new merchant responses without raising a
+  // false 500 from a conditional update.
+  const response = await prisma.$transaction(async (tx) => {
+    const created = await tx.demandResponse.create({
       data: {
         demandRequestId,
         merchantId,
@@ -133,13 +135,20 @@ export async function POST(req: NextRequest) {
         offerId: offerId ?? null,
         status: 'PENDING',
       },
-    }),
-    // Move to COLLECTING status on first response
-    prisma.demandRequest.update({
-      where: { id: demandRequestId, status: 'OPEN' },
-      data: { status: 'COLLECTING' },
-    }),
-  ])
+    })
+
+    await tx.demandRequest.updateMany({
+      where: {
+        id: demandRequestId,
+        status: 'OPEN',
+      },
+      data: {
+        status: 'COLLECTING',
+      },
+    })
+
+    return created
+  })
 
   return NextResponse.json({ response }, { status: 201 })
 }
