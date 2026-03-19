@@ -9,6 +9,36 @@ Each entry tracks: timestamp, area, files changed, functions/symbols used, datab
 
 ---
 
+## 2026-03-19 05:57 — Production Hardening Handoff: 150/150 Live Matrix, Deferred Items Logged
+
+**Area:** Infrastructure / Testing / Operations
+**Type:** fix + chore + docs
+
+### Files Changed
+- `.gitignore` — added `playwright-report/` and `test-results/` to prevent artifact pollution
+- `scripts/run-scenario-matrix.ts` — added `REMOTE_DATABASE_URL` support for live DB cleanup via SSH tunnel
+- `.claude/agent-log.md` — this entry
+- `.claude/sessions/2026-03-19-production-hardening.md` — mid-session notes (Codex handoff)
+- `.claude/sessions/2026-03-19-055703.md` — full session notes
+
+### Functions/Symbols Modified
+- `prisma` (module-level, `run-scenario-matrix.ts`) — now accepts `REMOTE_DATABASE_URL` with pool timeout
+
+### Database Tables
+- `RedemptionEvent`, `Redemption`, `RedemptionSession`, `UserSubscription`, `DemandResponse` — production data cleanup for matrix preconditions
+
+### Summary
+Picked up from Codex after it hit its usage limit. Root-caused persistent live matrix failures (145–148/150) to split-brain cleanup: `ensureScenarioData()` was cleaning local DB while API calls hit production. Fixed by adding `REMOTE_DATABASE_URL` support with SSH tunnel to production postgres. Achieved **150/150** on live matrix. Cleaned 56 test artifacts from working tree. Yandex OAuth and YooKassa logged as explicitly deferred — not blocking production.
+
+### Deferred / Skipped
+- **Yandex OAuth prod credentials** — SKIPPED. Not needed until Yandex login is required in production.
+- **YooKassa payment integration** — SKIPPED. Explicitly deferred by user, waiting on merchant account setup.
+
+### Session Notes
+→ `.claude/sessions/2026-03-19-055703.md`
+
+---
+
 ## 2026-03-19 — Production Hardening: 150/150 Live Matrix, Clean Workspace
 
 **Area:** Infrastructure / Testing / Operations
