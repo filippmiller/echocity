@@ -27,6 +27,8 @@ export async function GET() {
   const healthy = checks.database && checks.sessionSecret && checks.redemptionSecret
   const status = healthy ? 200 : 503
 
+  const isProduction = process.env.NODE_ENV === 'production'
+
   return NextResponse.json(
     {
       ok: healthy,
@@ -34,7 +36,11 @@ export async function GET() {
       uptimeSeconds: Math.round(process.uptime()),
       durationMs: Date.now() - startedAt,
       checks,
-      databaseError,
+      databaseError: isProduction
+        ? databaseError
+          ? 'Connection failed'
+          : null
+        : databaseError,
       timestamp: new Date().toISOString(),
     },
     { status }

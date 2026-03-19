@@ -1,4 +1,6 @@
 import { execFile } from 'node:child_process'
+import { homedir } from 'node:os'
+import path from 'node:path'
 import { promisify } from 'node:util'
 
 const execFileAsync = promisify(execFile)
@@ -88,7 +90,7 @@ async function run() {
     'ssh',
     [
       '-i',
-      `${process.env.HOME || process.env.USERPROFILE}\\.ssh\\id_ed25519`,
+      path.join(homedir(), '.ssh', 'id_ed25519'),
       '-o',
       'StrictHostKeyChecking=no',
       '-o',
