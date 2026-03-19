@@ -9,6 +9,30 @@ Each entry tracks: timestamp, area, files changed, functions/symbols used, datab
 
 ---
 
+## 2026-03-19 07:30 — Critic Fixes: 0 TS Errors, Zod Validation, Security Hardening
+
+**Area:** Code Quality / Security / Testing
+**Type:** fix
+
+### Files Changed
+- `app/api/health/route.ts` — mask databaseError in production
+- `app/api/business/demand/respond/route.ts` — add Zod schema, try/catch on req.json()
+- `tests/smoke/health-route.test.ts` — fix TS error, add 2 test cases
+- `tests/unit/offers-validation.test.ts` — fix 7 TS2790 errors (delete on non-optional)
+- `tests/integration/subscription-flow.test.ts` — fix 18 TS2339 errors (mock typing)
+- `tests/e2e/security.spec.ts` — fix TS2322 (page.evaluate return type)
+- `tests/mocks/prisma.ts` — add subscriptionPlan and userSubscription to MockPrismaClient
+- `scripts/check-coolify-env.ts` — cross-platform path fix
+
+### Summary
+Ran /critic review and fixed all findings. Eliminated 27 pre-existing TypeScript errors across 4 test files. Added Zod validation and malformed JSON handling to the demand respond route. Masked database error details in the production health endpoint. Deployed `970918a` (security fix) and `756f76a` (TS+Zod) to production. Live matrix confirmed 150/150 after both deploys.
+
+### Commits
+- `970918a` — fix(security): mask health endpoint DB errors in production
+- `756f76a` — fix: resolve all TypeScript errors and add Zod validation to demand respond
+
+---
+
 ## 2026-03-19 05:57 — Production Hardening Handoff: 150/150 Live Matrix, Deferred Items Logged
 
 **Area:** Infrastructure / Testing / Operations
