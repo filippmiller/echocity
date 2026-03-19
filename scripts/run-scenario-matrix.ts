@@ -4,7 +4,12 @@ import bcrypt from 'bcrypt'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 
-const prisma = new PrismaClient()
+const remoteUrl = process.env.REMOTE_DATABASE_URL
+const prisma = new PrismaClient({
+  datasourceUrl: remoteUrl
+    ? `${remoteUrl}${remoteUrl.includes('?') ? '&' : '?'}connect_timeout=30&pool_timeout=30`
+    : undefined,
+})
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3013'
 const PASSWORD = 'Test1234!'
 const NAVIGATION_TIMEOUT_MS = 120000
