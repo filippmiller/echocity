@@ -9,6 +9,38 @@ Each entry tracks: timestamp, area, files changed, functions/symbols used, datab
 
 ---
 
+## 2026-03-19 — Production Hardening: 150/150 Live Matrix, Clean Workspace
+
+**Area:** Infrastructure / Testing / Operations
+**Type:** fix + chore
+
+### Files Changed
+- `.gitignore` — added `playwright-report/` and `test-results/`
+- `scripts/run-scenario-matrix.ts` — added `REMOTE_DATABASE_URL` support for live cleanup
+- `.claude/sessions/2026-03-19-production-hardening.md` — session notes
+
+### Key Results
+- **Live matrix: 150/150** on `echocity.filippmiller.com` (was stuck at 145-148 due to split-brain DB cleanup)
+- Root cause: matrix `ensureScenarioData()` cleaned local DB while API hit production
+- Fix: `REMOTE_DATABASE_URL` via SSH tunnel to production postgres
+- Cleaned 56 test artifact files from working tree
+- All 167 unit tests green
+
+### Commits
+- `0448dba` — chore: gitignore test artifacts and clean working tree
+- `a447877` — fix(matrix): use remote DB for live scenario cleanup
+
+### Previous Session (Codex, same day)
+- `7479990` — fix(demand): allow responses for collecting requests
+- `e7cb025` — feat(ops): add health checks and env drift detection
+- `5f902b2` — docs(env): document nextauth runtime keys
+- VAPID keys generated and deployed to Coolify
+- Coolify env drift fixed (NEXTAUTH_URL, NEXTAUTH_SECRET)
+
+**Session notes:** `.claude/sessions/2026-03-19-production-hardening.md`
+
+---
+
 ## 2026-03-17 — Full V2 Sprint: 15 Features, 25 Security Fixes, 200+ Tests
 
 **Area:** Full-Stack / V2 Features + Security + Quality + Testing
