@@ -108,7 +108,7 @@ async function api<T = any>(
   url: string,
   init?: { method?: string; body?: unknown },
 ): Promise<ApiResult<T>> {
-  return page.evaluate(async ({ url, init }) => {
+  return page.evaluate(async ({ url, init }: { url: string; init?: { method?: string; body?: unknown } }) => {
     const response = await fetch(url, {
       method: init?.method ?? 'GET',
       headers: init?.body !== undefined ? { 'Content-Type': 'application/json' } : undefined,
@@ -127,10 +127,10 @@ async function api<T = any>(
     return {
       ok: response.ok,
       status: response.status,
-      body,
+      body: body as T,
       text,
     }
-  }, { url, init })
+  }, { url, init }) as Promise<ApiResult<T>>
 }
 
 async function newAuthedPage(browser: Browser, email: string, password: string) {

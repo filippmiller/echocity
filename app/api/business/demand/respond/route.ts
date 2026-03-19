@@ -1,6 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { getSession } from '@/modules/auth/session'
 import { prisma } from '@/lib/prisma'
+
+const respondSchema = z.object({
+  demandRequestId: z.string().min(1),
+  message: z.string().optional(),
+  offerId: z.string().optional(),
+  merchantId: z.string().optional(),
+}).refine(
+  (data) => data.message || data.offerId,
+  { message: 'Either message or offerId must be provided' }
+)
 
 export async function POST(req: NextRequest) {
   const session = await getSession()
@@ -8,26 +19,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const body = await req.json()
-  const { demandRequestId, message, offerId } = body as {
-    demandRequestId?: string
-    message?: string
-    offerId?: string
+  let rawBody: unknown
+  try {
+    rawBody = await req.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
   }
 
-  if (!demandRequestId) {
+  const parsed = respondSchema.safeParse(rawBody)
+  if (!parsed.success) {
     return NextResponse.json(
-      { error: 'demandRequestId is required' },
+      { error: parsed.error.issues[0]?.message ?? 'Invalid request body' },
       { status: 400 }
     )
   }
 
-  if (!message && !offerId) {
-    return NextResponse.json(
-      { error: 'Either message or offerId must be provided' },
-      { status: 400 }
-    )
-  }
+  const { demandRequestId, message, offerId } = parsed.data
 
   // Verify the demand request exists and is active
   const demandRequest = await prisma.demandRequest.findUnique({
@@ -85,9 +92,8 @@ export async function POST(req: NextRequest) {
     merchantId = place.businessId
   } else {
     // City/category-level demand — require explicit merchantId in body or use first business
-    const requestedMerchantId = (body as any).merchantId
-    if (requestedMerchantId && merchantIds.includes(requestedMerchantId)) {
-      merchantId = requestedMerchantId
+    if (parsed.data.merchantId && merchantIds.includes(parsed.data.merchantId)) {
+      merchantId = parsed.data.merchantId
     } else {
       merchantId = merchantIds[0]
     }

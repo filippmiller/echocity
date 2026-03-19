@@ -34,35 +34,6 @@ const {
 beforeEach(() => {
   mockPrisma = createMockPrismaClient()
   resetMockPrisma(mockPrisma)
-
-  // Add subscriptionPlan and userSubscription models to mock
-  mockPrisma.subscriptionPlan = {
-    findUnique: vi.fn().mockResolvedValue(null),
-    findFirst: vi.fn().mockResolvedValue(null),
-    findMany: vi.fn().mockResolvedValue([]),
-    create: vi.fn().mockResolvedValue(null),
-    update: vi.fn().mockResolvedValue(null),
-    upsert: vi.fn().mockResolvedValue(null),
-    delete: vi.fn().mockResolvedValue(null),
-    deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
-    count: vi.fn().mockResolvedValue(0),
-    aggregate: vi.fn().mockResolvedValue({}),
-    groupBy: vi.fn().mockResolvedValue([]),
-  }
-  mockPrisma.userSubscription = {
-    findUnique: vi.fn().mockResolvedValue(null),
-    findFirst: vi.fn().mockResolvedValue(null),
-    findMany: vi.fn().mockResolvedValue([]),
-    create: vi.fn().mockResolvedValue(null),
-    update: vi.fn().mockResolvedValue(null),
-    updateMany: vi.fn().mockResolvedValue({ count: 0 }),
-    upsert: vi.fn().mockResolvedValue(null),
-    delete: vi.fn().mockResolvedValue(null),
-    deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
-    count: vi.fn().mockResolvedValue(0),
-    aggregate: vi.fn().mockResolvedValue({}),
-    groupBy: vi.fn().mockResolvedValue([]),
-  }
 })
 
 const userId = 'user-sub-1'

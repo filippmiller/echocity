@@ -77,50 +77,43 @@ describe('offers/validation — createOfferSchema', () => {
 
   describe('missing required fields', () => {
     it('fails when title is missing', () => {
-      const payload = validOfferPayload()
-      delete payload.title
+      const { title: _, ...payload } = validOfferPayload()
       const result = createOfferSchema.safeParse(payload)
       expect(result.success).toBe(false)
     })
 
     it('fails when merchantId is missing', () => {
-      const payload = validOfferPayload()
-      delete payload.merchantId
+      const { merchantId: _, ...payload } = validOfferPayload()
       const result = createOfferSchema.safeParse(payload)
       expect(result.success).toBe(false)
     })
 
     it('fails when branchId is missing', () => {
-      const payload = validOfferPayload()
-      delete payload.branchId
+      const { branchId: _, ...payload } = validOfferPayload()
       const result = createOfferSchema.safeParse(payload)
       expect(result.success).toBe(false)
     })
 
     it('fails when offerType is missing', () => {
-      const payload = validOfferPayload()
-      delete payload.offerType
+      const { offerType: _, ...payload } = validOfferPayload()
       const result = createOfferSchema.safeParse(payload)
       expect(result.success).toBe(false)
     })
 
     it('fails when benefitType is missing', () => {
-      const payload = validOfferPayload()
-      delete payload.benefitType
+      const { benefitType: _, ...payload } = validOfferPayload()
       const result = createOfferSchema.safeParse(payload)
       expect(result.success).toBe(false)
     })
 
     it('fails when benefitValue is missing', () => {
-      const payload = validOfferPayload()
-      delete payload.benefitValue
+      const { benefitValue: _, ...payload } = validOfferPayload()
       const result = createOfferSchema.safeParse(payload)
       expect(result.success).toBe(false)
     })
 
     it('fails when startAt is missing', () => {
-      const payload = validOfferPayload()
-      delete payload.startAt
+      const { startAt: _, ...payload } = validOfferPayload()
       const result = createOfferSchema.safeParse(payload)
       expect(result.success).toBe(false)
     })
