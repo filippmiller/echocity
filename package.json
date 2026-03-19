@@ -13,6 +13,7 @@
     "prisma:deploy": "prisma migrate deploy",
     "prisma:seed": "tsx prisma/seed.ts",
     "import:services": "tsx scripts/import-services-example.ts",
+    "ops:check-coolify-env": "tsx scripts/check-coolify-env.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:unit": "vitest run tests/unit",
