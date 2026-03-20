@@ -1,8 +1,28 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/modules/auth/session'
 import { prisma } from '@/lib/prisma'
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const isAggregate = req.nextUrl.searchParams.get('aggregate') === 'true'
+
+  // Public aggregate — no auth required
+  if (isAggregate) {
+    const now = new Date()
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+    const [allSavings, monthSavings] = await Promise.all([
+      prisma.userSavings.aggregate({ _sum: { savedAmount: true }, _count: true }),
+      prisma.userSavings.aggregate({ where: { savedAt: { gte: startOfMonth } }, _sum: { savedAmount: true } }),
+    ])
+    const totalSaved = Math.round((allSavings._sum.savedAmount ?? 0) / 100)
+    const thisMonth = Math.round((monthSavings._sum.savedAmount ?? 0) / 100)
+    return NextResponse.json({
+      totalSaved: Math.max(totalSaved, 0),
+      thisMonth: Math.max(thisMonth, 0),
+      thisWeek: 0,
+      redemptionCount: allSavings._count,
+    })
+  }
+
   const session = await getSession()
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

@@ -97,7 +97,9 @@ export async function handleWebhookEvent(body: any, rawBody?: string) {
       .update(rawBody)
       .digest('hex')
     const receivedSignature = body._signature
-    if (!receivedSignature || receivedSignature !== expectedSignature) {
+    if (!receivedSignature ||
+        Buffer.byteLength(receivedSignature) !== Buffer.byteLength(expectedSignature) ||
+        !crypto.timingSafeEqual(Buffer.from(receivedSignature), Buffer.from(expectedSignature))) {
       logger.warn('ЮKassa webhook: invalid or missing signature')
       throw new Error('Webhook signature verification failed')
     }

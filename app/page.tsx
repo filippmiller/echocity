@@ -9,6 +9,7 @@ import { SavingsCounter } from "@/components/SavingsCounter"
 import { CollectionCard } from "@/components/CollectionCard"
 import { HomeStoriesBar } from "@/components/HomeStoriesBar"
 import { ForYouSection } from "@/components/ForYouSection"
+import { NearYouSection } from "@/components/NearYouSection"
 
 const CATEGORIES = [
   { name: 'Кофе', slug: 'coffee', emoji: '☕', types: ['CAFE'] },
@@ -199,6 +200,9 @@ export default async function Home() {
         </div>
       </section>
 
+      {/* Near You — critical differentiator */}
+      <NearYouSection />
+
       {/* Stories bar */}
       <HomeStoriesBar />
 
@@ -334,19 +338,33 @@ export default async function Home() {
               </Link>
             </div>
             <div className="flex gap-4 overflow-x-auto hide-scrollbar pb-2">
-              {memberOffers.map((offer) => (
+              {memberOffers.slice(0, Math.max(1, memberOffers.length - 1)).map((offer) => (
                 <div key={offer.id} className="w-[260px] shrink-0">
                   <OfferCard {...mapOfferToCard(offer)} />
                 </div>
               ))}
-            </div>
-            <div className="mt-4 text-center">
-              <Link
-                href="/subscription"
-                className="inline-flex items-center gap-2 text-sm text-deal-premium font-medium hover:underline"
-              >
-                Подписка от 199₽/мес — попробуйте 7 дней бесплатно &rarr;
-              </Link>
+              {/* Desire-gap: blurred locked card with subscription CTA */}
+              {memberOffers.length > 1 && (
+                <div className="w-[260px] shrink-0 relative">
+                  <div className="blur-[3px] opacity-60 pointer-events-none select-none">
+                    <OfferCard {...mapOfferToCard(memberOffers[memberOffers.length - 1])} />
+                  </div>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Link
+                      href="/subscription"
+                      className="bg-white/95 backdrop-blur-sm rounded-xl shadow-lg px-5 py-4 text-center max-w-[220px] hover:shadow-xl transition-shadow"
+                    >
+                      <div className="text-2xl mb-1">🔓</div>
+                      <p className="font-bold text-gray-900 text-sm mb-1">
+                        +{memberOffers.length} эксклюзивных скидок
+                      </p>
+                      <p className="text-xs text-deal-premium font-medium">
+                        от 199₽/мес · 7 дней бесплатно
+                      </p>
+                    </Link>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </section>

@@ -52,8 +52,13 @@ export function SavingsCounter({ variant = 'hero' }: { variant?: 'hero' | 'profi
   const animatedMonth = useAnimatedCounter(data?.thisMonth ?? 0)
 
   useEffect(() => {
+    // Try personal savings first, fall back to public aggregate
     fetch('/api/savings')
-      .then((r) => (r.ok ? r.json() : null))
+      .then((r) => {
+        if (r.ok) return r.json()
+        // Guest — fetch public aggregate instead
+        return fetch('/api/savings?aggregate=true').then((r2) => r2.ok ? r2.json() : null)
+      })
       .then((d) => {
         if (d) setData(d)
       })
@@ -70,7 +75,7 @@ export function SavingsCounter({ variant = 'hero' }: { variant?: 'hero' | 'profi
           <span className="relative inline-flex rounded-full h-2 w-2 bg-deal-savings" />
         </span>
         <span className="text-deal-savings font-medium">
-          Сэкономлено в этом месяце: {formatRubles(animatedMonth)} ₽
+          Пользователи сэкономили: {formatRubles(animatedMonth)} ₽
         </span>
       </div>
     )

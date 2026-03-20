@@ -103,31 +103,32 @@ export function OnboardingFlow() {
   const isLast = currentScreen === SCREENS.length - 1
 
   return (
-    <div className="fixed inset-0 z-[200]">
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-md" />
+    <div className="fixed bottom-0 left-0 right-0 z-[200] pointer-events-none">
+      {/* Semi-transparent scrim — tap to dismiss */}
+      <div className="fixed inset-0 bg-black/20" onClick={close} style={{ pointerEvents: 'auto' }} />
 
-      {/* Content */}
+      {/* Bottom sheet content */}
       <div
-        className="relative flex flex-col items-center justify-center h-full px-6"
+        className="relative bg-white rounded-t-3xl shadow-2xl px-6 pt-6 pb-8 pointer-events-auto animate-slide-up"
+        style={{ paddingBottom: 'calc(32px + env(safe-area-inset-bottom, 0px))' }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        {/* Skip button */}
-        {!isLast && (
-          <button
-            onClick={close}
-            className="absolute top-4 right-4 text-white/60 text-sm font-medium hover:text-white/90 transition-colors z-10 text-btn"
-            style={{ top: 'calc(16px + env(safe-area-inset-top, 0px))' }}
-          >
-            Пропустить
-          </button>
-        )}
+        {/* Drag handle */}
+        <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-4" />
+
+        {/* Skip button — always visible */}
+        <button
+          onClick={close}
+          className="absolute top-4 right-4 text-gray-400 text-sm font-medium hover:text-gray-600 transition-colors z-10 text-btn"
+        >
+          Пропустить
+        </button>
 
         {/* Card */}
         <div
-          className={`w-full max-w-sm transition-all duration-200 ${
+          className={`w-full max-w-sm mx-auto transition-all duration-200 ${
             animating
               ? direction === 'left'
                 ? 'opacity-0 -translate-x-8'
@@ -135,43 +136,38 @@ export function OnboardingFlow() {
               : 'opacity-100 translate-x-0'
           }`}
         >
-          {/* Icon */}
-          <div className={`w-24 h-24 ${screen.iconBg} rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-lg`}>
-            <Icon className="w-12 h-12 text-white" strokeWidth={1.5} />
+          <div className="flex items-center gap-4 mb-3">
+            <div className={`w-14 h-14 ${screen.iconBg} rounded-2xl flex items-center justify-center shadow-sm shrink-0`}>
+              <Icon className="w-7 h-7 text-white" strokeWidth={1.5} />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-gray-900">{screen.title}</h2>
+              <p className="text-sm text-gray-500 leading-snug mt-0.5">{screen.text}</p>
+            </div>
           </div>
-
-          {/* Text */}
-          <h2 className="text-2xl font-bold text-white text-center mb-3">
-            {screen.title}
-          </h2>
-          <p className="text-base text-white/70 text-center leading-relaxed max-w-xs mx-auto">
-            {screen.text}
-          </p>
         </div>
 
-        {/* Bottom controls */}
-        <div className="absolute bottom-0 left-0 right-0 px-6 pb-8" style={{ paddingBottom: 'calc(32px + env(safe-area-inset-bottom, 0px))' }}>
-          {/* Dots */}
-          <div className="flex justify-center gap-2 mb-6">
+        {/* Dots + Button */}
+        <div className="mt-5">
+          <div className="flex justify-center gap-2 mb-4">
             {SCREENS.map((_, i) => (
               <div
                 key={i}
-                className={`h-2 rounded-full transition-all duration-300 ${
+                className={`h-1.5 rounded-full transition-all duration-300 ${
                   i === currentScreen
-                    ? 'w-8 bg-white'
-                    : 'w-2 bg-white/30'
+                    ? 'w-6 bg-brand-600'
+                    : 'w-1.5 bg-gray-200'
                 }`}
               />
             ))}
           </div>
 
-          {/* Button */}
           <button
             onClick={goNext}
-            className="w-full py-4 bg-white text-gray-900 rounded-2xl font-semibold text-base flex items-center justify-center gap-2 hover:bg-gray-100 active:scale-[0.98] transition-all"
+            className="w-full py-3.5 bg-brand-600 text-white rounded-xl font-semibold text-sm flex items-center justify-center gap-2 hover:bg-brand-700 active:scale-[0.98] transition-all"
           >
             {isLast ? 'Начать' : 'Далее'}
-            {!isLast && <ChevronRight className="w-5 h-5" />}
+            {!isLast && <ChevronRight className="w-4 h-4" />}
           </button>
         </div>
       </div>

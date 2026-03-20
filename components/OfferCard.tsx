@@ -34,13 +34,16 @@ function getBenefitBadge(benefitType: string, benefitValue: number) {
   }
 }
 
-function getTimeLeft(expiresAt: string): string | null {
+function getTimeLeft(expiresAt: string): { text: string; urgent: boolean } | null {
   const diff = new Date(expiresAt).getTime() - Date.now()
-  if (diff <= 0 || diff > 86400000) return null
+  if (diff <= 0) return null
+  const days = Math.floor(diff / 86400000)
+  if (days > 7) return null
+  if (days >= 1) return { text: `${days} ${days === 1 ? 'день' : days < 5 ? 'дня' : 'дней'}`, urgent: days <= 2 }
   const hours = Math.floor(diff / 3600000)
   const minutes = Math.floor((diff % 3600000) / 60000)
-  if (hours > 0) return `${hours}ч ${minutes}м`
-  return `${minutes}м`
+  if (hours > 0) return { text: `${hours}ч ${minutes}м`, urgent: true }
+  return { text: `${minutes}м`, urgent: true }
 }
 
 export function OfferCard({
@@ -51,7 +54,7 @@ export function OfferCard({
 }: OfferCardProps) {
   const badge = getBenefitBadge(benefitType, benefitValue)
   const isMembersOnly = visibility === 'MEMBERS_ONLY'
-  const timeLeft = expiresAt ? getTimeLeft(expiresAt) : null
+  const timeInfo = expiresAt ? getTimeLeft(expiresAt) : null
   const utilizationPercent = maxRedemptions && redemptionCount
     ? Math.round((redemptionCount / maxRedemptions) * 100)
     : 0
@@ -99,12 +102,12 @@ export function OfferCard({
           </div>
 
           {/* Urgency bar */}
-          {(timeLeft || isAlmostGone) && (
+          {(timeInfo || isAlmostGone) && (
             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent px-2 py-1.5 flex items-center gap-2">
-              {timeLeft && (
-                <span className="flex items-center gap-1 text-xs font-medium text-deal-urgent badge">
+              {timeInfo && (
+                <span className={`flex items-center gap-1 text-xs font-medium badge ${timeInfo.urgent ? 'text-deal-urgent' : 'text-white'}`}>
                   <Clock className="w-3 h-3" />
-                  {timeLeft}
+                  {timeInfo.text}
                 </span>
               )}
               {isAlmostGone && maxRedemptions && redemptionCount !== undefined && (
