@@ -1,4 +1,5 @@
 export const dynamic = 'force-dynamic'
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
@@ -6,6 +7,37 @@ import PlaceCard from '@/components/PlaceCard'
 import ReviewsSection from '@/components/ReviewsSection'
 import { OfferCard } from '@/components/OfferCard'
 import { DemandButton } from '@/components/DemandButton'
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params
+  const place = await prisma.place.findUnique({
+    where: { id },
+    select: { title: true, address: true, city: true, descriptionShort: true },
+  })
+
+  if (!place) {
+    return { title: 'Место не найдено | ГдеСейчас' }
+  }
+
+  const title = `${place.title} | ГдеСейчас`
+  const description = place.descriptionShort || `${place.title}, ${place.address}, ${place.city}`
+  const images: string[] = []
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      images,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+    },
+  }
+}
 
 interface PageProps {
   params: Promise<{ id: string }>
