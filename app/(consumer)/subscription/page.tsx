@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/auth-client'
 import { Check, X, Crown, Zap, Star, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { Footer } from '@/components/Footer'
+import { SubscriptionSavingsCard } from '@/components/SubscriptionSavingsCard'
 
 interface Plan {
   id: string
@@ -204,6 +205,13 @@ function SubscriptionContent() {
             <button onClick={handleCancel} disabled={actionLoading} className="mt-2 text-sm text-red-500 hover:underline text-btn">
               Отменить подписку
             </button>
+          </div>
+        )}
+
+        {/* Subscription savings card — only shown to subscribed users with savings */}
+        {status?.isSubscribed && (
+          <div className="mb-6">
+            <SubscriptionSavingsCard />
           </div>
         )}
 

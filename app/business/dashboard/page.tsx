@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { getSession } from '@/modules/auth/session'
 import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
+import { DemandSuggestionBanner } from '@/components/DemandSuggestionBanner'
 
 const DAY_NAMES_RU = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб']
 
@@ -111,6 +112,9 @@ export default async function BusinessDashboardPage() {
   return (
     <div className="px-4 py-6 sm:px-6">
       <h1 className="text-2xl font-bold text-gray-900 mb-5">Панель управления</h1>
+
+      {/* Demand-driven suggestions */}
+      <DemandSuggestionBanner />
 
       {/* Stats grid */}
       <div className="grid grid-cols-2 gap-3 mb-6">

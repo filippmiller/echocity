@@ -4,6 +4,7 @@ import { expireSessions } from '@/modules/redemptions/service'
 import { expireSubscriptions } from '@/modules/subscriptions/service'
 import { expireStories } from '@/modules/stories/service'
 import { completeExpiredReservations } from '@/modules/reservations/service'
+import { sendWeeklyDigests } from '@/modules/notifications/weekly-digest'
 import { logger } from '@/lib/logger'
 
 let initialized = false
@@ -58,6 +59,14 @@ export function initCronJobs() {
       const count = await expireSubscriptions()
       if (count > 0) logger.info(`Expired ${count} subscriptions`)
     } catch (e) { logger.error('Cron expireSubscriptions failed', { error: String(e) }) }
+  })
+
+  // Every Monday at 10:00 Moscow time (07:00 UTC): weekly digest push
+  cron.schedule('0 7 * * 1', async () => {
+    try {
+      const count = await sendWeeklyDigests()
+      logger.info(`Weekly digest sent to ${count} users`)
+    } catch (e) { logger.error('Cron weeklyDigest failed', { error: String(e) }) }
   })
 
   logger.info('Cron jobs initialized')

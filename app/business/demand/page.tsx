@@ -4,6 +4,7 @@ import { getSession } from '@/modules/auth/session'
 import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
 import { RespondButton } from './respond-button'
+import { DemandSuggestionBanner } from '@/components/DemandSuggestionBanner'
 
 export default async function BusinessDemandPage() {
   const session = await getSession()
@@ -94,6 +95,9 @@ export default async function BusinessDemandPage() {
           Панель
         </Link>
       </div>
+
+      {/* Demand-driven suggestions */}
+      <DemandSuggestionBanner />
 
       {/* Summary stats */}
       <div className="grid grid-cols-3 gap-3 mb-6">

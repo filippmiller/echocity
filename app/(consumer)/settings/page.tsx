@@ -8,6 +8,7 @@ import { toast } from 'sonner'
 import { ReferralCard } from '@/components/ReferralCard'
 import { SavingsCounter } from '@/components/SavingsCounter'
 import { NotificationSettings } from '@/components/NotificationSettings'
+import { SubscriptionSavingsCard } from '@/components/SubscriptionSavingsCard'
 
 interface UserProfile {
   id: string
@@ -312,6 +313,11 @@ export default function SettingsPage() {
         {/* Savings Counter */}
         <div className="mb-6">
           <SavingsCounter variant="profile" />
+        </div>
+
+        {/* Subscription Savings Card */}
+        <div className="mb-6">
+          <SubscriptionSavingsCard />
         </div>
 
         {/* Referral Card */}

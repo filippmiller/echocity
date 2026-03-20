@@ -222,7 +222,8 @@ model User {
   role          Role      @default(CITIZEN)
   firstName     String
   lastName      String?
-  phone         String?
+  phone         String?   @unique
+  phoneVerified Boolean   @default(false)
   city          String    @default("Санкт-Петербург")
   language      Language  @default(ru)
   isActive      Boolean   @default(true)
@@ -1484,4 +1485,20 @@ model BundleRedemption {
 
   @@index([bundleId])
   @@index([userId])
+}
+
+// ==============================
+// PHONE OTP AUTHENTICATION
+// ==============================
+
+model PhoneOtp {
+  id        String   @id @default(cuid())
+  phone     String
+  code      String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([phone, code])
+  @@index([expiresAt])
 }
