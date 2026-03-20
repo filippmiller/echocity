@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Clock, Users, Flame, Globe, Train } from 'lucide-react'
 import { FavoriteButton } from '@/components/FavoriteButton'
 import { VerifiedBadge } from '@/components/VerifiedBadge'
+import { hapticTap } from '@/lib/haptics'
 
 interface ScheduleSlot {
   weekday: number   // 0=Monday..6=Sunday
@@ -104,7 +105,7 @@ export function OfferCard({
   const scheduleStatus = schedules && schedules.length > 0 ? getScheduleStatus(schedules) : null
 
   return (
-    <Link href={`/offers/${id}`} className="block group">
+    <Link href={`/offers/${id}`} className="block group" onClick={hapticTap}>
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all active:scale-[0.98]">
         {/* Image */}
         <div className="relative aspect-[16/10] bg-gray-100">

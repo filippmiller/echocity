@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import QRCode from 'qrcode'
 import { CheckCircle2, RefreshCw, Coins } from 'lucide-react'
 import { toast } from 'sonner'
+import { hapticSuccess } from '@/lib/haptics'
 
 interface QRRedeemScreenProps {
   offerId: string
@@ -92,6 +93,7 @@ export function QRRedeemScreen({ offerId, offerTitle }: QRRedeemScreenProps) {
         if (data.status === 'USED') {
           if (pollRef.current) clearInterval(pollRef.current)
           pollRef.current = null
+          hapticSuccess()
           setRedeemed(true)
           if (data.earnedCoins > 0) {
             setEarnedCoins(data.earnedCoins)

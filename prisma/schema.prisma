@@ -189,6 +189,13 @@ enum DemandStatus {
 }
 
 // === FRAUD ENUMS ===
+enum GroupDealStatus {
+  OPEN
+  READY
+  COMPLETED
+  EXPIRED
+}
+
 enum FraudSeverity {
   LOW
   MEDIUM
@@ -269,6 +276,8 @@ model User {
   bundleRedemptions    BundleRedemption[]
   coinBalance          Int             @default(0)
   coinTransactions     CoinTransaction[]
+  createdGroupDeals    GroupDeal[]       @relation("GroupDealCreator")
+  groupDealMembers     GroupDealMember[] @relation("GroupDealMember")
 
   @@index([email])
   @@index([role])
@@ -709,6 +718,7 @@ model Offer {
   offerReviews    OfferReview[]
   demandResponses DemandResponse[] @relation("DemandResponseOffer")
   bundleItems     BundleItem[]
+  groupDeals      GroupDeal[]
 
   @@index([merchantId])
   @@index([branchId])
@@ -1536,4 +1546,40 @@ model CoinTransaction {
 
   @@index([userId])
   @@index([createdAt])
+}
+
+// ==============================
+// GROUP DEALS ("Пойдём вместе")
+// ==============================
+
+model GroupDeal {
+  id           String          @id @default(cuid())
+  offerId      String
+  creatorId    String
+  status       GroupDealStatus @default(OPEN)
+  minMembers   Int             @default(3)
+  bonusPercent Int             @default(5)
+  expiresAt    DateTime
+  createdAt    DateTime        @default(now())
+
+  offer   Offer @relation(fields: [offerId], references: [id])
+  creator User  @relation("GroupDealCreator", fields: [creatorId], references: [id])
+  members GroupDealMember[]
+
+  @@index([offerId])
+  @@index([status])
+}
+
+model GroupDealMember {
+  id          String   @id @default(cuid())
+  groupDealId String
+  userId      String
+  hasRedeemed Boolean  @default(false)
+  joinedAt    DateTime @default(now())
+
+  groupDeal GroupDeal @relation(fields: [groupDealId], references: [id], onDelete: Cascade)
+  user      User      @relation("GroupDealMember", fields: [userId], references: [id])
+
+  @@unique([groupDealId, userId])
+  @@index([userId])
 }

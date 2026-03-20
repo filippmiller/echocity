@@ -11,6 +11,7 @@ import { HomeStoriesBar } from "@/components/HomeStoriesBar"
 import { ForYouSection } from "@/components/ForYouSection"
 import { NearYouSection } from "@/components/NearYouSection"
 import { DealOfTheDay } from "@/components/DealOfTheDay"
+import { getSeasonalCollections, type SeasonalCollection } from "@/modules/collections/seasonal"
 
 const CATEGORIES = [
   { name: 'Кофе', slug: 'coffee', emoji: '☕', types: ['CAFE'] },
@@ -32,7 +33,7 @@ async function getHomeData() {
   )
   const startOfToday = new Date(startOfTodayMoscow.getTime() - 3 * 60 * 60_000)
 
-  const [freeOffers, memberOffers, flashOffers, allActive, demandCount, placeCount, collections, activeBundles, dealOfTheDay] = await Promise.all([
+  const [freeOffers, memberOffers, flashOffers, allActive, demandCount, placeCount, collections, activeBundles, seasonalCollections, dealOfTheDay] = await Promise.all([
     // Free deals
     prisma.offer.findMany({
       where: {
@@ -120,6 +121,8 @@ async function getHomeData() {
       orderBy: { createdAt: 'desc' },
       take: 6,
     }) ?? Promise.resolve([])).catch(() => []),
+    // Seasonal collections
+    getSeasonalCollections().catch(() => [] as SeasonalCollection[]),
     // Deal of the Day — most redeemed today
     prisma.offer.findFirst({
       where: {
@@ -142,7 +145,7 @@ async function getHomeData() {
     }).catch(() => null),
   ])
 
-  return { freeOffers, memberOffers, flashOffers, allActive, demandCount, placeCount, collections: collections ?? [], activeBundles: activeBundles ?? [], dealOfTheDay: dealOfTheDay ?? null }
+  return { freeOffers, memberOffers, flashOffers, allActive, demandCount, placeCount, collections: collections ?? [], activeBundles: activeBundles ?? [], dealOfTheDay: dealOfTheDay ?? null, seasonalCollections: seasonalCollections ?? [] }
 }
 
 function mapOfferToCard(offer: any) {
@@ -164,7 +167,7 @@ function mapOfferToCard(offer: any) {
 }
 
 export default async function Home() {
-  const { freeOffers, memberOffers, flashOffers, allActive, demandCount, placeCount, collections, activeBundles, dealOfTheDay } = await getHomeData()
+  const { freeOffers, memberOffers, flashOffers, allActive, demandCount, placeCount, collections, activeBundles, dealOfTheDay, seasonalCollections } = await getHomeData()
 
   return (
     <main className="min-h-screen bg-white">
@@ -270,6 +273,38 @@ export default async function Home() {
                   coverUrl={col.coverUrl}
                   itemCount={col.items.length}
                 />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Seasonal Collections */}
+      {seasonalCollections.length > 0 && (
+        <section className="py-6 px-4 bg-gradient-to-r from-emerald-50 to-teal-50">
+          <div className="max-w-5xl mx-auto">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-lg">🌿</span>
+              <h2 className="font-bold text-gray-900">Сезонные подборки</h2>
+            </div>
+            <div className="space-y-6">
+              {seasonalCollections.map((col: SeasonalCollection) => (
+                <div key={col.slug}>
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <h3 className="font-semibold text-gray-800 text-sm">{col.title}</h3>
+                      <p className="text-xs text-gray-500 mt-0.5">{col.description}</p>
+                    </div>
+                    <span className="text-xs text-gray-400 shrink-0">{col.offers.length} предложений</span>
+                  </div>
+                  <div className="flex gap-4 overflow-x-auto hide-scrollbar pb-2">
+                    {col.offers.map((offer) => (
+                      <div key={offer.id} className="w-[240px] shrink-0">
+                        <OfferCard {...offer} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           </div>

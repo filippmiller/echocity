@@ -1,9 +1,10 @@
 'use client'
 
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, useCallback, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { OfferFeed } from '@/components/OfferFeed'
 import { Footer } from '@/components/Footer'
+import { PullToRefresh } from '@/components/PullToRefresh'
 
 const FILTER_CHIPS = [
   { key: 'all', label: 'Все' },
@@ -56,6 +57,14 @@ function OffersContent() {
   const [activeNow, setActiveNow] = useState(searchParams.get('activeNow') === 'true')
   const [metro, setMetro] = useState(searchParams.get('metro') || '')
   const [showMetroDropdown, setShowMetroDropdown] = useState(false)
+  const [refreshKey, setRefreshKey] = useState(0)
+
+  const handleRefresh = useCallback(async () => {
+    // Bump the key so OfferFeed re-mounts and re-fetches
+    setRefreshKey((k) => k + 1)
+    // Brief delay so the animation feels satisfying
+    await new Promise((resolve) => setTimeout(resolve, 600))
+  }, [])
 
   useEffect(() => {
     const nextCity = searchParams.get('city') || 'Санкт-Петербург'
@@ -209,18 +218,21 @@ function OffersContent() {
         </div>
       </div>
 
-      {/* Feed */}
-      <div className="px-4 py-6">
-        <div className="max-w-7xl mx-auto">
-          <OfferFeed
-            city={city}
-            visibility={section === 'all' || section === 'activeNow' ? undefined : section}
-            category={category === 'all' ? undefined : category}
-            activeNow={activeNow}
-            metro={metro || undefined}
-          />
+      {/* Feed with pull-to-refresh */}
+      <PullToRefresh onRefresh={handleRefresh}>
+        <div className="px-4 py-6">
+          <div className="max-w-7xl mx-auto">
+            <OfferFeed
+              key={refreshKey}
+              city={city}
+              visibility={section === 'all' || section === 'activeNow' ? undefined : section}
+              category={category === 'all' ? undefined : category}
+              activeNow={activeNow}
+              metro={metro || undefined}
+            />
+          </div>
         </div>
-      </div>
+      </PullToRefresh>
 
       <Footer />
     </div>

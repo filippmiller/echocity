@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState, useTransition } from 'react'
 import { useFavorites } from '@/components/FavoritesProvider'
 import { AuthPrompt } from '@/components/AuthPrompt'
 import { useAuthPrompt } from '@/lib/useAuthPrompt'
+import { hapticTap } from '@/lib/haptics'
 
 interface FavoriteButtonProps {
   entityType: 'PLACE' | 'OFFER'
@@ -36,6 +37,7 @@ export function FavoriteButton({
 
     if (isPending) return
 
+    hapticTap()
     startTransition(async () => {
       try {
         const result = await toggleFavorite(entityType, entityId)

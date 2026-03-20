@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/Toaster";
 import { Navbar } from "@/components/Navbar";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { ClientProviders } from "@/components/ClientProviders";
+import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration";
 
 export const metadata: Metadata = {
   title: "ГдеСейчас — скидки рядом с вами",
@@ -36,9 +37,11 @@ export default function RootLayout({
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <meta name="theme-color" content="#2563EB" />
+        <link rel="manifest" href="/manifest.json" />
       </head>
       <body>
         <ClientProviders>
+          <ServiceWorkerRegistration />
           <Navbar />
           <div className="pb-safe md:pb-0">
             {children}

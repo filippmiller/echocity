@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import { getOfferById } from '@/modules/offers/service'
 import { OfferDetailClient, type OfferDetail } from '@/components/OfferDetailClient'
 
@@ -53,5 +54,9 @@ export default async function OfferDetailPage({ params }: OfferPageProps) {
   const offer = await getOfferById(id)
   const serializedOffer = offer ? JSON.parse(JSON.stringify(offer)) as OfferDetail : null
 
-  return <OfferDetailClient offer={serializedOffer} />
+  return (
+    <Suspense fallback={null}>
+      <OfferDetailClient offer={serializedOffer} />
+    </Suspense>
+  )
 }

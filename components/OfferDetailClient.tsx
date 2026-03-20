@@ -1,10 +1,10 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, useCallback } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/lib/auth-client'
 import Link from 'next/link'
-import { MapPin, Clock, Shield, ChevronLeft, Flag, Globe, Copy, Train } from 'lucide-react'
+import { MapPin, Clock, Shield, ChevronLeft, Flag, Globe, Copy, Train, Users } from 'lucide-react'
 import { ComplaintSheet } from '@/components/ComplaintSheet'
 import { AuthPrompt } from '@/components/AuthPrompt'
 import { useAuthPrompt } from '@/lib/useAuthPrompt'
@@ -13,6 +13,8 @@ import { FavoriteButton } from '@/components/FavoriteButton'
 import { SimilarOffers } from '@/components/SimilarOffers'
 import { ShareButton } from '@/components/ShareButton'
 import { VerifiedBadge } from '@/components/VerifiedBadge'
+import { GroupDealCard, type GroupDealData } from '@/components/GroupDealCard'
+import { toast } from 'sonner'
 
 export interface OfferDetail {
   id: string
@@ -65,8 +67,76 @@ function getVisibilityLabel(visibility: string) {
 export function OfferDetailClient({ offer }: { offer: OfferDetail | null }) {
   const { user, loading: authLoading } = useAuth()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [showComplaint, setShowComplaint] = useState(false)
   const { authPromptProps, showAuthPrompt } = useAuthPrompt()
+
+  // Group deal state
+  const [groupDeals, setGroupDeals] = useState<GroupDealData[]>([])
+  const [groupLoading, setGroupLoading] = useState(false)
+  const [creatingGroup, setCreatingGroup] = useState(false)
+  const [showGroupSection, setShowGroupSection] = useState(false)
+
+  // Load group deals for this offer
+  const loadGroupDeals = useCallback(async (offerId: string) => {
+    setGroupLoading(true)
+    try {
+      const res = await fetch(`/api/group-deals/by-offer/${offerId}`)
+      if (res.ok) {
+        const data = await res.json()
+        setGroupDeals(data.groupDeals || [])
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setGroupLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!offer) return
+    const groupParam = searchParams.get('group')
+    if (groupParam) {
+      setShowGroupSection(true)
+    }
+    loadGroupDeals(offer.id)
+  }, [offer, searchParams, loadGroupDeals])
+
+  const handleCreateGroup = useCallback(async () => {
+    if (!user) {
+      showAuthPrompt('Войдите, чтобы создать группу и пригласить друзей', `/offers/${offer?.id}`)
+      return
+    }
+    if (!offer) return
+    setCreatingGroup(true)
+    try {
+      const res = await fetch('/api/group-deals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ offerId: offer.id }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        toast.error(data.error || 'Не удалось создать группу')
+        return
+      }
+      setGroupDeals(prev => {
+        const exists = prev.find(g => g.id === data.groupDeal.id)
+        if (exists) return prev
+        return [data.groupDeal, ...prev]
+      })
+      setShowGroupSection(true)
+      toast.success('Группа создана! Поделитесь ссылкой с друзьями.')
+    } catch {
+      toast.error('Ошибка сети')
+    } finally {
+      setCreatingGroup(false)
+    }
+  }, [user, offer, showAuthPrompt])
+
+  const handleGroupUpdated = useCallback((updated: GroupDealData) => {
+    setGroupDeals(prev => prev.map(g => g.id === updated.id ? updated : g))
+  }, [])
 
   if (!offer) {
     return (
@@ -308,24 +378,70 @@ export function OfferDetailClient({ offer }: { offer: OfferDetail | null }) {
               </p>
             </div>
           ) : (
-            <div className="flex gap-3">
-              <ShareButton
-                title={offer.title}
-                text={`Скидка в ${offer.merchant.name}!`}
-                url={typeof window !== 'undefined' ? window.location.href : `/offers/${offer.id}`}
-                variant="full"
-                className="shrink-0"
-              />
+            <div className="space-y-2">
+              <div className="flex gap-3">
+                <ShareButton
+                  title={offer.title}
+                  text={`Скидка в ${offer.merchant.name}!`}
+                  url={typeof window !== 'undefined' ? window.location.href : `/offers/${offer.id}`}
+                  variant="full"
+                  className="shrink-0"
+                />
+                <button
+                  onClick={() => router.push(`/offers/${offer.id}/redeem`)}
+                  className="flex-1 bg-green-600 text-white py-3.5 rounded-xl font-semibold hover:bg-green-700 transition-colors text-lg"
+                >
+                  Активировать
+                </button>
+              </div>
+              {/* "Пойдём вместе" button */}
               <button
-                onClick={() => router.push(`/offers/${offer.id}/redeem`)}
-                className="flex-1 bg-green-600 text-white py-3.5 rounded-xl font-semibold hover:bg-green-700 transition-colors text-lg"
+                onClick={handleCreateGroup}
+                disabled={creatingGroup}
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-brand-200 text-brand-600 text-sm font-semibold hover:bg-brand-50 transition-colors disabled:opacity-50"
               >
-                Активировать
+                <Users className="w-4 h-4" />
+                {creatingGroup ? 'Создаём группу...' : 'Пойдём вместе — +5% скидки'}
               </button>
             </div>
           )}
         </div>
       </div>
+
+      {/* Group deal section */}
+      {(showGroupSection || groupDeals.length > 0) && !isMembersOnly && (
+        <div className="mt-6 mb-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Users className="w-5 h-5 text-brand-600" />
+            <h2 className="text-base font-bold text-gray-900">Пойдём вместе</h2>
+            <span className="ml-auto text-xs text-gray-400">+{5}% при групповом погашении</span>
+          </div>
+          {groupLoading ? (
+            <div className="text-sm text-gray-400 py-4 text-center">Загружаем группы...</div>
+          ) : groupDeals.length === 0 ? (
+            <div className="bg-brand-50 border border-brand-100 rounded-2xl p-4 text-sm text-brand-700">
+              <p className="font-semibold mb-1">Соберите компанию и получите дополнительную скидку</p>
+              <p className="text-xs text-brand-500">Пригласите 2 друзей — все трое получат +5% к скидке при одновременном погашении.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {groupDeals.map(group => (
+                <GroupDealCard
+                  key={group.id}
+                  groupDeal={group}
+                  onJoined={handleGroupUpdated}
+                  showOffer={false}
+                />
+              ))}
+            </div>
+          )}
+          {!user && (
+            <p className="text-xs text-gray-400 text-center mt-3">
+              Войдите, чтобы создать или присоединиться к группе
+            </p>
+          )}
+        </div>
+      )}
 
       <AuthPrompt {...authPromptProps} />
     </div>
