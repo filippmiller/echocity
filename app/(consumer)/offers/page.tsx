@@ -9,6 +9,7 @@ const FILTER_CHIPS = [
   { key: 'all', label: 'Все' },
   { key: 'FREE_FOR_ALL', label: 'Бесплатные' },
   { key: 'MEMBERS_ONLY', label: 'Plus' },
+  { key: 'activeNow', label: '🟢 Сейчас' },
 ]
 
 const CATEGORIES = [
@@ -34,14 +35,17 @@ function OffersContent() {
   const [city, setCity] = useState(searchParams.get('city') || 'Санкт-Петербург')
   const [section, setSection] = useState(searchParams.get('visibility') || 'all')
   const [category, setCategory] = useState(searchParams.get('category') || 'all')
+  const [activeNow, setActiveNow] = useState(searchParams.get('activeNow') === 'true')
 
   useEffect(() => {
     const nextCity = searchParams.get('city') || 'Санкт-Петербург'
     const nextSection = searchParams.get('visibility') || 'all'
     const nextCategory = searchParams.get('category') || 'all'
+    const nextActiveNow = searchParams.get('activeNow') === 'true'
     setCity(nextCity)
     setSection(nextSection)
     setCategory(nextCategory)
+    setActiveNow(nextActiveNow)
   }, [searchParams])
 
   useEffect(() => {
@@ -85,19 +89,32 @@ function OffersContent() {
             </select>
 
             <div className="flex gap-2 overflow-x-auto hide-scrollbar">
-              {FILTER_CHIPS.map((chip) => (
-                <button
-                  key={chip.key}
-                  onClick={() => setSection(chip.key)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors chip ${
-                    section === chip.key
-                      ? 'bg-brand-600 text-white'
-                      : 'bg-gray-100 text-gray-600 active:bg-gray-200'
-                  }`}
-                >
-                  {chip.label}
-                </button>
-              ))}
+              {FILTER_CHIPS.map((chip) => {
+                const isActiveNowChip = chip.key === 'activeNow'
+                const isSelected = isActiveNowChip ? activeNow : section === chip.key
+                return (
+                  <button
+                    key={chip.key}
+                    onClick={() => {
+                      if (isActiveNowChip) {
+                        setActiveNow((prev) => !prev)
+                      } else {
+                        setSection(chip.key)
+                        setActiveNow(false)
+                      }
+                    }}
+                    className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors chip ${
+                      isSelected
+                        ? isActiveNowChip
+                          ? 'bg-green-500 text-white'
+                          : 'bg-brand-600 text-white'
+                        : 'bg-gray-100 text-gray-600 active:bg-gray-200'
+                    }`}
+                  >
+                    {chip.label}
+                  </button>
+                )
+              })}
             </div>
           </div>
 
@@ -126,8 +143,9 @@ function OffersContent() {
         <div className="max-w-7xl mx-auto">
           <OfferFeed
             city={city}
-            visibility={section === 'all' ? undefined : section}
+            visibility={section === 'all' || section === 'activeNow' ? undefined : section}
             category={category === 'all' ? undefined : category}
+            activeNow={activeNow}
           />
         </div>
       </div>

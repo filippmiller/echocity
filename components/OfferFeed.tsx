@@ -4,6 +4,12 @@ import { useEffect, useState } from 'react'
 import { OfferCard } from './OfferCard'
 import { OfferCardSkeleton } from './ui/OfferCardSkeleton'
 
+interface ScheduleSlot {
+  weekday: number
+  startTime: string
+  endTime: string
+}
+
 interface OfferData {
   id: string
   title: string
@@ -22,9 +28,10 @@ interface OfferData {
   isFlash?: boolean
   redemptionChannel?: string
   minOrderAmount?: number | null
+  schedules?: ScheduleSlot[]
 }
 
-export function OfferFeed({ city, visibility, category }: { city?: string; visibility?: string; category?: string }) {
+export function OfferFeed({ city, visibility, category, activeNow }: { city?: string; visibility?: string; category?: string; activeNow?: boolean }) {
   const [offers, setOffers] = useState<OfferData[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -33,6 +40,7 @@ export function OfferFeed({ city, visibility, category }: { city?: string; visib
     if (city) params.set('city', city)
     if (visibility) params.set('visibility', visibility)
     if (category && category !== 'all') params.set('category', category)
+    if (activeNow) params.set('activeNow', 'true')
 
     fetch(`/api/offers?${params}`)
       .then((r) => r.json())
@@ -41,7 +49,7 @@ export function OfferFeed({ city, visibility, category }: { city?: string; visib
         setLoading(false)
       })
       .catch(() => setLoading(false))
-  }, [city, visibility, category])
+  }, [city, visibility, category, activeNow])
 
   if (loading) {
     return (
@@ -85,6 +93,7 @@ export function OfferFeed({ city, visibility, category }: { city?: string; visib
           maxRedemptions={offer.maxRedemptions}
           isFlash={offer.isFlash}
           redemptionChannel={offer.redemptionChannel}
+          schedules={offer.schedules}
         />
       ))}
     </div>

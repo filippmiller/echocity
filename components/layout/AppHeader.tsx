@@ -4,12 +4,22 @@ import Link from 'next/link'
 import { useAuth } from '@/lib/auth-client'
 import { useRouter } from 'next/navigation'
 import { Search, LogOut } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { StreakBadge } from '@/components/StreakBadge'
 
 export function AppHeader() {
   const { user, loading } = useAuth()
   const router = useRouter()
   const [showMenu, setShowMenu] = useState(false)
+
+  // Update streak once per browser session when user is logged in
+  useEffect(() => {
+    if (!user) return
+    const key = 'echocity_streak_pinged'
+    if (sessionStorage.getItem(key)) return
+    sessionStorage.setItem(key, '1')
+    fetch('/api/streak', { method: 'POST' }).catch(() => {})
+  }, [user])
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' })
@@ -64,7 +74,9 @@ export function AppHeader() {
           {loading ? (
             <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse" />
           ) : user ? (
-            <div className="relative">
+            <div className="flex items-center gap-2">
+              <StreakBadge />
+              <div className="relative">
               <button
                 onClick={() => setShowMenu(!showMenu)}
                 className="flex items-center gap-2"
@@ -114,6 +126,7 @@ export function AppHeader() {
                   </div>
                 </>
               )}
+              </div>
             </div>
           ) : (
             <div className="flex items-center gap-2">

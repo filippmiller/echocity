@@ -4,13 +4,14 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-client'
 import Link from 'next/link'
-import { MapPin, Clock, Shield, ChevronLeft, Flag, Globe, Copy, Share2 } from 'lucide-react'
+import { MapPin, Clock, Shield, ChevronLeft, Flag, Globe, Copy } from 'lucide-react'
 import { ComplaintSheet } from '@/components/ComplaintSheet'
 import { AuthPrompt } from '@/components/AuthPrompt'
 import { useAuthPrompt } from '@/lib/useAuthPrompt'
 import OfferReviews from '@/components/OfferReviews'
 import { FavoriteButton } from '@/components/FavoriteButton'
 import { SimilarOffers } from '@/components/SimilarOffers'
+import { ShareButton } from '@/components/ShareButton'
 
 export interface OfferDetail {
   id: string
@@ -115,20 +116,12 @@ export function OfferDetailClient({ offer }: { offer: OfferDetail | null }) {
       <div className="flex items-start justify-between gap-2 mb-1">
         <h1 className="text-2xl font-bold text-gray-900">{offer.title}</h1>
         <div className="flex items-center gap-1 shrink-0 mt-1">
-          <button
-            onClick={() => {
-              const url = `${window.location.origin}/offers/${offer.id}`
-              if (navigator.share) {
-                navigator.share({ title: offer.title, text: `${benefitText} — ${offer.title}`, url })
-              } else {
-                navigator.clipboard.writeText(url)
-              }
-            }}
-            className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-            title="Поделиться"
-          >
-            <Share2 className="w-5 h-5 text-gray-400" />
-          </button>
+          <ShareButton
+            title={offer.title}
+            text={`Скидка в ${offer.merchant.name}!`}
+            url={typeof window !== 'undefined' ? window.location.href : `/offers/${offer.id}`}
+            variant="icon"
+          />
           <FavoriteButton entityType="OFFER" entityId={offer.id} size="md" />
         </div>
       </div>
@@ -267,32 +260,59 @@ export function OfferDetailClient({ offer }: { offer: OfferDetail | null }) {
       <div className="fixed bottom-16 md:bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4 md:static md:border-0 md:p-0 z-40">
         <div className="max-w-2xl mx-auto">
           {!user ? (
-            <button
-              onClick={() => showAuthPrompt('Войдите, чтобы активировать скидку и получить QR-код', `/offers/${offer.id}`)}
-              className="w-full text-center bg-brand-600 text-white py-3.5 rounded-xl font-semibold hover:bg-brand-700 transition-colors"
-              aria-busy={authLoading}
-            >
-              Войдите, чтобы активировать
-            </button>
+            <div className="flex gap-3">
+              <ShareButton
+                title={offer.title}
+                text={`Скидка в ${offer.merchant.name}!`}
+                url={typeof window !== 'undefined' ? window.location.href : `/offers/${offer.id}`}
+                variant="full"
+                className="shrink-0"
+              />
+              <button
+                onClick={() => showAuthPrompt('Войдите, чтобы активировать скидку и получить QR-код', `/offers/${offer.id}`)}
+                className="flex-1 text-center bg-brand-600 text-white py-3.5 rounded-xl font-semibold hover:bg-brand-700 transition-colors"
+                aria-busy={authLoading}
+              >
+                Войдите, чтобы активировать
+              </button>
+            </div>
           ) : isMembersOnly ? (
             <div className="space-y-2">
-              <Link
-                href="/subscription"
-                className="block w-full text-center bg-deal-premium text-white py-3.5 rounded-xl font-semibold hover:opacity-90 transition-opacity"
-              >
-                Подпишитесь для доступа
-              </Link>
+              <div className="flex gap-3">
+                <ShareButton
+                  title={offer.title}
+                  text={`Скидка в ${offer.merchant.name}!`}
+                  url={typeof window !== 'undefined' ? window.location.href : `/offers/${offer.id}`}
+                  variant="full"
+                  className="shrink-0"
+                />
+                <Link
+                  href="/subscription"
+                  className="flex-1 block text-center bg-deal-premium text-white py-3.5 rounded-xl font-semibold hover:opacity-90 transition-opacity"
+                >
+                  Подпишитесь для доступа
+                </Link>
+              </div>
               <p className="text-xs text-center text-gray-400">
                 От 199 ₽/мес — 7 дней бесплатно
               </p>
             </div>
           ) : (
-            <button
-              onClick={() => router.push(`/offers/${offer.id}/redeem`)}
-              className="w-full bg-green-600 text-white py-3.5 rounded-xl font-semibold hover:bg-green-700 transition-colors text-lg"
-            >
-              Активировать
-            </button>
+            <div className="flex gap-3">
+              <ShareButton
+                title={offer.title}
+                text={`Скидка в ${offer.merchant.name}!`}
+                url={typeof window !== 'undefined' ? window.location.href : `/offers/${offer.id}`}
+                variant="full"
+                className="shrink-0"
+              />
+              <button
+                onClick={() => router.push(`/offers/${offer.id}/redeem`)}
+                className="flex-1 bg-green-600 text-white py-3.5 rounded-xl font-semibold hover:bg-green-700 transition-colors text-lg"
+              >
+                Активировать
+              </button>
+            </div>
           )}
         </div>
       </div>

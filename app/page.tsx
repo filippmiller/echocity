@@ -10,6 +10,7 @@ import { CollectionCard } from "@/components/CollectionCard"
 import { HomeStoriesBar } from "@/components/HomeStoriesBar"
 import { ForYouSection } from "@/components/ForYouSection"
 import { NearYouSection } from "@/components/NearYouSection"
+import { DealOfTheDay } from "@/components/DealOfTheDay"
 
 const CATEGORIES = [
   { name: 'Кофе', slug: 'coffee', emoji: '☕', types: ['CAFE'] },
@@ -24,8 +25,14 @@ const CATEGORIES = [
 
 async function getHomeData() {
   const now = new Date()
+  // Start of today in Moscow time (UTC+3)
+  const moscowNow = new Date(now.getTime() + 3 * 60 * 60_000)
+  const startOfTodayMoscow = new Date(
+    Date.UTC(moscowNow.getUTCFullYear(), moscowNow.getUTCMonth(), moscowNow.getUTCDate(), 0, 0, 0)
+  )
+  const startOfToday = new Date(startOfTodayMoscow.getTime() - 3 * 60 * 60_000)
 
-  const [freeOffers, memberOffers, flashOffers, allActive, demandCount, placeCount, collections, activeBundles] = await Promise.all([
+  const [freeOffers, memberOffers, flashOffers, allActive, demandCount, placeCount, collections, activeBundles, dealOfTheDay] = await Promise.all([
     // Free deals
     prisma.offer.findMany({
       where: {
@@ -113,9 +120,29 @@ async function getHomeData() {
       orderBy: { createdAt: 'desc' },
       take: 6,
     }) ?? Promise.resolve([])).catch(() => []),
+    // Deal of the Day — most redeemed today
+    prisma.offer.findFirst({
+      where: {
+        lifecycleStatus: 'ACTIVE',
+        approvalStatus: 'APPROVED',
+        branch: { isActive: true },
+      },
+      include: {
+        branch: { select: { id: true, title: true, address: true, city: true } },
+        merchant: { select: { id: true, name: true } },
+        _count: {
+          select: {
+            redemptions: {
+              where: { redeemedAt: { gte: startOfToday } },
+            },
+          },
+        },
+      },
+      orderBy: { redemptions: { _count: 'desc' } },
+    }).catch(() => null),
   ])
 
-  return { freeOffers, memberOffers, flashOffers, allActive, demandCount, placeCount, collections: collections ?? [], activeBundles: activeBundles ?? [] }
+  return { freeOffers, memberOffers, flashOffers, allActive, demandCount, placeCount, collections: collections ?? [], activeBundles: activeBundles ?? [], dealOfTheDay: dealOfTheDay ?? null }
 }
 
 function mapOfferToCard(offer: any) {
@@ -137,7 +164,7 @@ function mapOfferToCard(offer: any) {
 }
 
 export default async function Home() {
-  const { freeOffers, memberOffers, flashOffers, allActive, demandCount, placeCount, collections, activeBundles } = await getHomeData()
+  const { freeOffers, memberOffers, flashOffers, allActive, demandCount, placeCount, collections, activeBundles, dealOfTheDay } = await getHomeData()
 
   return (
     <main className="min-h-screen bg-white">
@@ -181,6 +208,20 @@ export default async function Home() {
           </div>
         </div>
       </section>
+
+      {/* Deal of the Day — top featured offer */}
+      {dealOfTheDay && (
+        <DealOfTheDay
+          id={dealOfTheDay.id}
+          title={dealOfTheDay.title}
+          merchantName={dealOfTheDay.merchant.name}
+          branchName={dealOfTheDay.branch.title}
+          imageUrl={dealOfTheDay.imageUrl}
+          benefitType={dealOfTheDay.benefitType}
+          benefitValue={Number(dealOfTheDay.benefitValue)}
+          redemptionsTodayCount={dealOfTheDay._count.redemptions}
+        />
+      )}
 
       {/* Categories — horizontal scroll with emojis */}
       <section className="py-5 px-4 border-b border-gray-100">

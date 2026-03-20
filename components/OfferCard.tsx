@@ -4,6 +4,12 @@ import Link from 'next/link'
 import { Clock, Users, Flame, Globe } from 'lucide-react'
 import { FavoriteButton } from '@/components/FavoriteButton'
 
+interface ScheduleSlot {
+  weekday: number   // 0=Monday..6=Sunday
+  startTime: string // "HH:MM"
+  endTime: string   // "HH:MM"
+}
+
 interface OfferCardProps {
   id: string
   title: string
@@ -21,6 +27,39 @@ interface OfferCardProps {
   maxRedemptions?: number | null
   isFlash?: boolean
   redemptionChannel?: string
+  schedules?: ScheduleSlot[]
+}
+
+type ScheduleStatus =
+  | { kind: 'open_now' }
+  | { kind: 'opens_today'; startTime: string }
+  | { kind: 'tomorrow' }
+  | { kind: 'no_schedule' }
+
+function getMoscowInfo(): { weekday: number; timeStr: string } {
+  const now = new Date()
+  const moscow = new Date(now.getTime() + 3 * 60 * 60_000)
+  const weekday = (moscow.getUTCDay() + 6) % 7 // 0=Monday
+  const timeStr = `${String(moscow.getUTCHours()).padStart(2, '0')}:${String(moscow.getUTCMinutes()).padStart(2, '0')}`
+  return { weekday, timeStr }
+}
+
+function getScheduleStatus(schedules: ScheduleSlot[]): ScheduleStatus {
+  if (!schedules || schedules.length === 0) return { kind: 'no_schedule' }
+  const { weekday, timeStr } = getMoscowInfo()
+  // Check if open right now
+  const openNow = schedules.some((s) => s.weekday === weekday && s.startTime <= timeStr && s.endTime > timeStr)
+  if (openNow) return { kind: 'open_now' }
+  // Check if opens later today
+  const laterToday = schedules
+    .filter((s) => s.weekday === weekday && s.startTime > timeStr)
+    .sort((a, b) => a.startTime.localeCompare(b.startTime))[0]
+  if (laterToday) return { kind: 'opens_today', startTime: laterToday.startTime }
+  // Check if tomorrow
+  const tomorrow = (weekday + 1) % 7
+  const hasTomorrow = schedules.some((s) => s.weekday === tomorrow)
+  if (hasTomorrow) return { kind: 'tomorrow' }
+  return { kind: 'no_schedule' }
 }
 
 function getBenefitBadge(benefitType: string, benefitValue: number) {
@@ -50,7 +89,7 @@ export function OfferCard({
   id, title, subtitle, benefitType, benefitValue, visibility,
   imageUrl, branchName, branchAddress, distance,
   expiresAt, redemptionCount, maxRedemptions, isFlash,
-  redemptionChannel,
+  redemptionChannel, schedules,
 }: OfferCardProps) {
   const badge = getBenefitBadge(benefitType, benefitValue)
   const isMembersOnly = visibility === 'MEMBERS_ONLY'
@@ -59,6 +98,7 @@ export function OfferCard({
     ? Math.round((redemptionCount / maxRedemptions) * 100)
     : 0
   const isAlmostGone = utilizationPercent >= 80
+  const scheduleStatus = schedules && schedules.length > 0 ? getScheduleStatus(schedules) : null
 
   return (
     <Link href={`/offers/${id}`} className="block group">
@@ -131,6 +171,25 @@ export function OfferCard({
           </h3>
           {subtitle && (
             <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{subtitle}</p>
+          )}
+          {/* Schedule availability indicator */}
+          {scheduleStatus && (
+            <div className="mt-1">
+              {scheduleStatus.kind === 'open_now' && (
+                <span className="inline-flex items-center gap-1 text-xs font-medium text-green-600 badge">
+                  <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse inline-block" />
+                  Сейчас
+                </span>
+              )}
+              {scheduleStatus.kind === 'opens_today' && (
+                <span className="text-xs text-orange-500 font-medium badge">
+                  Сегодня с {scheduleStatus.startTime}
+                </span>
+              )}
+              {scheduleStatus.kind === 'tomorrow' && (
+                <span className="text-xs text-gray-400 badge">Завтра</span>
+              )}
+            </div>
           )}
           <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
             <span className="truncate max-w-[60%]">{branchName}</span>

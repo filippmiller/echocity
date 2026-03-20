@@ -111,6 +111,15 @@ export function AuthPrompt({ isOpen, onClose, reason, redirectTo }: AuthPromptPr
           <p className="text-xs text-gray-400 text-center mt-4">
             Регистрация занимает меньше минуты
           </p>
+
+          {/* Dismiss */}
+          <button
+            type="button"
+            onClick={onClose}
+            className="block w-full text-center text-sm text-gray-400 hover:text-gray-600 mt-3 transition-colors"
+          >
+            Позже
+          </button>
         </div>
       </div>
     </div>

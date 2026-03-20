@@ -1,23 +1,25 @@
 'use client'
 
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { QRRedeemScreen } from '@/components/QRRedeemScreen'
 import { useAuth } from '@/lib/auth-client'
-import Link from 'next/link'
+import { useEffect } from 'react'
 
 export default function RedeemPage() {
   const { id } = useParams<{ id: string }>()
   const { user, loading } = useAuth()
+  const router = useRouter()
 
-  if (loading) return <div className="max-w-md mx-auto px-4 py-8 text-center text-gray-500">Загрузка...</div>
+  useEffect(() => {
+    if (!loading && !user) {
+      router.replace(`/auth/login?redirect=${encodeURIComponent(`/offers/${id}/redeem`)}`)
+    }
+  }, [loading, user, id, router])
 
-  if (!user) {
+  if (loading || !user) {
     return (
-      <div className="max-w-md mx-auto px-4 py-8 text-center">
-        <p className="text-gray-700 mb-4">Войдите, чтобы активировать предложение</p>
-        <Link href="/auth/login" className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
-          Войти
-        </Link>
+      <div className="max-w-md mx-auto px-4 py-8 text-center text-gray-500">
+        Загрузка...
       </div>
     )
   }
