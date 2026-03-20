@@ -15,10 +15,13 @@ interface OfferData {
   imageUrl: string | null
   branch: { title: string; address: string; city: string }
   merchant: { name: string }
+  endAt?: string | null
   expiresAt?: string | null
   redemptionCount?: number
   maxRedemptions?: number | null
   isFlash?: boolean
+  redemptionChannel?: string
+  minOrderAmount?: number | null
 }
 
 export function OfferFeed({ city, visibility, category }: { city?: string; visibility?: string; category?: string }) {
@@ -42,7 +45,7 @@ export function OfferFeed({ city, visibility, category }: { city?: string; visib
 
   if (loading) {
     return (
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         {Array.from({ length: 6 }).map((_, i) => (
           <OfferCardSkeleton key={i} />
         ))}
@@ -63,7 +66,7 @@ export function OfferFeed({ city, visibility, category }: { city?: string; visib
   }
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
       {offers.map((offer) => (
         <OfferCard
           key={offer.id}
@@ -77,10 +80,11 @@ export function OfferFeed({ city, visibility, category }: { city?: string; visib
           imageUrl={offer.imageUrl}
           branchName={offer.branch.title}
           branchAddress={offer.branch.address}
-          expiresAt={offer.expiresAt}
+          expiresAt={offer.expiresAt || offer.endAt}
           redemptionCount={offer.redemptionCount}
           maxRedemptions={offer.maxRedemptions}
           isFlash={offer.isFlash}
+          redemptionChannel={offer.redemptionChannel}
         />
       ))}
     </div>

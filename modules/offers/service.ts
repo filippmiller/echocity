@@ -138,6 +138,7 @@ export async function getActiveOffersByCity(
       limits: true,
       branch: { select: { id: true, title: true, address: true, city: true, lat: true, lng: true } },
       merchant: { select: { id: true, name: true } },
+      _count: { select: { redemptions: true } },
     },
     orderBy: { createdAt: 'desc' },
     take: options?.limit ?? 50,

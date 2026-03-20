@@ -68,8 +68,13 @@ export function OfferCard({
           {imageUrl ? (
             <img src={imageUrl} alt={title} className="w-full h-full object-cover" loading="lazy" />
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
-              <span className="text-4xl text-gray-300">%</span>
+            <div className={`w-full h-full flex flex-col items-center justify-center ${
+              isFlash ? 'bg-gradient-to-br from-rose-100 to-orange-100' :
+              isMembersOnly ? 'bg-gradient-to-br from-violet-100 to-purple-100' :
+              'bg-gradient-to-br from-blue-50 to-indigo-100'
+            }`}>
+              <span className="text-3xl font-bold text-gray-400/60">{badge}</span>
+              <span className="text-[10px] text-gray-400 mt-1 uppercase tracking-wide">{branchName.split(' — ')[0]}</span>
             </div>
           )}
 
