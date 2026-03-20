@@ -222,7 +222,7 @@ model User {
   role          Role      @default(CITIZEN)
   firstName     String
   lastName      String?
-  phone         String?   @unique
+  phone         String?
   phoneVerified Boolean   @default(false)
   city          String    @default("Санкт-Петербург")
   language      Language  @default(ru)
