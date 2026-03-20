@@ -32,6 +32,7 @@ interface OfferCardProps {
   schedules?: ScheduleSlot[]
   nearestMetro?: string | null
   isVerified?: boolean
+  isTrending?: boolean
 }
 
 type ScheduleStatus =
@@ -93,7 +94,7 @@ export function OfferCard({
   id, title, subtitle, benefitType, benefitValue, visibility,
   imageUrl, branchName, branchAddress, distance,
   expiresAt, redemptionCount, maxRedemptions, isFlash,
-  redemptionChannel, schedules, nearestMetro, isVerified,
+  redemptionChannel, schedules, nearestMetro, isVerified, isTrending,
 }: OfferCardProps) {
   const badge = getBenefitBadge(benefitType, benefitValue)
   const isMembersOnly = visibility === 'MEMBERS_ONLY'
@@ -142,6 +143,13 @@ export function OfferCard({
             <div className={`absolute ${isMembersOnly ? 'top-8' : 'top-2'} right-10 bg-blue-500 text-white px-2 py-0.5 rounded text-xs font-semibold badge flex items-center gap-0.5`}>
               <Globe className="w-3 h-3" />
               Online
+            </div>
+          )}
+
+          {/* Trending badge */}
+          {isTrending && (
+            <div className="absolute top-2 left-2 mt-7 px-2 py-0.5 rounded text-xs font-semibold badge bg-amber-400 text-white flex items-center gap-0.5 leading-tight">
+              🔥 Популярно
             </div>
           )}
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getActiveOffersByCity } from '@/modules/offers/service'
+import { getTrendingOfferIds } from '@/modules/offers/trending'
 
 // Returns Moscow weekday (0=Monday..6=Sunday) and HH:MM time string
 function getMoscowTimeInfo(): { weekday: number; timeStr: string } {
@@ -30,7 +31,12 @@ export async function GET(req: NextRequest) {
   const limit = Math.min(Math.max(parseInt(req.nextUrl.searchParams.get('limit') || '50') || 50, 1), 100)
   const offset = Math.max(parseInt(req.nextUrl.searchParams.get('offset') || '0') || 0, 0)
 
-  const rawOffers = await getActiveOffersByCity(city, { visibility, category, metro, limit, offset })
+  const [rawOffers, trendingIds] = await Promise.all([
+    getActiveOffersByCity(city, { visibility, category, metro, limit, offset }),
+    getTrendingOfferIds(city),
+  ])
+
+  const trendingSet = new Set(trendingIds)
 
   let filtered = rawOffers as any[]
 
@@ -46,6 +52,7 @@ export async function GET(req: NextRequest) {
     redemptionCount: offer._count?.redemptions ?? 0,
     maxRedemptions: offer.limits?.totalLimit ?? null,
     isFlash: offer.offerType === 'FLASH',
+    isTrending: trendingSet.has(offer.id),
     schedules: (offer.schedules ?? []).map((s: any) => ({
       weekday: s.weekday,
       startTime: s.startTime,

@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { SatisfactionGuarantee } from '@/components/SatisfactionGuarantee'
 
 export function Paywall() {
   return (
@@ -21,6 +22,10 @@ export function Paywall() {
       >
         Подписаться от 199{'\u20BD'}/мес
       </Link>
+
+      <div className="mt-4 text-left">
+        <SatisfactionGuarantee variant="compact" />
+      </div>
     </div>
   )
 }

@@ -1,11 +1,14 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { MapPin, QrCode, Crown, ChevronRight } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { MapPin, QrCode, Crown, ChevronRight, Send, Gift, Sparkles } from 'lucide-react'
+import { detectSource, type OnboardingSource } from '@/lib/onboarding-source'
 
 const ONBOARDED_KEY = 'echocity_onboarded'
+const SOURCE_KEY = 'echocity_onboarding_source'
 
-const SCREENS = [
+const BASE_SCREENS = [
   {
     icon: MapPin,
     iconBg: 'bg-blue-500',
@@ -26,27 +29,87 @@ const SCREENS = [
   },
 ]
 
+function getSourceFirstScreen(source: OnboardingSource) {
+  switch (source) {
+    case 'telegram':
+      return {
+        icon: Send,
+        iconBg: 'bg-sky-500',
+        title: 'Добро пожаловать из Telegram!',
+        text: 'Вот скидка, которую вы смотрели — войдите, чтобы активировать её прямо сейчас',
+      }
+    case 'referral':
+      return {
+        icon: Gift,
+        iconBg: 'bg-pink-500',
+        title: 'Ваш друг пригласил вас!',
+        text: 'Зарегистрируйтесь и получите бонус — реферальный код применится автоматически',
+      }
+    case 'organic':
+      return {
+        icon: Sparkles,
+        iconBg: 'bg-amber-500',
+        title: 'Нашли нас в поиске?',
+        text: 'Вот что мы можем предложить — лучшие скидки города прямо в вашем телефоне',
+      }
+    default:
+      return null
+  }
+}
+
 export function OnboardingFlow() {
+  const router = useRouter()
   const [show, setShow] = useState(false)
   const [currentScreen, setCurrentScreen] = useState(0)
   const [direction, setDirection] = useState<'left' | 'right'>('left')
   const [animating, setAnimating] = useState(false)
+  const [screens, setScreens] = useState(BASE_SCREENS)
   const touchStartX = useRef(0)
   const touchEndX = useRef(0)
 
   useEffect(() => {
-    // Only show on first visit
     try {
       const onboarded = localStorage.getItem(ONBOARDED_KEY)
-      if (!onboarded) {
-        // Small delay so the page loads first
-        const timer = setTimeout(() => setShow(true), 500)
-        return () => clearTimeout(timer)
+      if (onboarded) return
+
+      const source = detectSource()
+
+      // Store source for analytics
+      try {
+        localStorage.setItem(SOURCE_KEY, source)
+      } catch {}
+
+      // If arriving from Telegram with a specific offer, skip onboarding
+      const params = new URLSearchParams(window.location.search)
+      const offerId = params.get('offerId')
+      if (source === 'telegram' && offerId) {
+        localStorage.setItem(ONBOARDED_KEY, '1')
+        router.push(`/offers/${offerId}`)
+        return
       }
+
+      // If arriving with a referral code, store it
+      const refCode = params.get('ref') || params.get('referral')
+      if (source === 'referral' && refCode) {
+        try {
+          localStorage.setItem('echocity_ref_code', refCode)
+        } catch {}
+      }
+
+      // Build screen list — prepend source-specific first screen for non-direct sources
+      const sourceScreen = getSourceFirstScreen(source)
+      if (sourceScreen) {
+        setScreens([sourceScreen as typeof BASE_SCREENS[0], ...BASE_SCREENS])
+      } else {
+        setScreens(BASE_SCREENS)
+      }
+
+      const timer = setTimeout(() => setShow(true), 500)
+      return () => clearTimeout(timer)
     } catch {
       // localStorage not available
     }
-  }, [])
+  }, [router])
 
   const close = useCallback(() => {
     setShow(false)
@@ -57,7 +120,7 @@ export function OnboardingFlow() {
 
   const goNext = useCallback(() => {
     if (animating) return
-    if (currentScreen === SCREENS.length - 1) {
+    if (currentScreen === screens.length - 1) {
       close()
       return
     }
@@ -67,7 +130,7 @@ export function OnboardingFlow() {
       setCurrentScreen((s) => s + 1)
       setAnimating(false)
     }, 200)
-  }, [currentScreen, close, animating])
+  }, [currentScreen, screens.length, close, animating])
 
   const goPrev = useCallback(() => {
     if (animating || currentScreen === 0) return
@@ -98,9 +161,9 @@ export function OnboardingFlow() {
 
   if (!show) return null
 
-  const screen = SCREENS[currentScreen]
+  const screen = screens[currentScreen]
   const Icon = screen.icon
-  const isLast = currentScreen === SCREENS.length - 1
+  const isLast = currentScreen === screens.length - 1
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-[200] pointer-events-none">
@@ -150,7 +213,7 @@ export function OnboardingFlow() {
         {/* Dots + Button */}
         <div className="mt-5">
           <div className="flex justify-center gap-2 mb-4">
-            {SCREENS.map((_, i) => (
+            {screens.map((_, i) => (
               <div
                 key={i}
                 className={`h-1.5 rounded-full transition-all duration-300 ${

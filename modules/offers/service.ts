@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import type { OfferType, BenefitType, OfferVisibility, RedemptionChannel } from '@prisma/client'
 import type { CreateOfferInput, OfferValidationResult, OfferWithDetails } from './types'
+import { notifyNearbyNewOffer } from '@/modules/notifications/triggers'
 
 const CATEGORY_PLACE_TYPE_MAP: Record<string, string[]> = {
   coffee: ['CAFE'],
@@ -62,13 +63,23 @@ export async function approveOffer(offerId: string) {
   const now = new Date()
   const isScheduledForFuture = offer.startAt > now
 
-  return prisma.offer.update({
+  const updated = await prisma.offer.update({
     where: { id: offerId },
     data: {
       approvalStatus: 'APPROVED',
       lifecycleStatus: isScheduledForFuture ? 'SCHEDULED' : 'ACTIVE',
     },
   })
+
+  // Fire-and-forget: notify nearby users about the new offer
+  // Only notify immediately if the offer is going ACTIVE right now (not scheduled for later)
+  if (!isScheduledForFuture) {
+    notifyNearbyNewOffer(offerId).catch(() => {
+      // errors are logged inside the function; never block approval
+    })
+  }
+
+  return updated
 }
 
 export async function rejectOffer(offerId: string, reason: string) {

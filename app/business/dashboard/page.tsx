@@ -4,6 +4,7 @@ import { getSession } from '@/modules/auth/session'
 import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
 import { DemandSuggestionBanner } from '@/components/DemandSuggestionBanner'
+import { CompetitionInsight } from '@/components/CompetitionInsight'
 
 const DAY_NAMES_RU = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб']
 
@@ -115,6 +116,9 @@ export default async function BusinessDashboardPage() {
 
       {/* Demand-driven suggestions */}
       <DemandSuggestionBanner />
+
+      {/* Competition insight */}
+      <CompetitionInsight />
 
       {/* Stats grid */}
       <div className="grid grid-cols-2 gap-3 mb-6">

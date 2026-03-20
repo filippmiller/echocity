@@ -7,6 +7,7 @@ import { Check, X, Crown, Zap, Star, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { Footer } from '@/components/Footer'
 import { SubscriptionSavingsCard } from '@/components/SubscriptionSavingsCard'
+import { SatisfactionGuarantee } from '@/components/SatisfactionGuarantee'
 
 interface Plan {
   id: string
@@ -315,6 +316,11 @@ function SubscriptionContent() {
               </div>
             )
           })}
+        </div>
+
+        {/* Satisfaction Guarantee */}
+        <div className="max-w-2xl mx-auto mb-8">
+          <SatisfactionGuarantee variant="compact" />
         </div>
 
         {/* FAQ */}

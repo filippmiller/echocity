@@ -5,6 +5,8 @@ import { expireSubscriptions } from '@/modules/subscriptions/service'
 import { expireStories } from '@/modules/stories/service'
 import { completeExpiredReservations } from '@/modules/reservations/service'
 import { sendWeeklyDigests } from '@/modules/notifications/weekly-digest'
+import { checkExpiringFavorites, checkStreaksAtRisk } from '@/modules/notifications/triggers'
+import { sendPendingReviewNudges } from '@/modules/notifications/review-nudge'
 import { logger } from '@/lib/logger'
 
 let initialized = false
@@ -67,6 +69,30 @@ export function initCronJobs() {
       const count = await sendWeeklyDigests()
       logger.info(`Weekly digest sent to ${count} users`)
     } catch (e) { logger.error('Cron weeklyDigest failed', { error: String(e) }) }
+  })
+
+  // Daily at 7pm Moscow (16:00 UTC): streak-at-risk notifications
+  cron.schedule('0 16 * * *', async () => {
+    try {
+      const count = await checkStreaksAtRisk()
+      if (count > 0) logger.info(`Streak-at-risk notifications sent to ${count} users`)
+    } catch (e) { logger.error('Cron checkStreaksAtRisk failed', { error: String(e) }) }
+  })
+
+  // Daily at 8pm Moscow (17:00 UTC): expiring-favorite notifications
+  cron.schedule('0 17 * * *', async () => {
+    try {
+      const count = await checkExpiringFavorites()
+      if (count > 0) logger.info(`Expiring-favorite notifications sent to ${count} users`)
+    } catch (e) { logger.error('Cron checkExpiringFavorites failed', { error: String(e) }) }
+  })
+
+  // Every 30 minutes: post-redemption review nudge (2h after redemption)
+  cron.schedule('*/30 * * * *', async () => {
+    try {
+      const count = await sendPendingReviewNudges()
+      if (count > 0) logger.info(`Review nudges sent to ${count} users`)
+    } catch (e) { logger.error('Cron reviewNudge failed', { error: String(e) }) }
   })
 
   logger.info('Cron jobs initialized')
