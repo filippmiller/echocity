@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-client'
 import Link from 'next/link'
-import { MapPin, Clock, Shield, ChevronLeft, Flag, Globe, Copy } from 'lucide-react'
+import { MapPin, Clock, Shield, ChevronLeft, Flag, Globe, Copy, Share2 } from 'lucide-react'
 import { ComplaintSheet } from '@/components/ComplaintSheet'
 import { AuthPrompt } from '@/components/AuthPrompt'
 import { useAuthPrompt } from '@/lib/useAuthPrompt'
@@ -93,10 +93,11 @@ export function OfferDetailClient({ offer }: { offer: OfferDetail | null }) {
       </button>
 
       {offer.imageUrl ? (
-        <img src={offer.imageUrl} alt={offer.title} className="w-full h-48 object-cover rounded-xl mb-4" />
+        <img src={offer.imageUrl} alt={offer.title} className="w-full h-56 md:h-72 object-cover rounded-xl mb-4" />
       ) : (
-        <div className="w-full h-36 bg-gradient-to-br from-brand-50 to-brand-100 rounded-xl mb-4 flex items-center justify-center">
-          <span className="text-5xl font-bold text-brand-600 opacity-30">%</span>
+        <div className="w-full h-44 bg-gradient-to-br from-brand-50 to-brand-100 rounded-xl mb-4 flex flex-col items-center justify-center">
+          <span className="text-4xl font-bold text-brand-600 opacity-30">{benefitText}</span>
+          <span className="text-xs text-brand-400 mt-1">{offer.branch.title}</span>
         </div>
       )}
 
@@ -113,7 +114,23 @@ export function OfferDetailClient({ offer }: { offer: OfferDetail | null }) {
 
       <div className="flex items-start justify-between gap-2 mb-1">
         <h1 className="text-2xl font-bold text-gray-900">{offer.title}</h1>
-        <FavoriteButton entityType="OFFER" entityId={offer.id} size="md" className="shrink-0 mt-1" />
+        <div className="flex items-center gap-1 shrink-0 mt-1">
+          <button
+            onClick={() => {
+              const url = `${window.location.origin}/offers/${offer.id}`
+              if (navigator.share) {
+                navigator.share({ title: offer.title, text: `${benefitText} — ${offer.title}`, url })
+              } else {
+                navigator.clipboard.writeText(url)
+              }
+            }}
+            className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+            title="Поделиться"
+          >
+            <Share2 className="w-5 h-5 text-gray-400" />
+          </button>
+          <FavoriteButton entityType="OFFER" entityId={offer.id} size="md" />
+        </div>
       </div>
       {offer.subtitle && <p className="text-gray-600 mb-4">{offer.subtitle}</p>}
 
@@ -130,21 +147,34 @@ export function OfferDetailClient({ offer }: { offer: OfferDetail | null }) {
         <p className="text-gray-700 mb-4 leading-relaxed">{offer.description}</p>
       )}
 
-      {offer.schedules.length > 0 && (
-        <div className="mb-4 bg-blue-50 rounded-xl p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Clock className="w-4 h-4 text-brand-600" />
-            <h3 className="text-sm font-semibold text-gray-700">Расписание</h3>
+      {offer.schedules.length > 0 && (() => {
+        // Collapse identical schedules: if all 7 days have same time → "Ежедневно"
+        const uniqueTimes = [...new Set(offer.schedules.map(s => `${s.startTime}-${s.endTime}`))]
+        const isAllDay = uniqueTimes.length === 1 && uniqueTimes[0] === '00:00-23:59'
+        const isEveryDay = offer.schedules.length === 7 && uniqueTimes.length === 1
+
+        return (
+          <div className="mb-4 bg-blue-50 rounded-xl p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Clock className="w-4 h-4 text-brand-600" />
+              <h3 className="text-sm font-semibold text-gray-700">Расписание</h3>
+            </div>
+            {isAllDay && isEveryDay ? (
+              <span className="text-sm text-gray-600">Ежедневно, весь день</span>
+            ) : isEveryDay ? (
+              <span className="text-sm text-gray-600">Ежедневно {offer.schedules[0].startTime}–{offer.schedules[0].endTime}</span>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {offer.schedules.map((schedule, index) => (
+                  <span key={index} className="text-xs bg-white px-2.5 py-1 rounded-full text-gray-600 border border-blue-100">
+                    {WEEKDAYS[schedule.weekday]} {schedule.startTime}–{schedule.endTime}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
-          <div className="flex flex-wrap gap-2">
-            {offer.schedules.map((schedule, index) => (
-              <span key={index} className="text-xs bg-white px-2.5 py-1 rounded-full text-gray-600 border border-blue-100">
-                {WEEKDAYS[schedule.weekday]} {schedule.startTime}–{schedule.endTime}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
+        )
+      })()}
 
       {(offer.redemptionChannel === 'ONLINE' || offer.redemptionChannel === 'BOTH') && (
         <div className="mb-4 bg-blue-50 rounded-xl p-4">
