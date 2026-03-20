@@ -6,6 +6,7 @@ import { trackSaving } from '@/modules/savings/track'
 import { validateGeoProximity } from './geo'
 import { checkAndProgressMissions, checkBadgeEligibility } from '@/modules/gamification/service'
 import { sendPushNotification } from '@/modules/notifications/push'
+import { earnCashback } from '@/modules/cashback/service'
 
 const SESSION_TTL_MS = 60 * 1000 // 60 seconds
 
@@ -260,6 +261,15 @@ export async function validateAndRedeem(input: {
     url: '/history',
   }).catch(() => {})
 
+  // Non-blocking cashback — earn EchoCoins on every successful redemption
+  const discountRubles = Number(session.offer.benefitValue)
+  let earnedCoins = 0
+  if (discountRubles > 0) {
+    earnCashback(session.userId, redemption.id, discountRubles)
+      .then((result) => { if (result) earnedCoins = result.coins })
+      .catch(() => {})
+  }
+
   return {
     success: true,
     geoWarning,
@@ -269,6 +279,7 @@ export async function validateAndRedeem(input: {
       benefitType: session.offer.benefitType,
       benefitValue: Number(session.offer.benefitValue),
       branchId: session.offer.branchId,
+      earnedCoins,
     },
   }
 }

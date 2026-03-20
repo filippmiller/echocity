@@ -19,8 +19,8 @@ interface OfferData {
   benefitType: string
   benefitValue: number
   imageUrl: string | null
-  branch: { title: string; address: string; city: string }
-  merchant: { name: string }
+  branch: { title: string; address: string; city: string; nearestMetro?: string | null }
+  merchant: { name: string; isVerified?: boolean }
   endAt?: string | null
   expiresAt?: string | null
   redemptionCount?: number
@@ -29,9 +29,11 @@ interface OfferData {
   redemptionChannel?: string
   minOrderAmount?: number | null
   schedules?: ScheduleSlot[]
+  nearestMetro?: string | null
+  isVerified?: boolean
 }
 
-export function OfferFeed({ city, visibility, category, activeNow }: { city?: string; visibility?: string; category?: string; activeNow?: boolean }) {
+export function OfferFeed({ city, visibility, category, activeNow, metro }: { city?: string; visibility?: string; category?: string; activeNow?: boolean; metro?: string }) {
   const [offers, setOffers] = useState<OfferData[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -41,6 +43,7 @@ export function OfferFeed({ city, visibility, category, activeNow }: { city?: st
     if (visibility) params.set('visibility', visibility)
     if (category && category !== 'all') params.set('category', category)
     if (activeNow) params.set('activeNow', 'true')
+    if (metro) params.set('metro', metro)
 
     fetch(`/api/offers?${params}`)
       .then((r) => r.json())
@@ -49,7 +52,7 @@ export function OfferFeed({ city, visibility, category, activeNow }: { city?: st
         setLoading(false)
       })
       .catch(() => setLoading(false))
-  }, [city, visibility, category, activeNow])
+  }, [city, visibility, category, activeNow, metro])
 
   if (loading) {
     return (
@@ -94,6 +97,8 @@ export function OfferFeed({ city, visibility, category, activeNow }: { city?: st
           isFlash={offer.isFlash}
           redemptionChannel={offer.redemptionChannel}
           schedules={offer.schedules}
+          nearestMetro={offer.nearestMetro ?? offer.branch?.nearestMetro}
+          isVerified={offer.isVerified ?? offer.merchant?.isVerified}
         />
       ))}
     </div>

@@ -11,6 +11,7 @@ export function AppHeader() {
   const { user, loading } = useAuth()
   const router = useRouter()
   const [showMenu, setShowMenu] = useState(false)
+  const [coinBalance, setCoinBalance] = useState<number>(0)
 
   // Update streak once per browser session when user is logged in
   useEffect(() => {
@@ -19,6 +20,15 @@ export function AppHeader() {
     if (sessionStorage.getItem(key)) return
     sessionStorage.setItem(key, '1')
     fetch('/api/streak', { method: 'POST' }).catch(() => {})
+  }, [user])
+
+  // Load coin balance when user is logged in
+  useEffect(() => {
+    if (!user) return
+    fetch('/api/coins')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((d) => { if (d?.balance) setCoinBalance(d.balance) })
+      .catch(() => {})
   }, [user])
 
   const handleLogout = async () => {
@@ -76,6 +86,15 @@ export function AppHeader() {
           ) : user ? (
             <div className="flex items-center gap-2">
               <StreakBadge />
+              {coinBalance > 0 && (
+                <Link
+                  href="/wallet"
+                  className="flex items-center gap-1 px-2 py-1 bg-amber-50 rounded-full text-xs font-semibold text-amber-700 hover:bg-amber-100 transition-colors chip"
+                  title="EchoCoins"
+                >
+                  🪙 {coinBalance}
+                </Link>
+              )}
               <div className="relative">
               <button
                 onClick={() => setShowMenu(!showMenu)}
@@ -102,9 +121,14 @@ export function AppHeader() {
                   <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-20">
                     {user.role === 'CITIZEN' && (
-                      <Link href="/settings" className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50" onClick={() => setShowMenu(false)}>
-                        Настройки
-                      </Link>
+                      <>
+                        <Link href="/wallet" className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50" onClick={() => setShowMenu(false)}>
+                          🪙 Кошелёк EchoCoins
+                        </Link>
+                        <Link href="/settings" className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50" onClick={() => setShowMenu(false)}>
+                          Настройки
+                        </Link>
+                      </>
                     )}
                     {user.role === 'BUSINESS_OWNER' && (
                       <Link href="/business/dashboard" className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50" onClick={() => setShowMenu(false)}>

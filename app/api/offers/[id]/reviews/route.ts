@@ -39,6 +39,7 @@ export async function GET(
       id: r.id,
       rating: r.rating,
       comment: r.comment,
+      photoUrls: r.photoUrls,
       createdAt: r.createdAt,
       authorName: [r.user.firstName, r.user.lastName].filter(Boolean).join(' ') || 'Пользователь',
     })),
@@ -64,7 +65,7 @@ export async function POST(
 
   const { id: offerId } = await params
   const body = await request.json()
-  const { redemptionId, rating, comment } = body
+  const { redemptionId, rating, comment, photoUrls } = body
 
   // Validate rating
   if (!rating || typeof rating !== 'number' || rating < 1 || rating > 5) {
@@ -128,6 +129,16 @@ export async function POST(
     )
   }
 
+  // Validate photoUrls if provided
+  const validatedPhotoUrls: string[] = []
+  if (Array.isArray(photoUrls)) {
+    for (const url of photoUrls.slice(0, 3)) {
+      if (typeof url === 'string' && url.startsWith('http')) {
+        validatedPhotoUrls.push(url)
+      }
+    }
+  }
+
   // Create the review
   const review = await prisma.offerReview.create({
     data: {
@@ -136,6 +147,7 @@ export async function POST(
       redemptionId,
       rating: Math.round(rating),
       comment: comment?.trim() || null,
+      photoUrls: validatedPhotoUrls,
     },
     include: {
       user: { select: { firstName: true, lastName: true } },
@@ -152,6 +164,7 @@ export async function POST(
         id: review.id,
         rating: review.rating,
         comment: review.comment,
+        photoUrls: review.photoUrls,
         createdAt: review.createdAt,
         authorName: [review.user.firstName, review.user.lastName].filter(Boolean).join(' ') || 'Пользователь',
       },

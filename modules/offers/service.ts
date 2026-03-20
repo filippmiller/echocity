@@ -104,15 +104,15 @@ export async function getOfferById(offerId: string): Promise<OfferWithDetails | 
       rules: true,
       limits: true,
       blackoutDates: true,
-      branch: { select: { id: true, title: true, address: true, city: true, lat: true, lng: true } },
-      merchant: { select: { id: true, name: true } },
+      branch: { select: { id: true, title: true, address: true, city: true, lat: true, lng: true, nearestMetro: true } },
+      merchant: { select: { id: true, name: true, isVerified: true } },
     },
   }) as any
 }
 
 export async function getActiveOffersByCity(
   cityName: string,
-  options?: { visibility?: string; category?: string; limit?: number; offset?: number },
+  options?: { visibility?: string; category?: string; metro?: string; limit?: number; offset?: number },
 ) {
   const now = new Date()
   const placeTypes = options?.category ? CATEGORY_PLACE_TYPE_MAP[options.category] : undefined
@@ -130,14 +130,15 @@ export async function getActiveOffersByCity(
         city: cityName,
         isActive: true,
         ...(placeTypes?.length ? { placeType: { in: placeTypes as any } } : {}),
+        ...(options?.metro ? { nearestMetro: { contains: options.metro, mode: 'insensitive' } } : {}),
       },
       ...(options?.visibility ? { visibility: options.visibility as any } : {}),
     },
     include: {
       schedules: true,
       limits: true,
-      branch: { select: { id: true, title: true, address: true, city: true, lat: true, lng: true } },
-      merchant: { select: { id: true, name: true } },
+      branch: { select: { id: true, title: true, address: true, city: true, lat: true, lng: true, nearestMetro: true } },
+      merchant: { select: { id: true, name: true, isVerified: true } },
       _count: { select: { redemptions: true } },
     },
     orderBy: { createdAt: 'desc' },

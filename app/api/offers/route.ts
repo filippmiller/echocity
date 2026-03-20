@@ -25,11 +25,12 @@ export async function GET(req: NextRequest) {
   const city = req.nextUrl.searchParams.get('city') || 'Санкт-Петербург'
   const visibility = req.nextUrl.searchParams.get('visibility') || undefined
   const category = req.nextUrl.searchParams.get('category') || undefined
+  const metro = req.nextUrl.searchParams.get('metro') || undefined
   const activeNow = req.nextUrl.searchParams.get('activeNow') === 'true'
   const limit = Math.min(Math.max(parseInt(req.nextUrl.searchParams.get('limit') || '50') || 50, 1), 100)
   const offset = Math.max(parseInt(req.nextUrl.searchParams.get('offset') || '0') || 0, 0)
 
-  const rawOffers = await getActiveOffersByCity(city, { visibility, category, limit, offset })
+  const rawOffers = await getActiveOffersByCity(city, { visibility, category, metro, limit, offset })
 
   let filtered = rawOffers as any[]
 
@@ -50,6 +51,8 @@ export async function GET(req: NextRequest) {
       startTime: s.startTime,
       endTime: s.endTime,
     })),
+    nearestMetro: offer.branch?.nearestMetro ?? null,
+    isVerified: offer.merchant?.isVerified ?? false,
   }))
 
   return NextResponse.json({ offers })

@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-client'
 import Link from 'next/link'
-import { MapPin, Clock, Shield, ChevronLeft, Flag, Globe, Copy } from 'lucide-react'
+import { MapPin, Clock, Shield, ChevronLeft, Flag, Globe, Copy, Train } from 'lucide-react'
 import { ComplaintSheet } from '@/components/ComplaintSheet'
 import { AuthPrompt } from '@/components/AuthPrompt'
 import { useAuthPrompt } from '@/lib/useAuthPrompt'
@@ -12,6 +12,7 @@ import OfferReviews from '@/components/OfferReviews'
 import { FavoriteButton } from '@/components/FavoriteButton'
 import { SimilarOffers } from '@/components/SimilarOffers'
 import { ShareButton } from '@/components/ShareButton'
+import { VerifiedBadge } from '@/components/VerifiedBadge'
 
 export interface OfferDetail {
   id: string
@@ -33,8 +34,8 @@ export interface OfferDetail {
   redemptionChannel?: string
   onlineUrl?: string | null
   promoCode?: string | null
-  branch: { id: string; title: string; address: string; city: string }
-  merchant: { id: string; name: string }
+  branch: { id: string; title: string; address: string; city: string; nearestMetro?: string | null }
+  merchant: { id: string; name: string; isVerified?: boolean }
   schedules: Array<{ weekday: number; startTime: string; endTime: string }>
   limits: { dailyLimit: number | null; totalLimit: number | null; perUserDailyLimit: number | null } | null
 }
@@ -132,7 +133,16 @@ export function OfferDetailClient({ offer }: { offer: OfferDetail | null }) {
         <div>
           <p className="text-sm font-medium text-gray-700">{offer.branch.title}</p>
           <p className="text-sm text-gray-500">{offer.branch.address}, {offer.branch.city}</p>
-          <p className="text-xs text-gray-400 mt-1">{offer.merchant.name}</p>
+          {offer.branch.nearestMetro && (
+            <p className="flex items-center gap-1 text-xs text-gray-400 mt-0.5">
+              <Train className="w-3 h-3 shrink-0" />
+              {offer.branch.nearestMetro}
+            </p>
+          )}
+          <div className="flex items-center gap-1.5 mt-1">
+            <p className="text-xs text-gray-400">{offer.merchant.name}</p>
+            {offer.merchant.isVerified && <VerifiedBadge size="md" />}
+          </div>
         </div>
       </div>
 

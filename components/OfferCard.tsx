@@ -1,8 +1,9 @@
 'use client'
 
 import Link from 'next/link'
-import { Clock, Users, Flame, Globe } from 'lucide-react'
+import { Clock, Users, Flame, Globe, Train } from 'lucide-react'
 import { FavoriteButton } from '@/components/FavoriteButton'
+import { VerifiedBadge } from '@/components/VerifiedBadge'
 
 interface ScheduleSlot {
   weekday: number   // 0=Monday..6=Sunday
@@ -28,6 +29,8 @@ interface OfferCardProps {
   isFlash?: boolean
   redemptionChannel?: string
   schedules?: ScheduleSlot[]
+  nearestMetro?: string | null
+  isVerified?: boolean
 }
 
 type ScheduleStatus =
@@ -89,7 +92,7 @@ export function OfferCard({
   id, title, subtitle, benefitType, benefitValue, visibility,
   imageUrl, branchName, branchAddress, distance,
   expiresAt, redemptionCount, maxRedemptions, isFlash,
-  redemptionChannel, schedules,
+  redemptionChannel, schedules, nearestMetro, isVerified,
 }: OfferCardProps) {
   const badge = getBenefitBadge(benefitType, benefitValue)
   const isMembersOnly = visibility === 'MEMBERS_ONLY'
@@ -192,13 +195,22 @@ export function OfferCard({
             </div>
           )}
           <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
-            <span className="truncate max-w-[60%]">{branchName}</span>
+            <span className="flex items-center gap-1 truncate max-w-[60%]">
+              <span className="truncate">{branchName}</span>
+              {isVerified && <VerifiedBadge size="sm" />}
+            </span>
             {distance !== undefined && (
               <span className="shrink-0 font-medium text-gray-600">
                 {distance < 1 ? `${Math.round(distance * 1000)} м` : `${distance.toFixed(1)} км`}
               </span>
             )}
           </div>
+          {nearestMetro && (
+            <div className="mt-0.5 flex items-center gap-1 text-xs text-gray-400">
+              <Train className="w-3 h-3 shrink-0" />
+              <span className="truncate">{nearestMetro}</span>
+            </div>
+          )}
           {redemptionCount !== undefined && redemptionCount > 0 && (
             <div className="mt-1.5 flex items-center gap-1 text-xs text-gray-400">
               <Users className="w-3 h-3" />

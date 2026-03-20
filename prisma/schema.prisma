@@ -267,6 +267,8 @@ model User {
   reservations         Reservation[]
   createdBundles       Bundle[]        @relation("BundleCreator")
   bundleRedemptions    BundleRedemption[]
+  coinBalance          Int             @default(0)
+  coinTransactions     CoinTransaction[]
 
   @@index([email])
   @@index([role])
@@ -336,6 +338,9 @@ model Business {
   yandexVerifiedAt         DateTime?
   yandexVerificationMethod String? // e.g. 'places_api_soft'
 
+  isVerified    Boolean   @default(false)
+  verifiedAt    DateTime?
+
   places        Place[]
   offers        Offer[]
   redemptions   Redemption[]
@@ -374,6 +379,8 @@ model Place {
   isActive          Boolean          @default(true)
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
+
+  nearestMetro     String?
 
   // Legacy fields (for backward compatibility)
   publicName       String?
@@ -1284,6 +1291,7 @@ model OfferReview {
   redemptionId String   @unique // one review per redemption
   rating       Int      // 1-5
   comment      String?  @db.Text
+  photoUrls    String[] @default([])
   isPublished  Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -1501,4 +1509,31 @@ model PhoneOtp {
 
   @@index([phone, code])
   @@index([expiresAt])
+}
+
+// ==============================
+// ECHOCOIN CASHBACK WALLET
+// ==============================
+
+enum CoinTransactionType {
+  REDEMPTION_CASHBACK
+  REFERRAL_BONUS
+  STREAK_BONUS
+  SUBSCRIPTION_PAYMENT
+  MANUAL_ADJUSTMENT
+}
+
+model CoinTransaction {
+  id          String              @id @default(cuid())
+  userId      String
+  amount      Int                 // positive = earned, negative = spent (1 coin = 1₽)
+  type        CoinTransactionType
+  description String
+  referenceId String?             // redemptionId, subscriptionId, etc.
+  createdAt   DateTime            @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([createdAt])
 }

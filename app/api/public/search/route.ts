@@ -7,6 +7,7 @@ export async function GET(request: NextRequest) {
     const query = searchParams.get('q') || ''
     const cityId = searchParams.get('cityId')
     const serviceTypeId = searchParams.get('serviceTypeId')
+    const metro = searchParams.get('metro') || ''
 
     // Build where clause
     const where: any = {
@@ -19,6 +20,10 @@ export async function GET(request: NextRequest) {
 
     if (cityId) {
       where.cityId = cityId
+    }
+
+    if (metro) {
+      where.nearestMetro = { contains: metro, mode: 'insensitive' }
     }
 
     if (query) {
@@ -97,6 +102,7 @@ export async function GET(request: NextRequest) {
         address: place.addressLine1 || place.address,
         city: place.city,
         placeType: place.placeType,
+        nearestMetro: place.nearestMetro ?? null,
         averageRating,
         reviewCount: place._count.reviews,
         services: place.services.map((s) => ({

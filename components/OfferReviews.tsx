@@ -9,6 +9,7 @@ interface Review {
   id: string
   rating: number
   comment: string | null
+  photoUrls: string[]
   createdAt: string
   authorName: string
 }
@@ -188,6 +189,26 @@ export default function OfferReviews({ offerId }: OfferReviewsProps) {
                 <p className="text-sm text-gray-600 whitespace-pre-wrap">
                   {review.comment}
                 </p>
+              )}
+              {review.photoUrls && review.photoUrls.length > 0 && (
+                <div className="flex gap-2 mt-2 overflow-x-auto pb-1">
+                  {review.photoUrls.map((url, idx) => (
+                    <a
+                      key={idx}
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border border-gray-100 bg-gray-50 hover:opacity-90 transition-opacity"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={url}
+                        alt={`Фото ${idx + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </a>
+                  ))}
+                </div>
               )}
             </div>
           ))}

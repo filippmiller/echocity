@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     })
 
     // Find or create user with this phone number
-    let user = await prisma.user.findUnique({
+    let user = await prisma.user.findFirst({
       where: { phone },
       select: { id: true, email: true, role: true, isActive: true },
     })

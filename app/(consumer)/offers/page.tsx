@@ -12,6 +12,24 @@ const FILTER_CHIPS = [
   { key: 'activeNow', label: '🟢 Сейчас' },
 ]
 
+const METRO_STATIONS = [
+  'Невский проспект',
+  'Гостиный двор',
+  'Адмиралтейская',
+  'Сенная площадь',
+  'Василеостровская',
+  'Петроградская',
+  'Чернышевская',
+  'Площадь Восстания',
+  'Маяковская',
+  'Технологический институт',
+  'Звёздная',
+  'Московская',
+  'Пионерская',
+  'Чёрная речка',
+  'Озерки',
+]
+
 const CATEGORIES = [
   { slug: 'all', label: 'Все категории', emoji: '🔥' },
   { slug: 'coffee', label: 'Кофе', emoji: '☕' },
@@ -36,16 +54,20 @@ function OffersContent() {
   const [section, setSection] = useState(searchParams.get('visibility') || 'all')
   const [category, setCategory] = useState(searchParams.get('category') || 'all')
   const [activeNow, setActiveNow] = useState(searchParams.get('activeNow') === 'true')
+  const [metro, setMetro] = useState(searchParams.get('metro') || '')
+  const [showMetroDropdown, setShowMetroDropdown] = useState(false)
 
   useEffect(() => {
     const nextCity = searchParams.get('city') || 'Санкт-Петербург'
     const nextSection = searchParams.get('visibility') || 'all'
     const nextCategory = searchParams.get('category') || 'all'
     const nextActiveNow = searchParams.get('activeNow') === 'true'
+    const nextMetro = searchParams.get('metro') || ''
     setCity(nextCity)
     setSection(nextSection)
     setCategory(nextCategory)
     setActiveNow(nextActiveNow)
+    setMetro(nextMetro)
   }, [searchParams])
 
   useEffect(() => {
@@ -135,6 +157,55 @@ function OffersContent() {
               </button>
             ))}
           </div>
+
+          {/* Metro filter */}
+          <div className="relative">
+            <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar">
+              <button
+                onClick={() => setShowMetroDropdown((v) => !v)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors chip shrink-0 ${
+                  metro
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-50 text-gray-600 border border-gray-200 active:bg-gray-100'
+                }`}
+              >
+                <span>🚇</span>
+                {metro ? `м. ${metro}` : 'Метро'}
+              </button>
+
+              {metro && (
+                <button
+                  onClick={() => setMetro('')}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap bg-gray-100 text-gray-500 active:bg-gray-200 chip shrink-0"
+                >
+                  Сбросить метро
+                </button>
+              )}
+            </div>
+
+            {showMetroDropdown && (
+              <div className="absolute top-full left-0 mt-1 z-40 bg-white rounded-xl shadow-lg border border-gray-100 p-2 w-64 max-h-60 overflow-y-auto">
+                <div className="flex flex-wrap gap-1.5">
+                  {METRO_STATIONS.map((station) => (
+                    <button
+                      key={station}
+                      onClick={() => {
+                        setMetro(station === metro ? '' : station)
+                        setShowMetroDropdown(false)
+                      }}
+                      className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors chip ${
+                        metro === station
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-100 text-gray-600 active:bg-gray-200'
+                      }`}
+                    >
+                      {station}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -146,6 +217,7 @@ function OffersContent() {
             visibility={section === 'all' || section === 'activeNow' ? undefined : section}
             category={category === 'all' ? undefined : category}
             activeNow={activeNow}
+            metro={metro || undefined}
           />
         </div>
       </div>

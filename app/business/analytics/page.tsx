@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { getSession } from '@/modules/auth/session'
 import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
+import RedemptionHeatmap from '@/components/RedemptionHeatmap'
 
 function formatRubles(kopecks: number): string {
   const rubles = Math.floor(kopecks / 100)
@@ -58,6 +59,7 @@ export default async function BusinessAnalyticsPage() {
     totalRedemptions,
     uniqueCustomers,
     overallAvgRating,
+    categoryAvgDiscount,
   ] = await Promise.all([
     prisma.redemption.findMany({
       where: {
@@ -113,6 +115,11 @@ export default async function BusinessAnalyticsPage() {
     prisma.offerReview.aggregate({
       _avg: { rating: true },
       where: { offer: { merchantId: { in: merchantIds } }, isPublished: true },
+    }),
+    // Category comparison: avg PERCENT discount across ALL merchants
+    prisma.offer.aggregate({
+      _avg: { benefitValue: true },
+      where: { benefitType: 'PERCENT', approvalStatus: 'APPROVED' },
     }),
   ])
 
@@ -186,6 +193,20 @@ export default async function BusinessAnalyticsPage() {
   // === Demand stats ===
   const demandConversion = totalDemands > 0 ? Math.round((fulfilledDemands / totalDemands) * 100) : 0
 
+  // === Category comparison ===
+  const myPercentOffers = allOffers.filter((o) => o.benefitType === 'PERCENT')
+  const myAvgDiscount =
+    myPercentOffers.length > 0
+      ? Math.round(
+          myPercentOffers.reduce((sum, o) => sum + Number(o.benefitValue), 0) /
+            myPercentOffers.length
+        )
+      : null
+  const categoryAvg =
+    categoryAvgDiscount._avg.benefitValue
+      ? Math.round(Number(categoryAvgDiscount._avg.benefitValue))
+      : null
+
   return (
     <div className="px-4 py-6 sm:px-6">
       <div className="flex items-center justify-between mb-5">
@@ -233,7 +254,62 @@ export default async function BusinessAnalyticsPage() {
         </div>
       </div>
 
-      {/* (b) Hourly heatmap */}
+      {/* (b1) 7×24 Redemption heatmap — client component */}
+      <RedemptionHeatmap />
+
+      {/* (b2) Repeat customer rate card + category comparison */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+        {/* Repeat customers */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+          <h2 className="text-sm font-semibold text-gray-900 mb-1">Постоянные клиенты</h2>
+          <p className="text-xs text-gray-400 mb-3">Доля пользователей с более чем 1 использованием</p>
+          {totalCust === 0 ? (
+            <p className="text-sm text-gray-400">Нет данных</p>
+          ) : (
+            <div className="flex items-center gap-4">
+              <div className="text-3xl font-bold text-brand-600">{retentionRate}%</div>
+              <div className="text-sm text-gray-600">
+                <p><span className="font-medium text-gray-900">{returningCust}</span> повторных</p>
+                <p><span className="font-medium text-gray-900">{newCust}</span> новых</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Category comparison */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+          <h2 className="text-sm font-semibold text-gray-900 mb-1">Сравнение со средним</h2>
+          <p className="text-xs text-gray-400 mb-3">Только для предложений с процентной скидкой</p>
+          {myAvgDiscount === null ? (
+            <p className="text-sm text-gray-400">Нет предложений со скидкой в %</p>
+          ) : (
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Ваша средняя скидка</span>
+                <span className="font-bold text-gray-900">-{myAvgDiscount}%</span>
+              </div>
+              {categoryAvg !== null && (
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Средняя по платформе</span>
+                  <span className="font-medium text-gray-500">-{categoryAvg}%</span>
+                </div>
+              )}
+              {categoryAvg !== null && myAvgDiscount < categoryAvg && (
+                <p className="text-xs text-amber-600 bg-amber-50 rounded-lg px-3 py-2 mt-2">
+                  Ваши скидки ниже среднего. Повышение скидки до -{categoryAvg}% может увеличить количество использований.
+                </p>
+              )}
+              {categoryAvg !== null && myAvgDiscount >= categoryAvg && (
+                <p className="text-xs text-green-600 bg-green-50 rounded-lg px-3 py-2 mt-2">
+                  Ваши скидки выше среднего по платформе — отличный результат!
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* (b3) Hourly heatmap (legacy bar chart) */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-6">
         <h2 className="text-sm font-semibold text-gray-900 mb-3">Активность по часам (текущий месяц)</h2>
         <div className="flex items-end gap-[3px] h-24">

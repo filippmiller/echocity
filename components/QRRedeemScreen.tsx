@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import QRCode from 'qrcode'
-import { CheckCircle2, RefreshCw } from 'lucide-react'
+import { CheckCircle2, RefreshCw, Coins } from 'lucide-react'
+import { toast } from 'sonner'
 
 interface QRRedeemScreenProps {
   offerId: string
@@ -38,7 +39,9 @@ export function QRRedeemScreen({ offerId, offerTitle }: QRRedeemScreenProps) {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [redeemed, setRedeemed] = useState(false)
+  const [earnedCoins, setEarnedCoins] = useState(0)
   const [geoStatus, setGeoStatus] = useState<'pending' | 'granted' | 'denied'>('pending')
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const createSession = useCallback(async () => {
     setLoading(true)
@@ -78,9 +81,45 @@ export function QRRedeemScreen({ offerId, offerTitle }: QRRedeemScreenProps) {
     }
   }, [offerId])
 
+  // Poll session status to detect redemption and show cashback toast
+  const startPolling = useCallback((sessionId: string) => {
+    if (pollRef.current) clearInterval(pollRef.current)
+    pollRef.current = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/redemptions/session-status?sessionId=${sessionId}`)
+        if (!res.ok) return
+        const data = await res.json()
+        if (data.status === 'USED') {
+          if (pollRef.current) clearInterval(pollRef.current)
+          pollRef.current = null
+          setRedeemed(true)
+          if (data.earnedCoins > 0) {
+            setEarnedCoins(data.earnedCoins)
+            toast.success(`+${data.earnedCoins} EchoCoins заработано! 🪙`, {
+              description: 'Монеты добавлены в ваш кошелёк',
+              duration: 5000,
+            })
+          }
+        }
+      } catch { /* ignore */ }
+    }, 2000)
+  }, [])
+
   useEffect(() => {
     createSession()
   }, [createSession])
+
+  // Start polling whenever we have a new session
+  useEffect(() => {
+    if (!session) return
+    startPolling(session.id)
+    return () => {
+      if (pollRef.current) {
+        clearInterval(pollRef.current)
+        pollRef.current = null
+      }
+    }
+  }, [session, startPolling])
 
   useEffect(() => {
     if (!session) return
@@ -131,6 +170,19 @@ export function QRRedeemScreen({ offerId, offerTitle }: QRRedeemScreenProps) {
         >
           {offerTitle || 'Скидка активирована'}
         </motion.p>
+        {earnedCoins > 0 && (
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.7 }}
+            className="mt-4 flex items-center gap-2 px-4 py-2.5 bg-amber-50 rounded-xl border border-amber-100"
+          >
+            <Coins className="w-5 h-5 text-amber-500" />
+            <span className="text-sm font-semibold text-amber-800">
+              +{earnedCoins} EchoCoins заработано!
+            </span>
+          </motion.div>
+        )}
       </motion.div>
     )
   }
