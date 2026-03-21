@@ -45,6 +45,7 @@ export async function GET() {
   const referrals = await prisma.referral.findMany({
     where: { referralCodeId: referralCode.id },
     select: { status: true, rewardGranted: true },
+    take: 1000,
   })
 
   const totalInvited = referrals.length

@@ -73,8 +73,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const body = await req.json()
-  const { placeId, tableNumber, seats, zone } = body
+  let body: Record<string, unknown>
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+  }
+  const { placeId, tableNumber, seats, zone } = body as { placeId?: string; tableNumber?: string; seats?: number; zone?: string }
 
   if (!placeId || !tableNumber || !seats) {
     return NextResponse.json(

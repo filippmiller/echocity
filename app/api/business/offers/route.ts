@@ -23,6 +23,7 @@ export async function GET() {
       limits: true,
     },
     orderBy: { createdAt: 'desc' },
+    take: 200,
   })
 
   return NextResponse.json({ offers })
@@ -34,7 +35,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const body = await req.json()
+  let body: unknown
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+  }
   const parsed = createOfferSchema.safeParse(body)
   if (!parsed.success) {
     return NextResponse.json({ error: 'Validation failed', details: parsed.error.flatten() }, { status: 400 })

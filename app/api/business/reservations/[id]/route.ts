@@ -14,7 +14,13 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
   }
 
   const { id } = await ctx.params
-  const body = await req.json()
+
+  let body: { action?: string; reason?: string }
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+  }
   const { action, reason } = body
 
   try {

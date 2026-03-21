@@ -13,7 +13,13 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
   }
 
   const { id } = await ctx.params
-  const body = await req.json()
+
+  let body: Record<string, unknown>
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+  }
 
   // Find table and verify ownership
   const table = await prisma.tableConfig.findUnique({

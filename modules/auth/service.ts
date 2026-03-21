@@ -259,6 +259,18 @@ export async function registerBusiness(
 const failedAttempts = new Map<string, { count: number; lastAttempt: number }>()
 const MAX_FAILED_ATTEMPTS = 7
 const LOCKOUT_DURATION_MS = 15 * 60_000 // 15 minutes
+let loginCallCount = 0
+
+function pruneExpiredAttempts() {
+  loginCallCount++
+  if (loginCallCount % 50 !== 0) return // prune every 50 login attempts
+  const now = Date.now()
+  for (const [email, record] of failedAttempts.entries()) {
+    if (now - record.lastAttempt >= LOCKOUT_DURATION_MS) {
+      failedAttempts.delete(email)
+    }
+  }
+}
 
 function checkAccountLockout(email: string): { locked: boolean; retryAfterSeconds?: number } {
   const record = failedAttempts.get(email)
@@ -287,6 +299,9 @@ function clearFailedLogin(email: string) {
  */
 export async function loginUser(data: LoginData): Promise<AuthResult> {
   try {
+    // Periodic cleanup of expired entries to prevent memory leak
+    pruneExpiredAttempts()
+
     // Check lockout before attempting (normalize email for consistent tracking)
     const normalizedEmail = data.email.toLowerCase()
     const lockout = checkAccountLockout(normalizedEmail)

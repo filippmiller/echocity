@@ -8,7 +8,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized — must be merchant staff' }, { status: 401 })
   }
 
-  const { sessionToken, shortCode } = await req.json()
+  let body: { sessionToken?: string; shortCode?: string }
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+  }
+  const { sessionToken, shortCode } = body
   if (!sessionToken && !shortCode) {
     return NextResponse.json({ error: 'sessionToken or shortCode required' }, { status: 400 })
   }
