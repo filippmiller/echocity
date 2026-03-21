@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Star } from 'lucide-react'
+import { Star, BadgeCheck } from 'lucide-react'
 import { useAuth } from '@/lib/auth-client'
 import OfferReviewForm from './OfferReviewForm'
 
@@ -12,6 +12,7 @@ interface Review {
   photoUrls: string[]
   createdAt: string
   authorName: string
+  isVerifiedVisit?: boolean
 }
 
 interface UnreviewedRedemption {
@@ -126,6 +127,12 @@ export default function OfferReviews({ offerId }: OfferReviewsProps) {
               <span className="text-sm text-gray-400">из 5</span>
             </div>
           )}
+          {reviewCount > 0 && (
+            <div className="flex items-center gap-1.5 mt-1.5">
+              <BadgeCheck className="w-3.5 h-3.5 text-green-500" />
+              <span className="text-xs text-green-600 font-medium">Все отзывы от проверенных посетителей</span>
+            </div>
+          )}
         </div>
 
         {user && unreviewedRedemptions.length > 0 && !showForm && (
@@ -180,6 +187,12 @@ export default function OfferReviews({ offerId }: OfferReviewsProps) {
                   <span className="text-sm font-medium text-gray-800">
                     {review.authorName}
                   </span>
+                  {review.isVerifiedVisit && (
+                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-green-50 text-green-600 text-[10px] font-semibold">
+                      <BadgeCheck className="w-3 h-3" />
+                      Визит подтверждён
+                    </span>
+                  )}
                 </div>
                 <span className="text-xs text-gray-400">
                   {new Date(review.createdAt).toLocaleDateString('ru-RU')}

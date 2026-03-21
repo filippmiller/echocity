@@ -50,6 +50,7 @@ export async function GET(
       photoUrls: r.photoUrls,
       createdAt: r.createdAt,
       authorName: [r.user.firstName, r.user.lastName].filter(Boolean).join(' ') || 'Пользователь',
+      isVerifiedVisit: true, // All reviews require a successful redemption — every review is verified
     })),
     total,
     page,

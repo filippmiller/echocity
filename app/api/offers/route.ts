@@ -60,6 +60,7 @@ export async function GET(req: NextRequest) {
     })),
     nearestMetro: offer.branch?.nearestMetro ?? null,
     isVerified: offer.merchant?.isVerified ?? false,
+    reviewCount: offer._count?.offerReviews ?? 0,
   }))
 
   return NextResponse.json({ offers })

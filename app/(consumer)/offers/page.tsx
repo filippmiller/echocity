@@ -3,6 +3,8 @@
 import { Suspense, useCallback, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { OfferFeed } from '@/components/OfferFeed'
+import { WhatsHot } from '@/components/WhatsHot'
+import { TrendingDemands } from '@/components/TrendingDemands'
 import { Footer } from '@/components/Footer'
 import { PullToRefresh } from '@/components/PullToRefresh'
 
@@ -222,6 +224,8 @@ function OffersContent() {
       <PullToRefresh onRefresh={handleRefresh}>
         <div className="px-4 py-6">
           <div className="max-w-7xl mx-auto">
+            <WhatsHot city={city} />
+            <TrendingDemands city={city} />
             <OfferFeed
               key={refreshKey}
               city={city}

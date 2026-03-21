@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Clock, Users, Flame, Globe, Train } from 'lucide-react'
+import { Clock, Users, Flame, Globe, Train, Star, BadgeCheck } from 'lucide-react'
 import { FavoriteButton } from '@/components/FavoriteButton'
 import { VerifiedBadge } from '@/components/VerifiedBadge'
 import { hapticTap } from '@/lib/haptics'
@@ -33,6 +33,7 @@ interface OfferCardProps {
   nearestMetro?: string | null
   isVerified?: boolean
   isTrending?: boolean
+  reviewCount?: number
 }
 
 type ScheduleStatus =
@@ -94,7 +95,7 @@ export function OfferCard({
   id, title, subtitle, benefitType, benefitValue, visibility,
   imageUrl, branchName, branchAddress, distance,
   expiresAt, redemptionCount, maxRedemptions, isFlash,
-  redemptionChannel, schedules, nearestMetro, isVerified, isTrending,
+  redemptionChannel, schedules, nearestMetro, isVerified, isTrending, reviewCount,
 }: OfferCardProps) {
   const badge = getBenefitBadge(benefitType, benefitValue)
   const isMembersOnly = visibility === 'MEMBERS_ONLY'
@@ -220,12 +221,20 @@ export function OfferCard({
               <span className="truncate">{nearestMetro}</span>
             </div>
           )}
-          {redemptionCount !== undefined && redemptionCount > 0 && (
-            <div className="mt-1.5 flex items-center gap-1 text-xs text-gray-400">
-              <Users className="w-3 h-3" />
-              <span>{redemptionCount} использовали</span>
-            </div>
-          )}
+          <div className="mt-1.5 flex items-center gap-2 flex-wrap">
+            {redemptionCount !== undefined && redemptionCount > 0 && (
+              <span className="flex items-center gap-1 text-xs text-gray-400">
+                <Users className="w-3 h-3" />
+                {redemptionCount} использовали
+              </span>
+            )}
+            {reviewCount !== undefined && reviewCount > 0 && (
+              <span className="flex items-center gap-1 text-xs text-green-500">
+                <BadgeCheck className="w-3 h-3" />
+                {reviewCount} {reviewCount === 1 ? 'отзыв' : reviewCount < 5 ? 'отзыва' : 'отзывов'}
+              </span>
+            )}
+          </div>
         </div>
       </div>
     </Link>

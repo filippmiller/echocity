@@ -31,6 +31,7 @@ interface OfferData {
   schedules?: ScheduleSlot[]
   nearestMetro?: string | null
   isVerified?: boolean
+  reviewCount?: number
 }
 
 export function OfferFeed({ city, visibility, category, activeNow, metro }: { city?: string; visibility?: string; category?: string; activeNow?: boolean; metro?: string }) {
@@ -99,6 +100,7 @@ export function OfferFeed({ city, visibility, category, activeNow, metro }: { ci
           schedules={offer.schedules}
           nearestMetro={offer.nearestMetro ?? offer.branch?.nearestMetro}
           isVerified={offer.isVerified ?? offer.merchant?.isVerified}
+          reviewCount={offer.reviewCount}
         />
       ))}
     </div>
