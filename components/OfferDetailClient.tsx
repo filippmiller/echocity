@@ -15,6 +15,7 @@ import { ShareButton } from '@/components/ShareButton'
 import { VerifiedBadge } from '@/components/VerifiedBadge'
 import { GroupDealCard, type GroupDealData } from '@/components/GroupDealCard'
 import { ExpiryCountdown } from '@/components/ExpiryCountdown'
+import { addRecentlyViewed } from '@/lib/recently-viewed'
 import { RecentActivityTicker } from '@/components/RecentActivityTicker'
 import { toast } from 'sonner'
 
@@ -101,6 +102,16 @@ export function OfferDetailClient({ offer }: { offer: OfferDetail | null }) {
     if (groupParam) {
       setShowGroupSection(true)
     }
+    // Track recently viewed for local history
+    addRecentlyViewed({
+      id: offer.id,
+      title: offer.title,
+      benefitType: offer.benefitType,
+      benefitValue: Number(offer.benefitValue),
+      imageUrl: offer.imageUrl,
+      branchName: offer.branch.title,
+    })
+
     // Track referral attribution — store ref param for later redemption tracking
     const refParam = searchParams.get('ref')
     if (refParam) {

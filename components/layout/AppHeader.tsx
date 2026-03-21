@@ -59,6 +59,9 @@ export function AppHeader() {
           <Link href="/favorites" className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 rounded-lg hover:bg-gray-50">
             Избранное
           </Link>
+          <Link href="/demands" className="px-3 py-2 text-sm font-medium text-orange-600 hover:text-orange-700 rounded-lg hover:bg-orange-50">
+            Запросы
+          </Link>
           {user?.role === 'BUSINESS_OWNER' && (
             <Link href="/business/dashboard" className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 rounded-lg hover:bg-gray-50">
               Бизнес

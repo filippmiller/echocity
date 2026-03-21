@@ -11,6 +11,8 @@ import { FeaturedCollections } from '@/components/FeaturedCollections'
 import { TopRatedOffers } from '@/components/TopRatedOffers'
 import { Footer } from '@/components/Footer'
 import { PullToRefresh } from '@/components/PullToRefresh'
+import { RecentlyViewed } from '@/components/RecentlyViewed'
+import { NearbyOffers } from '@/components/NearbyOffers'
 
 const FILTER_CHIPS = [
   { key: 'all', label: 'Все' },
@@ -247,8 +249,10 @@ function OffersContent() {
       <PullToRefresh onRefresh={handleRefresh}>
         <div className="px-4 py-6">
           <div className="max-w-7xl mx-auto">
+            <RecentlyViewed />
             <HomeStoriesBar />
             <WhatsHot city={city} />
+            <NearbyOffers city={city} />
             <ForYouOffers city={city} />
             <TopRatedOffers city={city} />
             <FeaturedCollections />
