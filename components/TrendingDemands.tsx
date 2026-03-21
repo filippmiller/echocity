@@ -26,6 +26,7 @@ export function TrendingDemands({ city }: { city?: string }) {
   const [loading, setLoading] = useState(true)
   const [showAuth, setShowAuth] = useState(false)
   const [supportingId, setSupportingId] = useState<string | null>(null)
+  const [responseRate, setResponseRate] = useState<number>(0)
 
   useEffect(() => {
     const params = new URLSearchParams()
@@ -36,6 +37,7 @@ export function TrendingDemands({ city }: { city?: string }) {
       .then((r) => r.json())
       .then((data) => {
         setDemands(data.demands || [])
+        setResponseRate(data.responseRate ?? 0)
         setLoading(false)
       })
       .catch(() => setLoading(false))
@@ -81,7 +83,11 @@ export function TrendingDemands({ city }: { city?: string }) {
           <Megaphone className="w-5 h-5 text-orange-500" />
           <h2 className="text-base font-bold text-gray-900">Люди хотят скидки</h2>
         </div>
-        <span className="text-xs text-gray-400">Поддержите запрос</span>
+        {responseRate > 0 && (
+          <span className="text-xs text-green-600 font-medium bg-green-50 px-2 py-0.5 rounded-full">
+            {responseRate}% получают ответ
+          </span>
+        )}
       </div>
 
       <div className="space-y-2">

@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import { OfferFeed } from '@/components/OfferFeed'
 import { WhatsHot } from '@/components/WhatsHot'
 import { TrendingDemands } from '@/components/TrendingDemands'
+import { ForYouOffers } from '@/components/ForYouOffers'
 import { Footer } from '@/components/Footer'
 import { PullToRefresh } from '@/components/PullToRefresh'
 
@@ -60,6 +61,7 @@ function OffersContent() {
   const [metro, setMetro] = useState(searchParams.get('metro') || '')
   const [showMetroDropdown, setShowMetroDropdown] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
+  const [categoryCounts, setCategoryCounts] = useState<Record<string, number>>({})
 
   const handleRefresh = useCallback(async () => {
     // Bump the key so OfferFeed re-mounts and re-fetches
@@ -80,6 +82,14 @@ function OffersContent() {
     setActiveNow(nextActiveNow)
     setMetro(nextMetro)
   }, [searchParams])
+
+  // Fetch category counts when city changes
+  useEffect(() => {
+    fetch(`/api/offers/counts?city=${encodeURIComponent(city)}`)
+      .then((r) => r.json())
+      .then((data) => setCategoryCounts(data.counts || {}))
+      .catch(() => {})
+  }, [city])
 
   useEffect(() => {
     fetch('/api/public/cities')
@@ -151,22 +161,32 @@ function OffersContent() {
             </div>
           </div>
 
-          {/* Category pills */}
+          {/* Category pills with live counts */}
           <div className="flex gap-2 overflow-x-auto hide-scrollbar">
-            {CATEGORIES.map((cat) => (
-              <button
-                key={cat.slug}
-                onClick={() => setCategory(cat.slug)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors chip ${
-                  category === cat.slug
-                    ? 'bg-gray-900 text-white'
-                    : 'bg-gray-50 text-gray-600 border border-gray-200 active:bg-gray-100'
-                }`}
-              >
-                <span>{cat.emoji}</span>
-                {cat.label}
-              </button>
-            ))}
+            {CATEGORIES.map((cat) => {
+              const count = categoryCounts[cat.slug]
+              return (
+                <button
+                  key={cat.slug}
+                  onClick={() => setCategory(cat.slug)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors chip ${
+                    category === cat.slug
+                      ? 'bg-gray-900 text-white'
+                      : 'bg-gray-50 text-gray-600 border border-gray-200 active:bg-gray-100'
+                  }`}
+                >
+                  <span>{cat.emoji}</span>
+                  {cat.label}
+                  {count !== undefined && count > 0 && (
+                    <span className={`ml-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                      category === cat.slug ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-500'
+                    }`}>
+                      {count}
+                    </span>
+                  )}
+                </button>
+              )
+            })}
           </div>
 
           {/* Metro filter */}
@@ -225,6 +245,7 @@ function OffersContent() {
         <div className="px-4 py-6">
           <div className="max-w-7xl mx-auto">
             <WhatsHot city={city} />
+            <ForYouOffers city={city} />
             <TrendingDemands city={city} />
             <OfferFeed
               key={refreshKey}

@@ -14,6 +14,8 @@ import { SimilarOffers } from '@/components/SimilarOffers'
 import { ShareButton } from '@/components/ShareButton'
 import { VerifiedBadge } from '@/components/VerifiedBadge'
 import { GroupDealCard, type GroupDealData } from '@/components/GroupDealCard'
+import { ExpiryCountdown } from '@/components/ExpiryCountdown'
+import { RecentActivityTicker } from '@/components/RecentActivityTicker'
 import { toast } from 'sonner'
 
 export interface OfferDetail {
@@ -99,6 +101,15 @@ export function OfferDetailClient({ offer }: { offer: OfferDetail | null }) {
     if (groupParam) {
       setShowGroupSection(true)
     }
+    // Track referral attribution — store ref param for later redemption tracking
+    const refParam = searchParams.get('ref')
+    if (refParam) {
+      try {
+        localStorage.setItem(`echocity_ref_${offer.id}`, refParam)
+      } catch {
+        // localStorage unavailable (private browsing)
+      }
+    }
     loadGroupDeals(offer.id)
   }, [offer, searchParams, loadGroupDeals])
 
@@ -183,6 +194,9 @@ export function OfferDetailClient({ offer }: { offer: OfferDetail | null }) {
           </span>
         )}
       </div>
+
+      {offer.endAt && <ExpiryCountdown expiresAt={offer.endAt} />}
+      <RecentActivityTicker offerId={offer.id} />
 
       <div className="flex items-start justify-between gap-2 mb-1">
         <h1 className="text-2xl font-bold text-gray-900">{offer.title}</h1>

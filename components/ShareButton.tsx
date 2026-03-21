@@ -2,6 +2,7 @@
 
 import { Share2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { useAuth } from '@/lib/auth-client'
 
 interface ShareButtonProps {
   title: string
@@ -18,10 +19,24 @@ export function ShareButton({
   className = '',
   variant = 'icon',
 }: ShareButtonProps) {
+  const { user } = useAuth()
+
+  // Append referral param if user is logged in
+  const shareUrl = (() => {
+    if (!user?.userId) return url
+    try {
+      const u = new URL(url, typeof window !== 'undefined' ? window.location.origin : undefined)
+      u.searchParams.set('ref', user.userId.slice(0, 8)) // Short ref ID for cleaner URLs
+      return u.toString()
+    } catch {
+      return url
+    }
+  })()
+
   const handleShare = async () => {
     if (typeof navigator !== 'undefined' && navigator.share) {
       try {
-        await navigator.share({ title, text, url })
+        await navigator.share({ title, text, url: shareUrl })
       } catch (err) {
         // User dismissed the share sheet — not an error
         if (err instanceof Error && err.name !== 'AbortError') {
@@ -35,7 +50,7 @@ export function ShareButton({
 
   const fallbackCopy = () => {
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
-      navigator.clipboard.writeText(url).then(() => {
+      navigator.clipboard.writeText(shareUrl).then(() => {
         toast.success('Ссылка скопирована')
       }).catch(() => {
         toast.error('Не удалось скопировать ссылку')

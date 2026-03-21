@@ -45,23 +45,48 @@ export async function GET(req: NextRequest) {
     filtered = filtered.filter((offer) => isOfferActiveNow(offer.schedules ?? [], weekday, timeStr))
   }
 
-  // Enrich response with computed fields
-  const offers = filtered.map((offer: any) => ({
-    ...offer,
-    expiresAt: offer.endAt?.toISOString() ?? null,
-    redemptionCount: offer._count?.redemptions ?? 0,
-    maxRedemptions: offer.limits?.totalLimit ?? null,
-    isFlash: offer.offerType === 'FLASH',
-    isTrending: trendingSet.has(offer.id),
-    schedules: (offer.schedules ?? []).map((s: any) => ({
-      weekday: s.weekday,
-      startTime: s.startTime,
-      endTime: s.endTime,
-    })),
-    nearestMetro: offer.branch?.nearestMetro ?? null,
-    isVerified: offer.merchant?.isVerified ?? false,
-    reviewCount: offer._count?.offerReviews ?? 0,
-  }))
+  // Enrich response with computed fields + engagement score
+  const now = Date.now()
+  const offers = filtered
+    .map((offer: any) => {
+      const redemptionCount = offer._count?.redemptions ?? 0
+      const reviewCount = offer._count?.offerReviews ?? 0
+      const isTrending = trendingSet.has(offer.id)
+      const isFlash = offer.offerType === 'FLASH'
+      const ageHours = (now - new Date(offer.createdAt).getTime()) / 3_600_000
+
+      // Engagement-weighted score: balances recency with popularity
+      // - Recency: newer offers get a boost (decays over 72h)
+      // - Redemptions: each redemption adds weight
+      // - Reviews: verified reviews are high-signal engagement
+      // - Trending: recent velocity bonus
+      // - Flash: urgency bonus
+      const recencyScore = Math.max(0, 1 - ageHours / 72) * 30
+      const redemptionScore = Math.min(redemptionCount * 2, 30)
+      const reviewScore = Math.min(reviewCount * 5, 20)
+      const trendingBonus = isTrending ? 15 : 0
+      const flashBonus = isFlash ? 10 : 0
+      const engagementScore = recencyScore + redemptionScore + reviewScore + trendingBonus + flashBonus
+
+      return {
+        ...offer,
+        expiresAt: offer.endAt?.toISOString() ?? null,
+        redemptionCount,
+        maxRedemptions: offer.limits?.totalLimit ?? null,
+        isFlash,
+        isTrending,
+        schedules: (offer.schedules ?? []).map((s: any) => ({
+          weekday: s.weekday,
+          startTime: s.startTime,
+          endTime: s.endTime,
+        })),
+        nearestMetro: offer.branch?.nearestMetro ?? null,
+        isVerified: offer.merchant?.isVerified ?? false,
+        reviewCount,
+        engagementScore: Math.round(engagementScore),
+      }
+    })
+    .sort((a: any, b: any) => b.engagementScore - a.engagementScore)
 
   return NextResponse.json({ offers })
 }

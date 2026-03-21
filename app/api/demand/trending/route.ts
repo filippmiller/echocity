@@ -33,6 +33,21 @@ export async function GET(req: NextRequest) {
     },
   })
 
+  // Calculate city-wide response rate for social proof
+  const [totalDemands, respondedDemands] = await Promise.all([
+    prisma.demandRequest.count({
+      where: { cityId: city.id, status: { in: ['OPEN', 'COLLECTING', 'FULFILLED'] } },
+    }),
+    prisma.demandRequest.count({
+      where: {
+        cityId: city.id,
+        status: { in: ['COLLECTING', 'FULFILLED'] },
+        responses: { some: {} },
+      },
+    }),
+  ])
+  const responseRate = totalDemands > 0 ? Math.round((respondedDemands / totalDemands) * 100) : 0
+
   return NextResponse.json({
     demands: demands.map((d) => ({
       id: d.id,
@@ -46,5 +61,6 @@ export async function GET(req: NextRequest) {
       status: d.status,
       createdAt: d.createdAt,
     })),
+    responseRate,
   })
 }
