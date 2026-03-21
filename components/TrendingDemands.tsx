@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Megaphone, Users, ArrowRight, MessageCircle } from 'lucide-react'
+import { Megaphone, Users, ArrowRight, MessageCircle, ChevronRight } from 'lucide-react'
+import Link from 'next/link'
 import { useAuth } from '@/lib/auth-client'
 import { AuthPrompt } from '@/components/AuthPrompt'
 import { toast } from 'sonner'
@@ -130,6 +131,14 @@ export function TrendingDemands({ city }: { city?: string }) {
           </div>
         ))}
       </div>
+
+      <Link
+        href="/demands"
+        className="mt-3 flex items-center justify-center gap-1 text-sm text-orange-600 font-medium hover:text-orange-700 py-2"
+      >
+        Все запросы и создать свой
+        <ChevronRight className="w-4 h-4" />
+      </Link>
 
       <AuthPrompt
         isOpen={showAuth}

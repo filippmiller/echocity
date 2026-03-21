@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import Link from 'next/link'
-import { Clock, MapPin, ArrowLeft, Tag, Loader2, ShoppingBag } from 'lucide-react'
+import { Clock, MapPin, ArrowLeft, Tag, Loader2, ShoppingBag, TrendingUp, Wallet } from 'lucide-react'
 
 interface RedemptionItem {
   id: string
@@ -175,6 +175,44 @@ export default function HistoryPage() {
       </div>
 
       <div className="max-w-2xl mx-auto px-4 pt-4">
+        {/* Savings summary banner */}
+        {!loading && redemptions.length > 0 && (() => {
+          const successful = redemptions.filter((r) => r.status === 'SUCCESS')
+          const totalSaved = successful.reduce((sum, r) => {
+            const amt = r.discountAmount ? parseFloat(r.discountAmount) : 0
+            return sum + amt
+          }, 0)
+          const uniquePlaces = new Set(successful.map((r) => r.branch.id)).size
+          return (
+            <div className="bg-gradient-to-r from-emerald-500 to-green-500 rounded-2xl p-4 mb-4 text-white">
+              <div className="flex items-center gap-2 mb-3">
+                <Wallet className="w-5 h-5" />
+                <span className="text-sm font-semibold">Ваша экономия</span>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <p className="text-2xl font-bold">{Math.round(totalSaved)} ₽</p>
+                  <p className="text-xs text-green-100">сэкономлено</p>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{successful.length}</p>
+                  <p className="text-xs text-green-100">скидок</p>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{uniquePlaces}</p>
+                  <p className="text-xs text-green-100">мест</p>
+                </div>
+              </div>
+              {totalSaved > 0 && (
+                <div className="mt-3 flex items-center gap-1.5 text-xs text-green-100">
+                  <TrendingUp className="w-3.5 h-3.5" />
+                  В среднем {Math.round(totalSaved / Math.max(successful.length, 1))} ₽ за визит
+                </div>
+              )}
+            </div>
+          )
+        })()}
+
         {/* Loading skeleton */}
         {loading && (
           <div className="space-y-3">

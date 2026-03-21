@@ -6,6 +6,9 @@ import { OfferFeed } from '@/components/OfferFeed'
 import { WhatsHot } from '@/components/WhatsHot'
 import { TrendingDemands } from '@/components/TrendingDemands'
 import { ForYouOffers } from '@/components/ForYouOffers'
+import { HomeStoriesBar } from '@/components/HomeStoriesBar'
+import { FeaturedCollections } from '@/components/FeaturedCollections'
+import { TopRatedOffers } from '@/components/TopRatedOffers'
 import { Footer } from '@/components/Footer'
 import { PullToRefresh } from '@/components/PullToRefresh'
 
@@ -244,8 +247,11 @@ function OffersContent() {
       <PullToRefresh onRefresh={handleRefresh}>
         <div className="px-4 py-6">
           <div className="max-w-7xl mx-auto">
+            <HomeStoriesBar />
             <WhatsHot city={city} />
             <ForYouOffers city={city} />
+            <TopRatedOffers city={city} />
+            <FeaturedCollections />
             <TrendingDemands city={city} />
             <OfferFeed
               key={refreshKey}
