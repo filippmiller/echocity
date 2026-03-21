@@ -13,7 +13,8 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
   try {
     const offer = await submitForModeration(id, session.userId)
     return NextResponse.json({ offer })
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 400 })
+  } catch (e) {
+    const message = e instanceof Error ? e.message : 'Unknown error'
+    return NextResponse.json({ error: message }, { status: 400 })
   }
 }

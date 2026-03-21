@@ -1,14 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { getSession } from '@/modules/auth/session'
 import { prisma } from '@/lib/prisma'
+
+const addMemberSchema = z.object({
+  email: z.string().email().max(255),
+})
+
+const removeMemberSchema = z.object({
+  memberId: z.string().uuid(),
+})
 
 export async function POST(req: NextRequest) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { email } = await req.json()
-  if (!email || typeof email !== 'string') {
-    return NextResponse.json({ error: 'Email обязателен' }, { status: 400 })
+  let body: z.infer<typeof addMemberSchema>
+  try {
+    body = addMemberSchema.parse(await req.json())
+  } catch (e) {
+    if (e instanceof z.ZodError) {
+      return NextResponse.json({ error: 'Validation error', details: e.errors }, { status: 400 })
+    }
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
   }
 
   // Find family plan owned by this user
@@ -28,7 +42,7 @@ export async function POST(req: NextRequest) {
 
   // Find user by email
   const invitedUser = await prisma.user.findUnique({
-    where: { email: email.toLowerCase().trim() },
+    where: { email: body.email.toLowerCase().trim() },
   })
 
   if (!invitedUser) {
@@ -74,9 +88,14 @@ export async function DELETE(req: NextRequest) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { memberId } = await req.json()
-  if (!memberId || typeof memberId !== 'string') {
-    return NextResponse.json({ error: 'memberId обязателен' }, { status: 400 })
+  let body: z.infer<typeof removeMemberSchema>
+  try {
+    body = removeMemberSchema.parse(await req.json())
+  } catch (e) {
+    if (e instanceof z.ZodError) {
+      return NextResponse.json({ error: 'Validation error', details: e.errors }, { status: 400 })
+    }
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
   }
 
   // Find family plan owned by this user
@@ -90,14 +109,14 @@ export async function DELETE(req: NextRequest) {
 
   // Find the member
   const member = await prisma.familyMember.findFirst({
-    where: { id: memberId, familyPlanId: familyPlan.id },
+    where: { id: body.memberId, familyPlanId: familyPlan.id },
   })
 
   if (!member) {
     return NextResponse.json({ error: 'Участник не найден' }, { status: 404 })
   }
 
-  await prisma.familyMember.delete({ where: { id: memberId } })
+  await prisma.familyMember.delete({ where: { id: body.memberId } })
 
   return NextResponse.json({ success: true })
 }

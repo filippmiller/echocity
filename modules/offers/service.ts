@@ -159,6 +159,8 @@ export async function getActiveOffersByCity(
 }
 
 export async function getNearbyOffers(lat: number, lng: number, radiusKm: number, cityName: string) {
+  // SECURITY: Uses Prisma tagged template literal — all ${} values are auto-parameterized.
+  // DO NOT convert to $queryRawUnsafe or string concatenation.
   const offers = await prisma.$queryRaw<Array<any>>`
     SELECT o.*, p.title as "branchTitle", p.address as "branchAddress", p.lat as "branchLat", p.lng as "branchLng",
       (6371 * acos(cos(radians(${lat})) * cos(radians(p.lat)) * cos(radians(p.lng) - radians(${lng})) + sin(radians(${lat})) * sin(radians(p.lat)))) AS distance

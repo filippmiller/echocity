@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { getSession } from '@/modules/auth/session'
 import { cancelReservation } from '@/modules/reservations/service'
 import { prisma } from '@/lib/prisma'
@@ -6,6 +7,11 @@ import { prisma } from '@/lib/prisma'
 interface RouteContext {
   params: Promise<{ id: string }>
 }
+
+const cancelSchema = z.object({
+  action: z.literal('cancel'),
+  reason: z.string().max(1000).optional(),
+})
 
 export async function GET(_req: NextRequest, ctx: RouteContext) {
   const session = await getSession()
@@ -51,10 +57,15 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
   }
 
   const { id } = await ctx.params
-  const body = await req.json()
 
-  if (body.action !== 'cancel') {
-    return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
+  let body: z.infer<typeof cancelSchema>
+  try {
+    body = cancelSchema.parse(await req.json())
+  } catch (e) {
+    if (e instanceof z.ZodError) {
+      return NextResponse.json({ error: 'Validation error', details: e.errors }, { status: 400 })
+    }
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
   }
 
   try {

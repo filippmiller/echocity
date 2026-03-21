@@ -161,6 +161,7 @@ export function OfferWizard({ merchantId, branches }: WizardProps) {
   const handleSubmit = async () => {
     setSubmitting(true)
     setError(null)
+    try {
 
     // Build schedules
     const enabledSchedules = scheduleRows
@@ -219,10 +220,18 @@ export function OfferWizard({ merchantId, branches }: WizardProps) {
     if (res.ok) {
       router.push('/business/offers')
     } else {
-      const data = await res.json()
-      setError(data.error || 'Ошибка создания')
+      try {
+        const data = await res.json()
+        setError(data.error || 'Ошибка создания')
+      } catch {
+        setError(`Ошибка сервера (${res.status})`)
+      }
     }
-    setSubmitting(false)
+    } catch {
+      setError('Ошибка сети. Попробуйте ещё раз.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   // ============================

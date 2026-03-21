@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { getSession } from '@/modules/auth/session'
 import { activateBundle, pauseBundle } from '@/modules/bundles/service'
 import { prisma } from '@/lib/prisma'
+
+const bundleActionSchema = z.object({
+  action: z.enum(['activate', 'pause', 'expire']),
+})
 
 export async function PATCH(
   req: NextRequest,
@@ -13,12 +18,20 @@ export async function PATCH(
   }
 
   const { id } = await params
-  const body = await req.json()
-  const { action } = body as { action: string }
+
+  let body: z.infer<typeof bundleActionSchema>
+  try {
+    body = bundleActionSchema.parse(await req.json())
+  } catch (e) {
+    if (e instanceof z.ZodError) {
+      return NextResponse.json({ error: 'Invalid action. Use: activate, pause, expire' }, { status: 400 })
+    }
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+  }
 
   try {
     let bundle
-    switch (action) {
+    switch (body.action) {
       case 'activate':
         bundle = await activateBundle(id)
         break
@@ -31,11 +44,9 @@ export async function PATCH(
           data: { status: 'EXPIRED' },
         })
         break
-      default:
-        return NextResponse.json({ error: 'Invalid action. Use: activate, pause, expire' }, { status: 400 })
     }
     return NextResponse.json({ bundle })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Server error' }, { status: 500 })
+  } catch (err) {
+    return NextResponse.json({ error: err instanceof Error ? err.message : 'Server error' }, { status: 500 })
   }
 }

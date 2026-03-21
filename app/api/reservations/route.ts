@@ -1,6 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { getSession } from '@/modules/auth/session'
 import { createReservation, getReservationsByUser } from '@/modules/reservations/service'
+
+const reservationSchema = z.object({
+  placeId: z.string().uuid(),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'date must be YYYY-MM-DD'),
+  timeSlot: z.string().regex(/^\d{2}:\d{2}$/, 'timeSlot must be HH:MM'),
+  partySize: z.number().int().min(1).max(20),
+  guestName: z.string().min(1).max(200),
+  guestPhone: z.string().max(30).optional(),
+  note: z.string().max(1000).optional(),
+})
 
 export async function GET() {
   const session = await getSession()
@@ -28,37 +39,25 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const body = await req.json()
-  const { placeId, date, timeSlot, partySize, guestName, guestPhone, note } = body
-
-  if (!placeId || !date || !timeSlot || !partySize || !guestName) {
-    return NextResponse.json(
-      { error: 'placeId, date, timeSlot, partySize, and guestName are required' },
-      { status: 400 },
-    )
-  }
-
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-    return NextResponse.json({ error: 'date must be YYYY-MM-DD' }, { status: 400 })
-  }
-
-  if (!/^\d{2}:\d{2}$/.test(timeSlot)) {
-    return NextResponse.json({ error: 'timeSlot must be HH:MM' }, { status: 400 })
-  }
-
-  if (partySize < 1 || partySize > 20) {
-    return NextResponse.json({ error: 'partySize must be 1-20' }, { status: 400 })
+  let body: z.infer<typeof reservationSchema>
+  try {
+    body = reservationSchema.parse(await req.json())
+  } catch (e) {
+    if (e instanceof z.ZodError) {
+      return NextResponse.json({ error: 'Validation error', details: e.errors }, { status: 400 })
+    }
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
   }
 
   try {
     const reservation = await createReservation(session.userId, {
-      placeId,
-      date,
-      timeSlot,
-      partySize: Number(partySize),
-      guestName,
-      guestPhone,
-      note,
+      placeId: body.placeId,
+      date: body.date,
+      timeSlot: body.timeSlot,
+      partySize: body.partySize,
+      guestName: body.guestName,
+      guestPhone: body.guestPhone,
+      note: body.note,
     })
 
     return NextResponse.json({

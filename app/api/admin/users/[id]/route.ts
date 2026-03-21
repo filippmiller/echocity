@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { getSession } from '@/modules/auth/session'
 import { prisma } from '@/lib/prisma'
 import type { Role } from '@prisma/client'
 
 const VALID_ROLES: Role[] = ['ADMIN', 'CITIZEN', 'BUSINESS_OWNER', 'MERCHANT_STAFF']
+
+const updateUserSchema = z.object({
+  isActive: z.boolean().optional(),
+  role: z.enum(['ADMIN', 'CITIZEN', 'BUSINESS_OWNER', 'MERCHANT_STAFF']).optional(),
+})
 
 export async function GET(
   _req: NextRequest,
@@ -111,8 +117,16 @@ export async function PATCH(
   }
 
   const { id } = await params
-  const body = await req.json()
-  const { isActive, role } = body as { isActive?: boolean; role?: Role }
+
+  let body: z.infer<typeof updateUserSchema>
+  try {
+    body = updateUserSchema.parse(await req.json())
+  } catch (e) {
+    if (e instanceof z.ZodError) {
+      return NextResponse.json({ error: 'Validation error', details: e.errors }, { status: 400 })
+    }
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+  }
 
   // Check user exists
   const existing = await prisma.user.findUnique({ where: { id } })
@@ -129,7 +143,7 @@ export async function PATCH(
   }
 
   // If deactivating an admin, ensure at least one admin remains
-  if (isActive === false && existing.role === 'ADMIN') {
+  if (body.isActive === false && existing.role === 'ADMIN') {
     const adminCount = await prisma.user.count({
       where: { role: 'ADMIN', isActive: true },
     })
@@ -142,7 +156,7 @@ export async function PATCH(
   }
 
   // If demoting an admin, ensure at least one admin remains
-  if (role && role !== 'ADMIN' && existing.role === 'ADMIN') {
+  if (body.role && body.role !== 'ADMIN' && existing.role === 'ADMIN') {
     const adminCount = await prisma.user.count({
       where: { role: 'ADMIN', isActive: true },
     })
@@ -154,14 +168,9 @@ export async function PATCH(
     }
   }
 
-  // Validate role
-  if (role && !VALID_ROLES.includes(role)) {
-    return NextResponse.json({ error: 'Invalid role' }, { status: 400 })
-  }
-
   const updateData: Record<string, unknown> = {}
-  if (typeof isActive === 'boolean') updateData.isActive = isActive
-  if (role) updateData.role = role
+  if (typeof body.isActive === 'boolean') updateData.isActive = body.isActive
+  if (body.role) updateData.role = body.role
 
   const updated = await prisma.user.update({
     where: { id },

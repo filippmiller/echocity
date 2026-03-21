@@ -19,8 +19,8 @@ export async function GET(req: NextRequest) {
   try {
     const bundles = await getAllBundles(statusFilter)
     return NextResponse.json({ bundles })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Server error' }, { status: 500 })
+  } catch (err) {
+    return NextResponse.json({ error: err instanceof Error ? err.message : 'Server error' }, { status: 500 })
   }
 }
 
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
 
     const bundle = await createBundle(session.userId, body)
     return NextResponse.json({ bundle }, { status: 201 })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Server error' }, { status: 500 })
+  } catch (err) {
+    return NextResponse.json({ error: err instanceof Error ? err.message : 'Server error' }, { status: 500 })
   }
 }

@@ -5,8 +5,8 @@ import { createSession } from '@/modules/auth/session'
 import { logger } from '@/lib/logger'
 
 const loginSchema = z.object({
-  email: z.string().email('Некорректный email'),
-  password: z.string().min(1, 'Пароль обязателен'),
+  email: z.string().email('Некорректный email').max(255),
+  password: z.string().min(1, 'Пароль обязателен').max(200),
 })
 
 export async function POST(request: NextRequest) {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/modules/auth/session'
+import { logger } from '@/lib/logger'
 
 // GET /api/user/history - List user's redemptions with offer and branch details
 export async function GET(request: NextRequest) {
@@ -59,7 +60,7 @@ export async function GET(request: NextRequest) {
       hasMore: offset + limit < total,
     })
   } catch (error) {
-    console.error('user.history.error', error)
+    logger.error('user.history.error', { error: String(error) })
     return NextResponse.json(
       { error: 'Ошибка при загрузке истории' },
       { status: 500 }

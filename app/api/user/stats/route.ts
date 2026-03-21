@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/modules/auth/session'
+import { logger } from '@/lib/logger'
 
 // GET /api/user/stats - Return user statistics
 export async function GET() {
@@ -78,7 +79,7 @@ export async function GET() {
         : null,
     })
   } catch (error) {
-    console.error('user.stats.error', error)
+    logger.error('user.stats.error', { error: String(error) })
     return NextResponse.json(
       { error: 'Ошибка при загрузке статистики' },
       { status: 500 }

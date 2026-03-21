@@ -1,5 +1,8 @@
 import crypto from 'crypto'
 
+if (!process.env.NEXTAUTH_SECRET && process.env.NODE_ENV === 'production') {
+  throw new Error('NEXTAUTH_SECRET environment variable is required in production')
+}
 const HMAC_SECRET = process.env.NEXTAUTH_SECRET || 'dev-secret-change-me'
 
 export function generateSessionToken(): string {

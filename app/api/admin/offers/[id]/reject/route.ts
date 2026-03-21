@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { getSession } from '@/modules/auth/session'
 import { rejectOffer } from '@/modules/offers/service'
+
+const rejectSchema = z.object({
+  reason: z.string().min(1, 'reason required').max(2000),
+})
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession()
@@ -9,13 +14,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
 
   const { id } = await params
-  const { reason } = await req.json()
-  if (!reason) return NextResponse.json({ error: 'reason required' }, { status: 400 })
+
+  let body: z.infer<typeof rejectSchema>
+  try {
+    body = rejectSchema.parse(await req.json())
+  } catch (e) {
+    if (e instanceof z.ZodError) {
+      return NextResponse.json({ error: 'Validation error', details: e.errors }, { status: 400 })
+    }
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+  }
 
   try {
-    const offer = await rejectOffer(id, reason)
+    const offer = await rejectOffer(id, body.reason)
     return NextResponse.json({ offer })
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 400 })
+  } catch (e) {
+    const message = e instanceof Error ? e.message : 'Unknown error'
+    return NextResponse.json({ error: message }, { status: 400 })
   }
 }

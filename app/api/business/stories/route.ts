@@ -1,7 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { getSession } from '@/modules/auth/session'
 import { prisma } from '@/lib/prisma'
 import { createStory, getStoriesByMerchant } from '@/modules/stories/service'
+
+const createStorySchema = z.object({
+  branchId: z.string().uuid(),
+  mediaUrl: z.string().url().max(2000),
+  mediaType: z.enum(['IMAGE', 'VIDEO']).default('IMAGE'),
+  caption: z.string().max(500).optional(),
+  linkOfferId: z.string().uuid().optional(),
+})
 
 export async function GET() {
   const session = await getSession()
@@ -23,6 +32,7 @@ export async function GET() {
       _count: { select: { views: true } },
     },
     orderBy: { createdAt: 'desc' },
+    take: 100,
   })
 
   return NextResponse.json({ stories })
@@ -34,20 +44,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const body = await req.json()
-  const { branchId, mediaUrl, mediaType, caption, linkOfferId } = body
-
-  if (!branchId || !mediaUrl) {
-    return NextResponse.json(
-      { error: 'branchId and mediaUrl are required' },
-      { status: 400 }
-    )
+  let body: z.infer<typeof createStorySchema>
+  try {
+    body = createStorySchema.parse(await req.json())
+  } catch (e) {
+    if (e instanceof z.ZodError) {
+      return NextResponse.json({ error: 'Validation error', details: e.errors }, { status: 400 })
+    }
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
   }
 
   // Verify the branch belongs to a business owned by this user
   const branch = await prisma.place.findFirst({
     where: {
-      id: branchId,
+      id: body.branchId,
       business: { ownerId: session.userId },
     },
     include: { business: { select: { id: true } } },
@@ -61,9 +71,9 @@ export async function POST(req: NextRequest) {
   }
 
   // If linkOfferId provided, verify it belongs to the same merchant
-  if (linkOfferId) {
+  if (body.linkOfferId) {
     const offer = await prisma.offer.findFirst({
-      where: { id: linkOfferId, merchantId: branch.business.id },
+      where: { id: body.linkOfferId, merchantId: branch.business.id },
     })
     if (!offer) {
       return NextResponse.json(
@@ -73,11 +83,11 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const story = await createStory(branch.business.id, branchId, {
-    mediaUrl,
-    mediaType: mediaType || 'IMAGE',
-    caption,
-    linkOfferId,
+  const story = await createStory(branch.business.id, body.branchId, {
+    mediaUrl: body.mediaUrl,
+    mediaType: body.mediaType,
+    caption: body.caption,
+    linkOfferId: body.linkOfferId,
   })
 
   return NextResponse.json({ story }, { status: 201 })

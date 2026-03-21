@@ -1,11 +1,37 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getSession } from '@/modules/auth/session'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const startedAt = Date.now()
 
+  let dbOk = false
+  try {
+    await prisma.$queryRaw`SELECT 1`
+    dbOk = true
+  } catch {
+    // DB down
+  }
+
+  // Skip admin check if no cookie header present (load balancer probes)
+  const cookieHeader = request.headers.get('cookie')
+  let isAdmin = false
+  if (cookieHeader?.includes('cityecho_session')) {
+    const session = await getSession()
+    isAdmin = session?.role === 'ADMIN'
+  }
+
+  // Public response: minimal
+  if (!isAdmin) {
+    return NextResponse.json(
+      { ok: dbOk, durationMs: Date.now() - startedAt },
+      { status: dbOk ? 200 : 503 }
+    )
+  }
+
+  // Admin response: detailed diagnostics
   const checks = {
-    database: false,
+    database: dbOk,
     sessionSecret: Boolean(process.env.SESSION_SECRET),
     redemptionSecret: Boolean(process.env.NEXTAUTH_SECRET),
     pushConfigured: Boolean(
@@ -15,19 +41,7 @@ export async function GET() {
     ),
   }
 
-  let databaseError: string | null = null
-
-  try {
-    await prisma.$queryRaw`SELECT 1`
-    checks.database = true
-  } catch (error) {
-    databaseError = error instanceof Error ? error.message : String(error)
-  }
-
   const healthy = checks.database && checks.sessionSecret && checks.redemptionSecret
-  const status = healthy ? 200 : 503
-
-  const isProduction = process.env.NODE_ENV === 'production'
 
   return NextResponse.json(
     {
@@ -36,13 +50,8 @@ export async function GET() {
       uptimeSeconds: Math.round(process.uptime()),
       durationMs: Date.now() - startedAt,
       checks,
-      databaseError: isProduction
-        ? databaseError
-          ? 'Connection failed'
-          : null
-        : databaseError,
       timestamp: new Date().toISOString(),
     },
-    { status }
+    { status: healthy ? 200 : 503 }
   )
 }

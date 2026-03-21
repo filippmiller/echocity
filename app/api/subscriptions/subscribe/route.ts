@@ -1,15 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { getSession } from '@/modules/auth/session'
 import { prisma } from '@/lib/prisma'
 import { createPayment } from '@/modules/payments/yokassa'
 import { switchSubscription } from '@/modules/subscriptions/service'
 
+const subscribeSchema = z.object({
+  planCode: z.string().min(1).max(50),
+})
+
 export async function POST(req: NextRequest) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { planCode } = await req.json()
-  if (!planCode) return NextResponse.json({ error: 'planCode required' }, { status: 400 })
+  let body: z.infer<typeof subscribeSchema>
+  try {
+    body = subscribeSchema.parse(await req.json())
+  } catch (e) {
+    if (e instanceof z.ZodError) {
+      return NextResponse.json({ error: 'Validation error', details: e.errors }, { status: 400 })
+    }
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+  }
+  const { planCode } = body
 
   // Check plan exists
   const plan = await prisma.subscriptionPlan.findUnique({ where: { code: planCode } })
@@ -56,7 +69,8 @@ export async function POST(req: NextRequest) {
       confirmationUrl: payment.confirmation?.confirmation_url,
       paymentId: payment.id,
     })
-  } catch (e: any) {
-    return NextResponse.json({ error: 'Payment creation failed: ' + e.message }, { status: 500 })
+  } catch (e) {
+    const message = e instanceof Error ? e.message : 'Unknown error'
+    return NextResponse.json({ error: 'Payment creation failed: ' + message }, { status: 500 })
   }
 }

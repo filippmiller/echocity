@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { logger } from '@/lib/logger'
 
 export async function GET() {
   try {
@@ -19,7 +20,7 @@ export async function GET() {
 
     return NextResponse.json({ cities })
   } catch (error) {
-    console.error('Cities error:', error)
+    logger.error('public.cities.error', { error: String(error) })
     return NextResponse.json(
       { error: 'Ошибка при получении списка городов' },
       { status: 500 }

@@ -16,8 +16,8 @@ export async function POST(
   try {
     const item = await acceptBundleItem(bundleItemId, session.userId)
     return NextResponse.json({ item })
-  } catch (err: any) {
-    const message = err.message || 'Server error'
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Server error'
     const status = message.includes('not found') ? 404
       : message.includes('Not your') ? 403
       : 500

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/modules/auth/session'
 import { uploadFile } from '@/lib/supabase'
 import { randomUUID } from 'crypto'
+import { logger } from '@/lib/logger'
 
 const MAX_SIZE_BYTES = 5 * 1024 * 1024 // 5 MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
@@ -51,7 +52,7 @@ export async function POST(request: NextRequest) {
     const url = await uploadFile(key, buffer, file.type)
     return NextResponse.json({ url })
   } catch (err) {
-    console.error('[review-upload] Storage error:', err)
+    logger.error('reviews.upload.storage.error', { error: String(err) })
     // Fallback: return a data URL so the review can still be submitted
     const buffer = Buffer.from(await file.arrayBuffer())
     const base64 = buffer.toString('base64')

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/modules/auth/session'
+import { logger } from '@/lib/logger'
 
 // GET /api/places - Get all active places for map
 export async function GET(request: NextRequest) {
@@ -76,16 +77,16 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ places: mappedPlaces })
   } catch (error) {
-    console.error('Error fetching places:', error)
+    logger.error('places.get.error', { error: String(error) })
     return NextResponse.json({ error: 'Ошибка при загрузке мест' }, { status: 500 })
   }
 }
 
-// POST /api/places - Create a new place (for testing)
+// POST /api/places - Create a new place (business owners only)
 export async function POST(request: NextRequest) {
   try {
     const session = await getSession()
-    if (!session) {
+    if (!session || session.role !== 'BUSINESS_OWNER') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -99,21 +100,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // For testing: find or create a Business for the user
-    let business = await prisma.business.findFirst({
+    const business = await prisma.business.findFirst({
       where: { ownerId: session.userId },
     })
 
     if (!business) {
-      // Create a test business for the user
-      business = await prisma.business.create({
-        data: {
-          ownerId: session.userId,
-          name: 'Test Business',
-          type: 'OTHER',
-          status: 'APPROVED',
-        },
-      })
+      return NextResponse.json(
+        { error: 'У вас нет зарегистрированного бизнеса' },
+        { status: 403 }
+      )
     }
 
     // Get default city (St. Petersburg) if cityId not provided
@@ -139,7 +134,7 @@ export async function POST(request: NextRequest) {
         longitude: parseFloat(longitude),
         addressLine1: addressLine1 || null, // Legacy field
         cityId: defaultCityId || null,
-        placeType: (placeType as any) || 'OTHER', // BusinessType enum
+        placeType: placeType || 'OTHER',
         businessId: business.id,
         isActive: true,
         isPublished: true,
@@ -159,7 +154,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ place: mappedPlace })
   } catch (error) {
-    console.error('Error creating place:', error)
+    logger.error('places.create.error', { error: String(error) })
     return NextResponse.json({ error: 'Ошибка при создании места' }, { status: 500 })
   }
 }

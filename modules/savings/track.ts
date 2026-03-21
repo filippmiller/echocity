@@ -20,9 +20,9 @@ export async function trackSaving(
         currency,
       },
     })
-  } catch (err: any) {
+  } catch (err) {
     // P2002 = unique constraint violation — already tracked
-    if (err?.code === 'P2002') return
+    if (err instanceof Error && 'code' in err && (err as { code: string }).code === 'P2002') return
     throw err
   }
 

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { getSession } from '@/modules/auth/session'
 import { prisma } from '@/lib/prisma'
 import type { ComplaintType, ComplaintPriority } from '@prisma/client'
@@ -13,7 +14,7 @@ const PRIORITY_MAP: Record<string, ComplaintPriority> = {
   OTHER: 'LOW',
 }
 
-const VALID_TYPES: ComplaintType[] = [
+const VALID_TYPES = [
   'OFFER_NOT_HONORED',
   'RUDE_STAFF',
   'FALSE_ADVERTISING',
@@ -21,7 +22,14 @@ const VALID_TYPES: ComplaintType[] = [
   'FRAUD',
   'CONTENT_ISSUE',
   'OTHER',
-]
+] as const
+
+const complaintSchema = z.object({
+  placeId: z.string().uuid().optional(),
+  offerId: z.string().uuid().optional(),
+  type: z.enum(VALID_TYPES),
+  description: z.string().min(20, 'Description must be at least 20 characters').max(5000),
+})
 
 export async function POST(req: NextRequest) {
   const session = await getSession()
@@ -29,20 +37,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const body = await req.json()
-  const { placeId, offerId, type, description } = body
-
-  // Validate type
-  if (!type || !VALID_TYPES.includes(type)) {
-    return NextResponse.json({ error: 'Invalid complaint type' }, { status: 400 })
-  }
-
-  // Validate description
-  if (!description || typeof description !== 'string' || description.trim().length < 20) {
-    return NextResponse.json(
-      { error: 'Description must be at least 20 characters' },
-      { status: 400 },
-    )
+  let body: z.infer<typeof complaintSchema>
+  try {
+    body = complaintSchema.parse(await req.json())
+  } catch (e) {
+    if (e instanceof z.ZodError) {
+      return NextResponse.json({ error: 'Validation error', details: e.errors }, { status: 400 })
+    }
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
   }
 
   // Rate limit: max 5 complaints per day per user
@@ -63,15 +65,15 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const priority = PRIORITY_MAP[type] || 'MEDIUM'
+  const priority = PRIORITY_MAP[body.type] || 'MEDIUM'
 
   const complaint = await prisma.complaint.create({
     data: {
       userId: session.userId,
-      placeId: placeId || null,
-      offerId: offerId || null,
-      type: type as ComplaintType,
-      description: description.trim(),
+      placeId: body.placeId || null,
+      offerId: body.offerId || null,
+      type: body.type as ComplaintType,
+      description: body.description.trim(),
       priority,
     },
   })

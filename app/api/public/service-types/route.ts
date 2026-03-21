@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { logger } from '@/lib/logger'
 
 export async function GET() {
   try {
@@ -24,6 +25,7 @@ export async function GET() {
           sortOrder: 'asc',
         },
       ],
+      take: 500,
     })
 
     const formatted = serviceTypes.map((st) => ({
@@ -34,7 +36,7 @@ export async function GET() {
 
     return NextResponse.json({ serviceTypes: formatted })
   } catch (error) {
-    console.error('Service types error:', error)
+    logger.error('public.service-types.error', { error: String(error) })
     return NextResponse.json(
       { error: 'Ошибка при получении списка услуг' },
       { status: 500 }

@@ -3,45 +3,23 @@
  */
 
 const WEAK_PASSWORDS = [
-  '1234',
-  '12345',
-  '123456',
-  '111111',
-  'qwerty',
-  'qwerty123',
-  'password',
-  'password1',
-  'admin',
-  'admin123',
+  '1234', '12345', '123456', '1234567', '12345678', '123456789',
+  '111111', '000000', 'qwerty', 'qwerty123', 'qwerty1',
+  'password', 'password1', 'password123',
+  'admin', 'admin123', 'admin1',
+  'letmein', 'welcome', 'monkey', 'dragon',
+  'master', 'login', 'abc123', 'iloveyou',
+  'trustno1', 'sunshine', 'princess', 'football',
+  'shadow', 'superman', 'michael', 'charlie',
+  'пароль', 'йцукен', 'привет', 'любовь',
 ]
 
 /**
- * Check if password is strong enough
+ * Check if password is strong enough.
+ * Requires: 8+ chars, at least one uppercase, one lowercase, one digit.
  */
 export function isStrongPassword(password: string): boolean {
-  if (!password || password.length < 8) {
-    return false
-  }
-
-  // Check for weak passwords
-  const lowerPassword = password.toLowerCase()
-  if (WEAK_PASSWORDS.includes(lowerPassword)) {
-    return false
-  }
-
-  // Must contain at least one letter
-  const hasLetter = /[a-zA-Zа-яА-Я]/.test(password)
-  if (!hasLetter) {
-    return false
-  }
-
-  // Must contain at least one digit
-  const hasDigit = /\d/.test(password)
-  if (!hasDigit) {
-    return false
-  }
-
-  return true
+  return getPasswordStrengthError(password) === null
 }
 
 /**
@@ -61,11 +39,16 @@ export function getPasswordStrengthError(password: string): string | null {
     return 'Пароль слишком простой, выберите более сложный'
   }
 
-  const hasLetter = /[a-zA-Zа-яА-Я]/.test(password)
+  const hasLower = /[a-zа-я]/.test(password)
+  const hasUpper = /[A-ZА-Я]/.test(password)
   const hasDigit = /\d/.test(password)
 
-  if (!hasLetter || !hasDigit) {
-    return 'Пароль должен содержать буквы и цифры'
+  if (!hasLower || !hasUpper) {
+    return 'Пароль должен содержать заглавные и строчные буквы'
+  }
+
+  if (!hasDigit) {
+    return 'Пароль должен содержать хотя бы одну цифру'
   }
 
   return null
@@ -77,4 +60,3 @@ export function getPasswordStrengthError(password: string): string | null {
 export function hasSpecialCharacters(password: string): boolean {
   return /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)
 }
-

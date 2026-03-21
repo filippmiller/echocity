@@ -255,11 +255,50 @@ export async function registerBusiness(
   }
 }
 
+// In-memory failed login tracking for account lockout
+const failedAttempts = new Map<string, { count: number; lastAttempt: number }>()
+const MAX_FAILED_ATTEMPTS = 7
+const LOCKOUT_DURATION_MS = 15 * 60_000 // 15 minutes
+
+function checkAccountLockout(email: string): { locked: boolean; retryAfterSeconds?: number } {
+  const record = failedAttempts.get(email)
+  if (!record || record.count < MAX_FAILED_ATTEMPTS) return { locked: false }
+  const elapsed = Date.now() - record.lastAttempt
+  if (elapsed >= LOCKOUT_DURATION_MS) {
+    failedAttempts.delete(email)
+    return { locked: false }
+  }
+  return { locked: true, retryAfterSeconds: Math.ceil((LOCKOUT_DURATION_MS - elapsed) / 1000) }
+}
+
+function recordFailedLogin(email: string) {
+  const record = failedAttempts.get(email) || { count: 0, lastAttempt: 0 }
+  record.count++
+  record.lastAttempt = Date.now()
+  failedAttempts.set(email, record)
+}
+
+function clearFailedLogin(email: string) {
+  failedAttempts.delete(email)
+}
+
 /**
  * Login user by email and password
  */
 export async function loginUser(data: LoginData): Promise<AuthResult> {
   try {
+    // Check lockout before attempting (normalize email for consistent tracking)
+    const normalizedEmail = data.email.toLowerCase()
+    const lockout = checkAccountLockout(normalizedEmail)
+    if (lockout.locked) {
+      logger.warn('auth.login.locked', { email: data.email, retryAfterSeconds: lockout.retryAfterSeconds })
+      return {
+        success: false,
+        error: `Слишком много попыток. Попробуйте через ${lockout.retryAfterSeconds} сек.`,
+        errorCode: 'ACCOUNT_LOCKED',
+      }
+    }
+
     // Find user by email
     const user = await prisma.user.findUnique({
       where: { email: data.email },
@@ -273,6 +312,7 @@ export async function loginUser(data: LoginData): Promise<AuthResult> {
     })
 
     if (!user) {
+      recordFailedLogin(normalizedEmail)
       logger.warn('auth.login.failed', { email: data.email, reason: 'user_not_found' })
       return {
         success: false,
@@ -293,6 +333,7 @@ export async function loginUser(data: LoginData): Promise<AuthResult> {
     // Verify password
     const passwordValid = await bcrypt.compare(data.password, user.passwordHash)
     if (!passwordValid) {
+      recordFailedLogin(normalizedEmail)
       logger.warn('auth.login.failed', { userId: user.id, reason: 'invalid_password' })
       return {
         success: false,
@@ -301,6 +342,7 @@ export async function loginUser(data: LoginData): Promise<AuthResult> {
       }
     }
 
+    clearFailedLogin(normalizedEmail)
     logger.info('auth.login.success', { userId: user.id, email: user.email })
 
     return {

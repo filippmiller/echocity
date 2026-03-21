@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { getSession } from '@/modules/auth/session'
 import { prisma } from '@/lib/prisma'
 import type { BusinessStatus } from '@prisma/client'
 
-const VALID_ACTIONS = ['APPROVED', 'REJECTED', 'SUSPENDED', 'PENDING'] as const
+const updateBusinessSchema = z.object({
+  status: z.enum(['APPROVED', 'REJECTED', 'SUSPENDED', 'PENDING']),
+  reason: z.string().min(1).max(2000).optional(),
+})
 
 export async function PATCH(
   req: NextRequest,
@@ -15,11 +19,15 @@ export async function PATCH(
   }
 
   const { id } = await params
-  const body = await req.json()
-  const { status, reason } = body
 
-  if (!status || !VALID_ACTIONS.includes(status as BusinessStatus)) {
-    return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
+  let body: z.infer<typeof updateBusinessSchema>
+  try {
+    body = updateBusinessSchema.parse(await req.json())
+  } catch (e) {
+    if (e instanceof z.ZodError) {
+      return NextResponse.json({ error: 'Validation error', details: e.errors }, { status: 400 })
+    }
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
   }
 
   const existing = await prisma.business.findUnique({ where: { id } })
@@ -28,17 +36,16 @@ export async function PATCH(
   }
 
   // For rejection, require a reason
-  if (status === 'REJECTED' && (!reason || !reason.trim())) {
+  if (body.status === 'REJECTED' && (!body.reason || !body.reason.trim())) {
     return NextResponse.json({ error: 'Reason is required for rejection' }, { status: 400 })
   }
 
   const business = await prisma.business.update({
     where: { id },
     data: {
-      status: status as BusinessStatus,
-      // Store rejection reason in description if the business is being rejected
-      ...(status === 'REJECTED' && reason
-        ? { description: `[REJECTED] ${reason}\n\n${existing.description || ''}` }
+      status: body.status as BusinessStatus,
+      ...(body.status === 'REJECTED' && body.reason
+        ? { description: `[REJECTED] ${body.reason}\n\n${existing.description || ''}` }
         : {}),
     },
   })

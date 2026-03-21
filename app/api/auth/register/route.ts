@@ -6,15 +6,17 @@ import { logger } from '@/lib/logger'
 
 const registerUserSchema = z.object({
   accountType: z.enum(['CITIZEN', 'BUSINESS_OWNER']),
-  email: z.string().email('Некорректный email'),
-  password: z.string().min(1, 'Пароль обязателен'),
-  // CITIZEN fields
-  firstName: z.string().optional(),
-  lastName: z.string().optional(),
-  phone: z.string().optional(),
-  city: z.string().optional(),
+  email: z.string().email('Некорректный email').max(255),
+  password: z.string().min(8, 'Пароль должен содержать минимум 8 символов'),
+  firstName: z.string().min(1, 'Имя обязательно').max(100).optional(),
+  lastName: z.string().max(100).optional(),
+  phone: z.string().max(30).optional(),
+  city: z.string().max(200).optional(),
   language: z.enum(['ru', 'en']).optional(),
-})
+}).refine(
+  (data) => data.accountType !== 'CITIZEN' || (data.firstName && data.firstName.length > 0),
+  { message: 'Имя обязательно для регистрации', path: ['firstName'] },
+)
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,14 +26,6 @@ export async function POST(request: NextRequest) {
     let result
 
     if (validated.accountType === 'CITIZEN') {
-      // Validate required user fields
-      if (!validated.email || !validated.password || !validated.firstName) {
-        return NextResponse.json(
-          { error: 'Email, пароль и имя обязательны' },
-          { status: 400 }
-        )
-      }
-
       result = await registerUser({
         email: validated.email,
         password: validated.password,

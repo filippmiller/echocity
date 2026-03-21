@@ -11,7 +11,7 @@ export async function GET() {
   try {
     const bundles = await getBundlesByMerchant(session.userId)
     return NextResponse.json({ bundles })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Server error' }, { status: 500 })
+  } catch (err) {
+    return NextResponse.json({ error: err instanceof Error ? err.message : 'Server error' }, { status: 500 })
   }
 }

@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { getSession } from '@/modules/auth/session'
 import { prisma } from '@/lib/prisma'
 import type { ComplaintStatus } from '@prisma/client'
 
 const VALID_STATUSES: ComplaintStatus[] = ['OPEN', 'IN_REVIEW', 'RESOLVED', 'DISMISSED']
+
+const updateComplaintSchema = z.object({
+  status: z.enum(['OPEN', 'IN_REVIEW', 'RESOLVED', 'DISMISSED']).optional(),
+  adminNote: z.string().max(5000).optional(),
+})
 
 export async function PATCH(
   req: NextRequest,
@@ -15,12 +21,15 @@ export async function PATCH(
   }
 
   const { id } = await params
-  const body = await req.json()
-  const { status, adminNote } = body
 
-  // Validate status if provided
-  if (status && !VALID_STATUSES.includes(status)) {
-    return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
+  let body: z.infer<typeof updateComplaintSchema>
+  try {
+    body = updateComplaintSchema.parse(await req.json())
+  } catch (e) {
+    if (e instanceof z.ZodError) {
+      return NextResponse.json({ error: 'Validation error', details: e.errors }, { status: 400 })
+    }
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
   }
 
   // Check complaint exists
@@ -31,16 +40,16 @@ export async function PATCH(
 
   const updateData: Record<string, unknown> = {}
 
-  if (status) {
-    updateData.status = status
-    if (status === 'RESOLVED' || status === 'DISMISSED') {
+  if (body.status) {
+    updateData.status = body.status
+    if (body.status === 'RESOLVED' || body.status === 'DISMISSED') {
       updateData.resolvedAt = new Date()
       updateData.resolvedById = session.userId
     }
   }
 
-  if (adminNote !== undefined) {
-    updateData.adminNote = adminNote
+  if (body.adminNote !== undefined) {
+    updateData.adminNote = body.adminNote
   }
 
   const complaint = await prisma.complaint.update({

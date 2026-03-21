@@ -12,6 +12,7 @@ export async function GET() {
       },
     },
     orderBy: { sortOrder: 'asc' },
+    take: 200,
   })
 
   return NextResponse.json({ categories })

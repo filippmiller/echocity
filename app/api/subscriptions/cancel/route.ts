@@ -9,7 +9,8 @@ export async function POST() {
   try {
     const subscription = await cancelSubscription(session.userId)
     return NextResponse.json({ subscription })
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 400 })
+  } catch (e) {
+    const message = e instanceof Error ? e.message : 'Unknown error'
+    return NextResponse.json({ error: message }, { status: 400 })
   }
 }

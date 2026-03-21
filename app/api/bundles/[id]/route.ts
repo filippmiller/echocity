@@ -13,7 +13,7 @@ export async function GET(
       return NextResponse.json({ error: 'Bundle not found' }, { status: 404 })
     }
     return NextResponse.json({ bundle })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Server error' }, { status: 500 })
+  } catch (err) {
+    return NextResponse.json({ error: err instanceof Error ? err.message : 'Server error' }, { status: 500 })
   }
 }

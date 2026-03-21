@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { getSession } from '@/modules/auth/session'
 import { prisma } from '@/lib/prisma'
 import { checkAndProgressMissions, checkBadgeEligibility } from '@/modules/gamification/service'
+
+const reviewSchema = z.object({
+  redemptionId: z.string().uuid(),
+  rating: z.number().int().min(1).max(5),
+  comment: z.string().max(5000).optional(),
+  photoUrls: z.array(z.string().url()).max(3).optional(),
+})
 
 /**
  * GET /api/offers/[id]/reviews — list published reviews for an offer (public, paginated)
@@ -64,24 +72,18 @@ export async function POST(
   }
 
   const { id: offerId } = await params
-  const body = await request.json()
+
+  let body: z.infer<typeof reviewSchema>
+  try {
+    body = reviewSchema.parse(await request.json())
+  } catch (e) {
+    if (e instanceof z.ZodError) {
+      return NextResponse.json({ error: 'Validation error', details: e.errors }, { status: 400 })
+    }
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+  }
+
   const { redemptionId, rating, comment, photoUrls } = body
-
-  // Validate rating
-  if (!rating || typeof rating !== 'number' || rating < 1 || rating > 5) {
-    return NextResponse.json(
-      { error: 'Оценка должна быть от 1 до 5' },
-      { status: 400 }
-    )
-  }
-
-  // Validate redemptionId provided
-  if (!redemptionId || typeof redemptionId !== 'string') {
-    return NextResponse.json(
-      { error: 'Необходимо указать redemptionId' },
-      { status: 400 }
-    )
-  }
 
   // Verify user owns this redemption and it's for this offer
   const redemption = await prisma.redemption.findUnique({
@@ -129,25 +131,15 @@ export async function POST(
     )
   }
 
-  // Validate photoUrls if provided
-  const validatedPhotoUrls: string[] = []
-  if (Array.isArray(photoUrls)) {
-    for (const url of photoUrls.slice(0, 3)) {
-      if (typeof url === 'string' && url.startsWith('http')) {
-        validatedPhotoUrls.push(url)
-      }
-    }
-  }
-
   // Create the review
   const review = await prisma.offerReview.create({
     data: {
       offerId,
       userId: session.userId,
       redemptionId,
-      rating: Math.round(rating),
+      rating,
       comment: comment?.trim() || null,
-      photoUrls: validatedPhotoUrls,
+      photoUrls: photoUrls || [],
     },
     include: {
       user: { select: { firstName: true, lastName: true } },
