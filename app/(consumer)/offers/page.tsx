@@ -16,6 +16,7 @@ import { NearbyOffers } from '@/components/NearbyOffers'
 
 const FILTER_CHIPS = [
   { key: 'all', label: 'Все' },
+  { key: 'nearby', label: '📍 Рядом' },
   { key: 'FREE_FOR_ALL', label: 'Бесплатные' },
   { key: 'MEMBERS_ONLY', label: 'Plus' },
   { key: 'activeNow', label: '🟢 Сейчас' },
@@ -40,12 +41,15 @@ const METRO_STATIONS = [
 ]
 
 const CATEGORIES = [
-  { slug: 'all', label: 'Все категории', emoji: '🔥' },
+  { slug: 'all', label: 'Все', emoji: '🔥' },
   { slug: 'coffee', label: 'Кофе', emoji: '☕' },
   { slug: 'food', label: 'Еда', emoji: '🍔' },
   { slug: 'bars', label: 'Бары', emoji: '🍺' },
-  { slug: 'beauty', label: 'Красота', emoji: '💅' },
-  { slug: 'services', label: 'Услуги', emoji: '🔧' },
+  { slug: 'beauty', label: 'Красота', emoji: '💆' },
+  { slug: 'nails', label: 'Ногти', emoji: '💅' },
+  { slug: 'hair', label: 'Волосы', emoji: '💇' },
+  { slug: 'laundry', label: 'Прачечная', emoji: '👔' },
+  { slug: 'other', label: 'Другое', emoji: '🏪' },
 ]
 
 export default function OffersPage() {
@@ -67,6 +71,7 @@ function OffersContent() {
   const [showMetroDropdown, setShowMetroDropdown] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
   const [categoryCounts, setCategoryCounts] = useState<Record<string, number>>({})
+  const [showNearby, setShowNearby] = useState(false)
 
   const handleRefresh = useCallback(async () => {
     // Bump the key so OfferFeed re-mounts and re-fetches
@@ -139,23 +144,33 @@ function OffersContent() {
             <div className="flex gap-2 overflow-x-auto hide-scrollbar">
               {FILTER_CHIPS.map((chip) => {
                 const isActiveNowChip = chip.key === 'activeNow'
-                const isSelected = isActiveNowChip ? activeNow : section === chip.key
+                const isNearbyChip = chip.key === 'nearby'
+                const isSelected = isNearbyChip
+                  ? showNearby
+                  : isActiveNowChip
+                    ? activeNow
+                    : section === chip.key
                 return (
                   <button
                     key={chip.key}
                     onClick={() => {
-                      if (isActiveNowChip) {
+                      if (isNearbyChip) {
+                        setShowNearby((prev) => !prev)
+                      } else if (isActiveNowChip) {
                         setActiveNow((prev) => !prev)
                       } else {
                         setSection(chip.key)
                         setActiveNow(false)
+                        setShowNearby(false)
                       }
                     }}
                     className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors chip ${
                       isSelected
-                        ? isActiveNowChip
-                          ? 'bg-green-500 text-white'
-                          : 'bg-brand-600 text-white'
+                        ? isNearbyChip
+                          ? 'bg-blue-500 text-white'
+                          : isActiveNowChip
+                            ? 'bg-green-500 text-white'
+                            : 'bg-brand-600 text-white'
                         : 'bg-gray-100 text-gray-600 active:bg-gray-200'
                     }`}
                   >
@@ -249,10 +264,11 @@ function OffersContent() {
       <PullToRefresh onRefresh={handleRefresh}>
         <div className="px-4 py-6">
           <div className="max-w-7xl mx-auto">
+            {showNearby && <NearbyOffers city={city} />}
             <RecentlyViewed />
             <HomeStoriesBar />
             <WhatsHot city={city} />
-            <NearbyOffers city={city} />
+            {!showNearby && <NearbyOffers city={city} />}
             <ForYouOffers city={city} />
             <TopRatedOffers city={city} />
             <FeaturedCollections />

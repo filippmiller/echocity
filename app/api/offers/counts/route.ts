@@ -5,8 +5,11 @@ const CATEGORY_PLACE_TYPE_MAP: Record<string, string[]> = {
   coffee: ['CAFE'],
   food: ['RESTAURANT'],
   bars: ['BAR'],
-  beauty: ['BEAUTY', 'NAILS', 'HAIR'],
-  services: ['DRYCLEANING', 'OTHER'],
+  beauty: ['BEAUTY'],
+  nails: ['NAILS'],
+  hair: ['HAIR'],
+  laundry: ['DRYCLEANING'],
+  other: ['OTHER'],
 }
 
 /**

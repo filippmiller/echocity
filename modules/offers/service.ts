@@ -7,7 +7,12 @@ const CATEGORY_PLACE_TYPE_MAP: Record<string, string[]> = {
   coffee: ['CAFE'],
   food: ['RESTAURANT'],
   bars: ['BAR'],
-  beauty: ['BEAUTY', 'NAILS', 'HAIR'],
+  beauty: ['BEAUTY'],
+  nails: ['NAILS'],
+  hair: ['HAIR'],
+  laundry: ['DRYCLEANING'],
+  other: ['OTHER'],
+  // Legacy combined categories (still used by counts API)
   services: ['DRYCLEANING', 'OTHER'],
 }
 
