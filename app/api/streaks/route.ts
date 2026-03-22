@@ -3,7 +3,7 @@ import { getSession } from '@/modules/auth/session'
 import { prisma } from '@/lib/prisma'
 
 /**
- * GET /api/streaks — get current streak info including freeze tokens
+ * GET /api/streaks — get current streak info including freeze tokens (DB-backed)
  */
 export async function GET() {
   const session = await getSession()
@@ -17,6 +17,7 @@ export async function GET() {
       streakCurrent: true,
       streakLongest: true,
       streakLastDate: true,
+      freezeTokensUsed: true,
     },
   })
 
@@ -25,16 +26,14 @@ export async function GET() {
   }
 
   const freezeTokensEarned = Math.floor((user.streakLongest || 0) / 7)
+  const freezeTokensAvailable = freezeTokensEarned - (user.freezeTokensUsed || 0)
 
   const today = new Date().toISOString().split('T')[0]
   const lastDate = user.streakLastDate?.toISOString().split('T')[0] || null
   const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
   const currentStreak = user.streakCurrent || 0
 
-  // Three mutually exclusive states:
-  // 1. engagedToday: user was active today — streak is healthy
-  // 2. isAtRisk: user was active yesterday but NOT today — streak will break if they don't act
-  // 3. isBroken: user missed both today AND yesterday — streak is gone
+  // Three mutually exclusive states
   const engagedToday = lastDate === today
   const isAtRisk = !engagedToday && lastDate === yesterday && currentStreak > 0
   const isBroken = !engagedToday && lastDate !== yesterday && currentStreak > 0
@@ -43,7 +42,7 @@ export async function GET() {
     current: currentStreak,
     longest: user.streakLongest || 0,
     lastDate,
-    freezeTokens: freezeTokensEarned,
+    freezeTokens: freezeTokensAvailable,
     isAtRisk,
     isBroken,
     engagedToday,

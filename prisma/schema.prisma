@@ -237,9 +237,12 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  streakCurrent    Int       @default(0)
-  streakLongest    Int       @default(0)
-  streakLastDate   DateTime?
+  streakCurrent      Int       @default(0)
+  streakLongest      Int       @default(0)
+  streakLastDate     DateTime?
+  freezeTokensUsed   Int       @default(0)
+  rouletteLastSpun   DateTime?
+  showOnLeaderboard  Boolean   @default(true)
 
   profile              UserProfile?
   businessAccount      BusinessAccount?

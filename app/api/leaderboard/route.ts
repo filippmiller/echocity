@@ -57,7 +57,7 @@ export async function GET(req: NextRequest) {
   ]
 
   const users = await prisma.user.findMany({
-    where: { id: { in: allUserIds } },
+    where: { id: { in: allUserIds }, showOnLeaderboard: true },
     select: { id: true, firstName: true, lastName: true, city: true, profile: { select: { avatarUrl: true } } },
   })
 

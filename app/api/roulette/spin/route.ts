@@ -2,14 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/modules/auth/session'
 import { prisma } from '@/lib/prisma'
 
-// Simple in-memory rate limit: userId -> last spin date string
-// Survives within a single server process; cleared on restart (acceptable for daily limit)
-const spinLog = new Map<string, string>()
-
 /**
- * GET /api/roulette/spin — spin the deal roulette
+ * GET /api/roulette/spin — spin the deal roulette.
  * Returns a random active offer from the user's city.
- * Server-enforced: 1 spin per calendar day per user.
+ * Server-enforced: 1 spin per calendar day per user (DB-backed).
  */
 export async function GET(_req: NextRequest) {
   const session = await getSession()
@@ -21,23 +17,26 @@ export async function GET(_req: NextRequest) {
   const now = new Date()
   const todayStr = now.toISOString().split('T')[0]
 
-  // Server-side daily rate limit
-  const lastSpin = spinLog.get(userId)
-  if (lastSpin === todayStr) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { city: true, rouletteLastSpun: true },
+  })
+
+  if (!user) {
+    return NextResponse.json({ error: 'User not found' }, { status: 404 })
+  }
+
+  // DB-backed daily rate limit — survives deploys and multi-instance
+  const lastSpunStr = user.rouletteLastSpun?.toISOString().split('T')[0] ?? null
+  if (lastSpunStr === todayStr) {
     return NextResponse.json(
       { error: 'Вы уже крутили сегодня. Приходите завтра!' },
       { status: 429 }
     )
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { city: true },
-  })
+  const cityName = user.city || 'Санкт-Петербург'
 
-  const cityName = user?.city || 'Санкт-Петербург'
-
-  // Get all active offers in user's city
   const offers = await prisma.offer.findMany({
     where: {
       lifecycleStatus: 'ACTIVE',
@@ -56,21 +55,14 @@ export async function GET(_req: NextRequest) {
     return NextResponse.json({ error: 'Нет доступных предложений для рулетки' }, { status: 404 })
   }
 
-  // Record the spin BEFORE returning the result (prevents race conditions)
-  spinLog.set(userId, todayStr)
+  // Record the spin in DB BEFORE returning (prevents race conditions)
+  await prisma.user.update({
+    where: { id: userId },
+    data: { rouletteLastSpun: now },
+  })
 
-  // Clean up old entries periodically (prevent memory leak)
-  if (spinLog.size > 10000) {
-    for (const [uid, date] of spinLog) {
-      if (date !== todayStr) spinLog.delete(uid)
-    }
-  }
-
-  // Pick a random offer
   const randomIndex = Math.floor(Math.random() * offers.length)
   const offer = offers[randomIndex]
-
-  // Calculate expiry (4 hours from now)
   const expiresAt = new Date(now.getTime() + 4 * 60 * 60 * 1000)
 
   return NextResponse.json({
