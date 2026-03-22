@@ -24,27 +24,28 @@ export async function GET(
 
   const responses = await prisma.demandResponse.findMany({
     where: { demandRequestId: demandId },
-    include: {
-      merchant: {
-        select: {
-          id: true,
-          name: true,
-          isVerified: true,
-          logoUrl: true,
-        },
-      },
-      offer: {
-        select: {
-          id: true,
-          title: true,
-          benefitType: true,
-          benefitValue: true,
-          imageUrl: true,
-        },
-      },
-    },
     orderBy: { createdAt: 'asc' },
   })
+
+  // Fetch merchant and offer details separately for type safety
+  const merchantIds = [...new Set(responses.map((r) => r.merchantId))]
+  const offerIds = responses.map((r) => r.offerId).filter((id): id is string => id !== null)
+
+  const [merchants, offers] = await Promise.all([
+    prisma.business.findMany({
+      where: { id: { in: merchantIds } },
+      select: { id: true, name: true, isVerified: true },
+    }),
+    offerIds.length > 0
+      ? prisma.offer.findMany({
+          where: { id: { in: offerIds } },
+          select: { id: true, title: true, benefitType: true, benefitValue: true, imageUrl: true },
+        })
+      : Promise.resolve([]),
+  ])
+
+  const merchantMap = new Map(merchants.map((m) => [m.id, m]))
+  const offerMap = new Map(offers.map((o) => [o.id, o]))
 
   return NextResponse.json({
     demand: {
@@ -55,24 +56,27 @@ export async function GET(
       supportCount: demand.supportCount,
       status: demand.status,
     },
-    bids: responses.map((r) => ({
-      id: r.id,
-      merchantId: r.merchantId,
-      merchantName: r.merchant.name,
-      merchantLogo: r.merchant.logoUrl,
-      isVerified: r.merchant.isVerified,
-      message: r.message,
-      status: r.status,
-      createdAt: r.createdAt,
-      offer: r.offer
-        ? {
-            id: r.offer.id,
-            title: r.offer.title,
-            benefitType: r.offer.benefitType,
-            benefitValue: Number(r.offer.benefitValue),
-            imageUrl: r.offer.imageUrl,
-          }
-        : null,
-    })),
+    bids: responses.map((r) => {
+      const merchant = merchantMap.get(r.merchantId)
+      const offer = r.offerId ? offerMap.get(r.offerId) : null
+      return {
+        id: r.id,
+        merchantId: r.merchantId,
+        merchantName: merchant?.name ?? 'Заведение',
+        isVerified: merchant?.isVerified ?? false,
+        message: r.message,
+        status: r.status,
+        createdAt: r.createdAt,
+        offer: offer
+          ? {
+              id: offer.id,
+              title: offer.title,
+              benefitType: offer.benefitType,
+              benefitValue: Number(offer.benefitValue),
+              imageUrl: offer.imageUrl,
+            }
+          : null,
+      }
+    }),
   })
 }

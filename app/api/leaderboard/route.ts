@@ -3,10 +3,9 @@ import { prisma } from '@/lib/prisma'
 
 /**
  * GET /api/leaderboard — neighborhood leaderboard
- * Returns top savers, reviewers, and redeemers for a city/metro area
+ * Returns top savers, reviewers, and redeemers for a city
  */
 export async function GET(req: NextRequest) {
-  const cityName = req.nextUrl.searchParams.get('city') || 'Санкт-Петербург'
   const limit = Math.min(parseInt(req.nextUrl.searchParams.get('limit') || '10') || 10, 20)
 
   // Get start of current month for monthly cycle
@@ -17,7 +16,7 @@ export async function GET(req: NextRequest) {
   const topSavers = await prisma.userSavings.groupBy({
     by: ['userId'],
     where: {
-      createdAt: { gte: monthStart },
+      savedAt: { gte: monthStart },
     },
     _sum: { savedAmount: true },
     orderBy: { _sum: { savedAmount: 'desc' } },
@@ -59,7 +58,7 @@ export async function GET(req: NextRequest) {
 
   const users = await prisma.user.findMany({
     where: { id: { in: allUserIds } },
-    select: { id: true, firstName: true, lastName: true, avatarUrl: true, city: true },
+    select: { id: true, firstName: true, lastName: true, city: true, profile: { select: { avatarUrl: true } } },
   })
 
   const userMap = new Map(users.map((u) => [u.id, u]))
@@ -69,7 +68,7 @@ export async function GET(req: NextRequest) {
     return {
       id: userId,
       name: u ? [u.firstName, u.lastName?.[0]].filter(Boolean).join(' ') || 'Пользователь' : 'Пользователь',
-      avatarUrl: u?.avatarUrl ?? null,
+      avatarUrl: u?.profile?.avatarUrl ?? null,
       city: u?.city ?? null,
     }
   }
@@ -79,7 +78,7 @@ export async function GET(req: NextRequest) {
     savers: topSavers.map((s, i) => ({
       rank: i + 1,
       ...formatUser(s.userId),
-      value: Math.floor((s._sum.savedAmount ?? 0) / 100), // kopecks to rubles
+      value: Math.floor((s._sum?.savedAmount ?? 0) / 100),
       unit: '₽',
     })),
     redeemers: topRedeemers.map((r, i) => ({

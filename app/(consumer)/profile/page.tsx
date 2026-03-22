@@ -22,6 +22,7 @@ import {
   Users,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { SavingsTracker } from '@/components/SavingsTracker'
 
 interface UserStats {
   redemptionCount: number
@@ -306,6 +307,11 @@ export default function ProfilePage() {
             />
           </div>
         </div>
+      </div>
+
+      {/* Savings tracker */}
+      <div className="max-w-2xl mx-auto">
+        <SavingsTracker />
       </div>
 
       {/* Menu links */}

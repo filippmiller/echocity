@@ -8,7 +8,6 @@ interface Bid {
   id: string
   merchantId: string
   merchantName: string
-  merchantLogo: string | null
   isVerified: boolean
   message: string | null
   status: string
@@ -90,13 +89,9 @@ export function DemandBids({ demandId }: { demandId: string }) {
         >
           {/* Merchant header */}
           <div className="flex items-center gap-2 mb-2">
-            {bid.merchantLogo ? (
-              <img src={bid.merchantLogo} alt="" className="w-8 h-8 rounded-full object-cover border border-gray-200" />
-            ) : (
-              <div className="w-8 h-8 rounded-full bg-brand-100 flex items-center justify-center">
-                <Store className="w-4 h-4 text-brand-600" />
-              </div>
-            )}
+            <div className="w-8 h-8 rounded-full bg-brand-100 flex items-center justify-center">
+              <Store className="w-4 h-4 text-brand-600" />
+            </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1">
                 <span className="text-sm font-medium text-gray-900 truncate">{bid.merchantName}</span>
