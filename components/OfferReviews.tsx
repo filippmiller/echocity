@@ -53,19 +53,6 @@ export default function OfferReviews({ offerId }: OfferReviewsProps) {
     }
   }, [offerId])
 
-  // Load unreviewed redemptions for this offer (only if logged in)
-  const loadUnreviewedRedemptions = useCallback(async () => {
-    if (!user) return
-    try {
-      // Fetch user's redemptions for this offer that don't have reviews yet
-      const res = await fetch(`/api/offers/${offerId}/reviews?_unreviewable=1`)
-      // We'll handle this by fetching redemptions separately
-      // For simplicity, we check in a different way
-    } catch {
-      // ignore
-    }
-  }, [user, offerId])
-
   useEffect(() => {
     loadReviews(page)
   }, [loadReviews, page])

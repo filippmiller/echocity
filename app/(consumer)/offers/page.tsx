@@ -15,6 +15,7 @@ import { RecentlyViewed } from '@/components/RecentlyViewed'
 import { NearbyOffers } from '@/components/NearbyOffers'
 import { CollapsibleSection } from '@/components/CollapsibleSection'
 import { StreakWidget } from '@/components/StreakWidget'
+import { useCompare, CompareBar } from '@/components/OfferCompare'
 
 const FILTER_CHIPS = [
   { key: 'all', label: 'Все' },
@@ -65,6 +66,7 @@ export default function OffersPage() {
 
 function OffersContent() {
   const searchParams = useSearchParams()
+  const compare = useCompare()
   const [availableCities, setAvailableCities] = useState<string[]>(['Санкт-Петербург', 'Москва'])
   const [city, setCity] = useState(searchParams.get('city') || 'Санкт-Петербург')
   const [section, setSection] = useState(searchParams.get('visibility') || 'all')
@@ -301,6 +303,7 @@ function OffersContent() {
         </div>
       </PullToRefresh>
 
+      <CompareBar ids={compare.ids} onClear={compare.clear} />
       <Footer />
     </div>
   )

@@ -1,13 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getSession } from '@/modules/auth/session'
 import { prisma } from '@/lib/prisma'
 
 /**
- * GET /api/demand/[id]/bids — get all merchant responses (bids) for a demand
+ * GET /api/demand/[id]/bids — get all merchant responses (bids) for a demand.
+ * Requires authentication to prevent public exposure of merchant messages.
  */
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const session = await getSession()
+  if (!session) {
+    return NextResponse.json({ error: 'Необходимо войти' }, { status: 401 })
+  }
+
   const { id: demandId } = await params
 
   const demand = await prisma.demandRequest.findUnique({

@@ -24,25 +24,28 @@ export async function GET() {
     return NextResponse.json({ error: 'User not found' }, { status: 404 })
   }
 
-  // Calculate freeze tokens: 1 per 7-day milestone achieved
   const freezeTokensEarned = Math.floor((user.streakLongest || 0) / 7)
 
-  // Check if streak is at risk (hasn't engaged today)
   const today = new Date().toISOString().split('T')[0]
   const lastDate = user.streakLastDate?.toISOString().split('T')[0] || null
-  const isAtRisk = lastDate !== today && (user.streakCurrent || 0) > 0
-
-  // Check if streak was actually broken (missed yesterday too)
   const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
-  const isBroken = lastDate !== today && lastDate !== yesterday && (user.streakCurrent || 0) > 0
+  const currentStreak = user.streakCurrent || 0
+
+  // Three mutually exclusive states:
+  // 1. engagedToday: user was active today — streak is healthy
+  // 2. isAtRisk: user was active yesterday but NOT today — streak will break if they don't act
+  // 3. isBroken: user missed both today AND yesterday — streak is gone
+  const engagedToday = lastDate === today
+  const isAtRisk = !engagedToday && lastDate === yesterday && currentStreak > 0
+  const isBroken = !engagedToday && lastDate !== yesterday && currentStreak > 0
 
   return NextResponse.json({
-    current: user.streakCurrent || 0,
+    current: currentStreak,
     longest: user.streakLongest || 0,
     lastDate,
     freezeTokens: freezeTokensEarned,
     isAtRisk,
     isBroken,
-    engagedToday: lastDate === today,
+    engagedToday,
   })
 }

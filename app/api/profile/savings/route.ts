@@ -55,7 +55,22 @@ export async function GET() {
     monthOverMonth: prevMonthRubles > 0
       ? Math.round(((monthlyRubles - prevMonthRubles) / prevMonthRubles) * 100)
       : null,
-    categories: [],
+    categories: await prisma.$queryRaw<Array<{ category: string; total: bigint; count: bigint }>>`
+      SELECT COALESCE(p."placeType"::text, 'OTHER') as category,
+             COALESCE(SUM(us."savedAmount"), 0) as total,
+             COUNT(*)::bigint as count
+      FROM "UserSavings" us
+      LEFT JOIN "Offer" o ON us."offerId" = o.id
+      LEFT JOIN "Place" p ON o."branchId" = p.id
+      WHERE us."userId" = ${userId}
+      GROUP BY p."placeType"
+      ORDER BY total DESC
+      LIMIT 10
+    `.then((rows) => rows.map((r) => ({
+      name: r.category,
+      rubles: Math.floor(Number(r.total) / 100),
+      count: Number(r.count),
+    }))).catch(() => []),
     monthlySeries: monthlySeries.map((m) => ({
       month: m.month,
       rubles: Math.floor(Number(m.total) / 100),

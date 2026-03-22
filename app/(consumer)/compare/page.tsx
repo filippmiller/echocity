@@ -9,7 +9,9 @@ import { CompareTable } from '@/components/OfferCompare'
 function CompareContent() {
   const searchParams = useSearchParams()
   const idsParam = searchParams.get('ids') || ''
-  const ids = idsParam.split(',').filter(Boolean).slice(0, 3)
+  // CUIDs are 25 alphanumeric chars starting with 'c'
+  const CUID_RE = /^c[a-z0-9]{24}$/
+  const ids = idsParam.split(',').filter((id) => CUID_RE.test(id)).slice(0, 3)
 
   const [offers, setOffers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)

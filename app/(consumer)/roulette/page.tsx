@@ -26,15 +26,7 @@ interface RouletteResult {
   spunAt: string
 }
 
-function getBenefitBadge(benefitType: string, benefitValue: number) {
-  switch (benefitType) {
-    case 'PERCENT': return `-${benefitValue}%`
-    case 'FIXED_AMOUNT': return `-${Math.round(benefitValue)}\u20BD`
-    case 'FIXED_PRICE': return `${Math.round(benefitValue)}\u20BD`
-    case 'FREE_ITEM': return 'Бесплатно'
-    default: return `${benefitValue}`
-  }
-}
+import { getBenefitBadge } from '@/lib/offer-utils'
 
 function canSpinToday(): boolean {
   try {
