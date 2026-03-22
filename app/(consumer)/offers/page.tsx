@@ -13,6 +13,7 @@ import { Footer } from '@/components/Footer'
 import { PullToRefresh } from '@/components/PullToRefresh'
 import { RecentlyViewed } from '@/components/RecentlyViewed'
 import { NearbyOffers } from '@/components/NearbyOffers'
+import { CollapsibleSection } from '@/components/CollapsibleSection'
 
 const FILTER_CHIPS = [
   { key: 'all', label: 'Все' },
@@ -270,9 +271,15 @@ function OffersContent() {
             <WhatsHot city={city} />
             {!showNearby && <NearbyOffers city={city} />}
             <ForYouOffers city={city} />
-            <TopRatedOffers city={city} />
-            <FeaturedCollections />
-            <TrendingDemands city={city} />
+            <CollapsibleSection id="top-rated">
+              <TopRatedOffers city={city} />
+            </CollapsibleSection>
+            <CollapsibleSection id="collections">
+              <FeaturedCollections />
+            </CollapsibleSection>
+            <CollapsibleSection id="demands">
+              <TrendingDemands city={city} />
+            </CollapsibleSection>
             <OfferFeed
               key={refreshKey}
               city={city}

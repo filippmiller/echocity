@@ -132,6 +132,24 @@ export default function SearchPage() {
       </div>
 
       <div className="max-w-3xl mx-auto px-4 py-4">
+        {/* Quick search suggestions */}
+        {!hasSearched && (
+          <div className="mb-6">
+            <h3 className="text-sm font-medium text-gray-500 mb-2">Популярные запросы</h3>
+            <div className="flex flex-wrap gap-2 mb-4">
+              {['☕ Кофе', '🍔 Бургеры', '💅 Маникюр', '💇 Стрижка', '🍺 Крафтовое пиво', '👔 Химчистка', '🍕 Пицца', '🧖 СПА'].map((s) => (
+                <button
+                  key={s}
+                  onClick={() => { setQuery(s.slice(2).trim()); handleSearch(s.slice(2).trim()) }}
+                  className="px-3 py-1.5 bg-brand-50 text-sm text-brand-700 rounded-full hover:bg-brand-100 border border-brand-100 chip"
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Recent searches */}
         {!hasSearched && recentSearches.length > 0 && (
           <div className="mb-6">

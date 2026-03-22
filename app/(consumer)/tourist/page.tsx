@@ -58,6 +58,16 @@ function mapOfferToCard(offer: any) {
 export default async function TouristPage() {
   const offers = await getTouristOffers()
 
+  // Top picks — best value offers (highest percentage or free items, max 3)
+  const topPicks = [...offers]
+    .sort((a, b) => {
+      // Free items first, then by benefit value descending
+      if (a.benefitType === 'FREE_ITEM' && b.benefitType !== 'FREE_ITEM') return -1
+      if (b.benefitType === 'FREE_ITEM' && a.benefitType !== 'FREE_ITEM') return 1
+      return Number(b.benefitValue) - Number(a.benefitValue)
+    })
+    .slice(0, 3)
+
   // Group by benefit type for display sections
   const percentOffers = offers.filter((o) => o.benefitType === 'PERCENT')
   const freeItemOffers = offers.filter((o) => o.benefitType === 'FREE_ITEM')
@@ -134,6 +144,26 @@ export default async function TouristPage() {
           </Link>
         </div>
       </section>
+
+      {/* Top Picks — hero section */}
+      {topPicks.length > 0 && (
+        <section className="py-6 px-4 bg-gradient-to-r from-amber-50 to-yellow-50">
+          <div className="max-w-5xl mx-auto">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-lg">⭐</span>
+              <h2 className="font-bold text-gray-900 text-lg">Выбор редакции</h2>
+              <span className="text-xs bg-amber-400 text-white px-2 py-0.5 rounded-full font-medium">
+                TOP {topPicks.length}
+              </span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {topPicks.map((offer) => (
+                <OfferCard key={`top-${offer.id}`} {...mapOfferToCard(offer)} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Percent discounts */}
       {percentOffers.length > 0 && (
