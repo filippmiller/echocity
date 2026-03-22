@@ -367,6 +367,10 @@ export default function ProfilePage() {
         <div className="bg-white rounded-2xl overflow-hidden shadow-sm mx-4 mt-4">
           <MenuLink href="/missions" icon={Trophy} label="Миссии и достижения" />
           <div className="h-px bg-gray-100 ml-12" />
+          <MenuLink href="/leaderboard" icon={Star} label="Лидерборд" />
+          <div className="h-px bg-gray-100 ml-12" />
+          <MenuLink href="/roulette" icon={Tag} label="Рулетка скидок" badge="🎰" />
+          <div className="h-px bg-gray-100 ml-12" />
           <MenuLink href="/settings" icon={Settings} label="Настройки профиля" />
         </div>
 
