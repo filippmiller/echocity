@@ -4,6 +4,14 @@ import { prisma } from '@/lib/prisma'
 import { OfferCard } from '@/components/OfferCard'
 import { Footer } from '@/components/Footer'
 
+const TOURIST_CATEGORIES = [
+  { slug: 'all', label: 'Все', labelEn: 'All', emoji: '🌍' },
+  { slug: 'CAFE', label: 'Кофейни', labelEn: 'Coffee', emoji: '☕' },
+  { slug: 'RESTAURANT', label: 'Рестораны', labelEn: 'Restaurants', emoji: '🍽️' },
+  { slug: 'BAR', label: 'Бары', labelEn: 'Bars', emoji: '🍺' },
+  { slug: 'BEAUTY', label: 'Красота', labelEn: 'Beauty', emoji: '💆' },
+] as const
+
 async function getTouristOffers(city: string = 'Санкт-Петербург') {
   const offers = await prisma.offer.findMany({
     where: {
@@ -25,10 +33,12 @@ async function getTouristOffers(city: string = 'Санкт-Петербург') 
           lat: true,
           lng: true,
           placeType: true,
+          nearestMetro: true,
         },
       },
-      merchant: { select: { id: true, name: true } },
+      merchant: { select: { id: true, name: true, isVerified: true } },
       limits: true,
+      _count: { select: { redemptions: true } },
     },
     orderBy: { benefitValue: 'desc' },
     take: 60,
@@ -52,6 +62,9 @@ function mapOfferToCard(offer: any) {
     expiresAt: offer.endAt?.toISOString(),
     isFlash: offer.offerType === 'FLASH',
     maxRedemptions: offer.limits?.totalLimit ?? null,
+    nearestMetro: offer.branch?.nearestMetro ?? null,
+    isVerified: offer.merchant?.isVerified ?? false,
+    redemptionCount: offer._count?.redemptions ?? 0,
   }
 }
 
@@ -118,32 +131,85 @@ export default async function TouristPage() {
         </div>
       </section>
 
-      {/* Quick navigation */}
-      <section className="py-4 px-4 border-b border-gray-100 sticky top-14 z-30 bg-white shadow-sm">
-        <div className="max-w-5xl mx-auto flex gap-2 overflow-x-auto hide-scrollbar">
-          <Link
-            href="/offers"
-            className="flex items-center gap-2 px-4 py-2 bg-gray-50 rounded-full hover:bg-gray-100 shrink-0 transition-colors text-sm text-gray-700 font-medium"
-          >
-            <span>&#x1F50D;</span>
-            Все скидки
-          </Link>
-          <Link
-            href="/map"
-            className="flex items-center gap-2 px-4 py-2 bg-gray-50 rounded-full hover:bg-gray-100 shrink-0 transition-colors text-sm text-gray-700 font-medium"
-          >
-            <span>&#x1F5FA;&#xFE0F;</span>
-            На карте
-          </Link>
-          <Link
-            href="/offers?visibility=FREE_FOR_ALL"
-            className="flex items-center gap-2 px-4 py-2 bg-gray-50 rounded-full hover:bg-gray-100 shrink-0 transition-colors text-sm text-gray-700 font-medium"
-          >
-            <span>&#x1F381;</span>
-            Бесплатные
-          </Link>
+      {/* Language hint */}
+      <section className="bg-blue-50 px-4 py-2">
+        <div className="max-w-5xl mx-auto flex items-center justify-center gap-3 text-xs text-blue-600">
+          <span>🇷🇺 Русский</span>
+          <span className="text-blue-300">|</span>
+          <span className="text-blue-400">🇬🇧 English version coming soon</span>
         </div>
       </section>
+
+      {/* Quick navigation + category filter */}
+      <section className="py-4 px-4 border-b border-gray-100 sticky top-14 z-30 bg-white shadow-sm">
+        <div className="max-w-5xl mx-auto space-y-2">
+          <div className="flex gap-2 overflow-x-auto hide-scrollbar">
+            <Link
+              href="/offers"
+              className="flex items-center gap-2 px-4 py-2 bg-gray-50 rounded-full hover:bg-gray-100 shrink-0 transition-colors text-sm text-gray-700 font-medium"
+            >
+              <span>&#x1F50D;</span>
+              Все скидки
+            </Link>
+            <Link
+              href="/map"
+              className="flex items-center gap-2 px-4 py-2 bg-gray-50 rounded-full hover:bg-gray-100 shrink-0 transition-colors text-sm text-gray-700 font-medium"
+            >
+              <span>&#x1F5FA;&#xFE0F;</span>
+              На карте
+            </Link>
+            <Link
+              href="/offers?visibility=FREE_FOR_ALL"
+              className="flex items-center gap-2 px-4 py-2 bg-gray-50 rounded-full hover:bg-gray-100 shrink-0 transition-colors text-sm text-gray-700 font-medium"
+            >
+              <span>&#x1F381;</span>
+              Бесплатные
+            </Link>
+            <Link
+              href="/roulette"
+              className="flex items-center gap-2 px-4 py-2 bg-purple-50 rounded-full hover:bg-purple-100 shrink-0 transition-colors text-sm text-purple-700 font-medium"
+            >
+              <span>🎰</span>
+              Рулетка
+            </Link>
+          </div>
+          {/* Tourist category pills */}
+          <div className="flex gap-2 overflow-x-auto hide-scrollbar">
+            {TOURIST_CATEGORIES.map((cat) => (
+              <span
+                key={cat.slug}
+                className="flex items-center gap-1 px-3 py-1.5 bg-teal-50 rounded-full text-xs text-teal-700 font-medium whitespace-nowrap border border-teal-100"
+              >
+                {cat.emoji} {cat.label}
+              </span>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Popular with tourists — most redeemed */}
+      {(() => {
+        const popular = [...offers].sort((a: any, b: any) => (b._count?.redemptions ?? 0) - (a._count?.redemptions ?? 0)).slice(0, 6)
+        if (popular.length === 0) return null
+        return (
+          <section className="py-6 px-4 bg-teal-50">
+            <div className="max-w-5xl mx-auto">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-lg">🔥</span>
+                <h2 className="font-bold text-gray-900 text-lg">Популярно у туристов</h2>
+                <span className="text-xs text-teal-600 bg-teal-100 px-2 py-0.5 rounded-full font-medium">
+                  по использованиям
+                </span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                {popular.map((offer) => (
+                  <OfferCard key={`pop-${offer.id}`} {...mapOfferToCard(offer)} />
+                ))}
+              </div>
+            </div>
+          </section>
+        )
+      })()}
 
       {/* Top Picks — hero section */}
       {topPicks.length > 0 && (
