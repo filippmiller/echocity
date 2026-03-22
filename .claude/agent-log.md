@@ -9,6 +9,90 @@ Each entry tracks: timestamp, area, files changed, functions/symbols used, datab
 
 ---
 
+## 2026-03-22 — Competitive Feature Blitz: 24 Features to Dominate Russian Market
+
+**Area:** Full-Stack / UX / Engagement / Competitive Differentiation
+**Type:** feature
+
+### Summary
+Deep competitive analysis of 11 Russian platforms (Afisha, KudaGo, 2GIS, Yandex, Biglion, Zoon, Flamp, Otzovik, VK, Telegram) followed by implementation of 24 features that no single Russian competitor offers.
+
+### Files Changed
+- **24 new files**: roulette page+API, streak API+freeze+widget, leaderboard page+API, demand bids API+component, savings API+tracker, trending demands API+component, what's hot API+component, compare page+component, tourist page enhanced, consumer layout updated
+- **12 modified files**: OfferCard, OfferFeed, OfferReviews, OfferDetailClient, offers page, offers API, offers service, profile page, demand trending API, consumer layout
+
+### Key New Endpoints
+- `GET /api/roulette/spin` — daily mystery deal spin
+- `GET /api/streaks` + `POST /api/streaks/freeze` — streak management with freeze tokens
+- `GET /api/leaderboard` — monthly neighborhood leaderboard (savers/redeemers/reviewers)
+- `GET /api/demand/[id]/bids` — merchant bidding on demand requests
+- `GET /api/profile/savings` — savings dashboard with monthly series
+- `GET /api/offers/hot` — real-time urgency aggregation (4 signals)
+- `GET /api/demand/trending` — trending demands with response rate
+
+### New Pages
+- `/roulette` — daily mystery spin with animated wheel
+- `/leaderboard` — monthly competition with 3 category tabs
+- `/compare` — side-by-side offer comparison table
+
+### Database Tables Affected
+- Read-only: Offer, Redemption, OfferReview, DemandRequest, DemandResponse, DemandSupport, UserSavings, User, UserProfile, Business, Place
+
+### Build Status
+- TypeScript: 0 errors
+- Next.js build: passes
+- 11 commits, all pushed to main
+
+### Session Notes
+`.claude/sessions/2026-03-22-competitive-features.md`
+
+---
+
+## 2026-03-21 01:00 — 30 World-Class Improvements: Full Audit + 5-Round Orchestra Implementation
+
+**Area:** Full-Stack / UX / Engagement / Growth / Merchant Tools / PWA
+**Type:** feature
+
+### Files Changed
+- ~90 files across 5 rounds (30 created, ~60 modified)
+- Key new files: DealOfTheDay, StreakBadge, ShareButton, SubscriptionSavingsCard, PhoneOTP APIs, CoinWallet, VerifiedBadge, GroupDealCard, PWAInstallPrompt, SatisfactionGuarantee, YandexAutoFill, CompetitionInsight, PullToRefresh, seasonal collections, notification triggers, trending detection
+- Key modified: OfferCard, OfferDetailClient, AppHeader, OfferFeed, offers page, home page, login/register pages, cron.ts, schema.prisma, redemption service, offers service
+
+### Functions/Symbols Modified
+- `earnCashback()`, `getBalance()`, `spendCoins()` — new (cashback service)
+- `sendWeeklyDigests()` — new (weekly push digest)
+- `getSeasonalCollections()` — new (seasonal auto-curation)
+- `notifyNearbyNewOffer()`, `notifyExpiringFavorite()`, `notifyStreakAtRisk()` — new (smart triggers)
+- `getTrendingOfferIds()` — new (trending detection)
+- `validateAndRedeem()` — modified (cashback integration)
+- `approveOffer()` — modified (notification trigger)
+- `getActiveOffersByCity()` — modified (metro filter, isVerified)
+
+### Database Tables
+- `User` — added streak fields, coinBalance, phone/phoneVerified, group deal relations
+- `PhoneOtp` — new (OTP auth)
+- `CoinTransaction` — new (cashback wallet)
+- `GroupDeal`, `GroupDealMember` — new (group deals)
+- `Place` — added nearestMetro
+- `Business` — added isVerified, verifiedAt
+- `OfferReview` — added photoUrls
+
+### Summary
+Conducted a thorough audit of all docs vs implementation, researched 10+ competitors (Groupon, TGTG, Entertainer, Biglion, etc.), and delivered 30 prioritized suggestions. Then implemented ALL 30 across 5 Orchestra rounds (15 parallel agent runs, ~7,600 new lines). Features span: Open Now filter, Deal of the Day, login streaks, savings celebrations, share button, deferred auth, combined search, phone OTP login, weekly digest push, demand suggestions, metro search, verified badges, EchoCoins cashback wallet, photo reviews, merchant analytics heatmap, PWA install, offline mode, group deals, seasonal collections, haptic feedback, pull-to-refresh, smart onboarding, satisfaction guarantee, Yandex auto-onboard, competition insight, smart notifications, trending badge. All deployed to production at echocity.filippmiller.com.
+
+### Commits
+- `7d73430` — R1: discovery, engagement, growth (+1,060)
+- `f9c5ac3` — R2: phone login, combined search, digest (+1,658)
+- `aa32c16` — fix: phone @unique removal
+- `4e4ceec` — R3: metro, cashback, photo reviews, analytics (+1,439)
+- `6ea485a` — R4: PWA, group deals, seasonal, haptics (+1,609)
+- `4e0d60a` — R5: onboarding, guarantee, auto-onboard, notifications (+1,848)
+
+### Session Notes
+→ `.claude/sessions/2026-03-21-010000.md`
+
+---
+
 ## 2026-03-19 07:30 — Critic Fixes: 0 TS Errors, Zod Validation, Security Hardening
 
 **Area:** Code Quality / Security / Testing
