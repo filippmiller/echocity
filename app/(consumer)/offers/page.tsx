@@ -52,6 +52,7 @@ const CATEGORIES = [
   { slug: 'hair', label: 'Волосы', emoji: '💇' },
   { slug: 'laundry', label: 'Прачечная', emoji: '👔' },
   { slug: 'other', label: 'Другое', emoji: '🏪' },
+  { slug: 'surprise', label: 'Сюрприз', emoji: '🎁' },
 ]
 
 export default function OffersPage() {

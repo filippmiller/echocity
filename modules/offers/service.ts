@@ -14,6 +14,8 @@ const CATEGORY_PLACE_TYPE_MAP: Record<string, string[]> = {
   other: ['OTHER'],
   // Legacy combined categories (still used by counts API)
   services: ['DRYCLEANING', 'OTHER'],
+  // Surprise bags are flash offers tagged as surprise
+  surprise: ['__SURPRISE__'],
 }
 
 export async function createOffer(input: CreateOfferInput, createdByUserId: string) {
@@ -131,7 +133,8 @@ export async function getActiveOffersByCity(
   options?: { visibility?: string; category?: string; metro?: string; limit?: number; offset?: number },
 ) {
   const now = new Date()
-  const placeTypes = options?.category ? CATEGORY_PLACE_TYPE_MAP[options.category] : undefined
+  const isSurprise = options?.category === 'surprise'
+  const placeTypes = (!isSurprise && options?.category) ? CATEGORY_PLACE_TYPE_MAP[options.category] : undefined
 
   return prisma.offer.findMany({
     where: {
@@ -142,6 +145,8 @@ export async function getActiveOffersByCity(
         { endAt: null },
         { endAt: { gt: now } },
       ],
+      // Surprise bags: flash offers with a title containing "сюрприз" or offerType FLASH with short window
+      ...(isSurprise ? { offerType: 'FLASH' } : {}),
       branch: {
         city: cityName,
         isActive: true,
