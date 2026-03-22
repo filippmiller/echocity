@@ -14,6 +14,7 @@ import { PullToRefresh } from '@/components/PullToRefresh'
 import { RecentlyViewed } from '@/components/RecentlyViewed'
 import { NearbyOffers } from '@/components/NearbyOffers'
 import { CollapsibleSection } from '@/components/CollapsibleSection'
+import { StreakWidget } from '@/components/StreakWidget'
 
 const FILTER_CHIPS = [
   { key: 'all', label: 'Все' },
@@ -125,8 +126,15 @@ function OffersContent() {
       {/* Page header */}
       <div className="bg-gradient-to-r from-brand-600 to-brand-700 text-white px-4 py-6">
         <div className="max-w-7xl mx-auto">
-          <h1 className="text-2xl font-bold mb-1">Скидки</h1>
-          <p className="text-blue-100 text-sm">Все актуальные предложения в вашем городе</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold mb-1">Скидки</h1>
+              <p className="text-blue-100 text-sm">Все актуальные предложения в вашем городе</p>
+            </div>
+          </div>
+          <div className="mt-3">
+            <StreakWidget />
+          </div>
         </div>
       </div>
 
