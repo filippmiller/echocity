@@ -7,6 +7,7 @@ import { completeExpiredReservations } from '@/modules/reservations/service'
 import { sendWeeklyDigests } from '@/modules/notifications/weekly-digest'
 import { checkExpiringFavorites, checkStreaksAtRisk } from '@/modules/notifications/triggers'
 import { sendPendingReviewNudges } from '@/modules/notifications/review-nudge'
+import { distributeAllCorporateCredits } from '@/modules/corporate/service'
 import { logger } from '@/lib/logger'
 
 let initialized = false
@@ -93,6 +94,14 @@ export function initCronJobs() {
       const count = await sendPendingReviewNudges()
       if (count > 0) logger.info(`Review nudges sent to ${count} users`)
     } catch (e) { logger.error('Cron reviewNudge failed', { error: String(e) }) }
+  })
+
+  // 1st of each month at 6am Moscow (3am UTC): distribute corporate credits
+  cron.schedule('0 3 1 * *', async () => {
+    try {
+      const count = await distributeAllCorporateCredits()
+      if (count > 0) logger.info(`Corporate credits distributed to ${count} employees`)
+    } catch (e) { logger.error('Cron distributeAllCorporateCredits failed', { error: String(e) }) }
   })
 
   logger.info('Cron jobs initialized')

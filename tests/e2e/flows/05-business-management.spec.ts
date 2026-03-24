@@ -206,34 +206,22 @@ test.describe('Flow 05: Business Management', () => {
   })
 
   test.describe('Business Register Page', () => {
-    test('3-step wizard renders correctly', async ({ page }) => {
+    test('register wizard starts with Yandex Maps search', async ({ page }) => {
       await page.goto('/business/register')
       await expect(page.locator('h1')).toContainText('Регистрация бизнеса')
-      await expect(page.locator('input[type="email"]')).toBeVisible()
-      await expect(page.locator('input[type="password"]').first()).toBeVisible()
-      await expect(page.getByRole('button', { name: 'Далее' })).toBeVisible()
+      await expect(page.locator('h2')).toContainText('Найдите ваше заведение на Яндекс Картах')
+      await expect(page.locator('input[type="text"]')).toBeVisible()
+      await expect(page.getByText('Или заполните вручную')).toBeVisible()
     })
 
-    test('step navigation works with valid data', async ({ page }) => {
+    test('skipping Yandex search shows contact form', async ({ page }) => {
       await page.goto('/business/register')
-      await page.locator('input[type="email"]').fill('test-biz-e2e@example.com')
-      const passwords = page.locator('input[type="password"]')
-      if (await passwords.count() >= 2) {
-        await passwords.nth(0).fill('TestPassword123!')
-        await passwords.nth(1).fill('TestPassword123!')
-      }
-      const textInputs = page.locator('input[type="text"]')
-      if (await textInputs.count() > 0) await textInputs.nth(0).fill('Test')
-      const telInput = page.locator('input[type="tel"]')
-      if (await telInput.count() > 0) await telInput.fill('+79001234567')
-
-      const nextBtn = page.getByRole('button', { name: 'Далее' })
-      if (await nextBtn.isVisible()) {
-        await nextBtn.click()
-        await page.waitForTimeout(1000)
-        const body = await page.textContent('body')
-        expect(body).toBeTruthy()
-      }
+      await page.getByText('Или заполните вручную').click()
+      await page.waitForTimeout(1000)
+      // Step 1 should show contact person fields
+      await expect(page.locator('input[type="email"]')).toBeVisible()
+      await expect(page.locator('input[type="tel"]')).toBeVisible()
+      await expect(page.getByRole('button', { name: 'Далее' })).toBeVisible()
     })
   })
 })

@@ -90,6 +90,7 @@ enum OfferType {
   OFF_PEAK
   FLASH
   REQUEST_ONLY
+  MYSTERY_BAG
 }
 
 enum OfferVisibility {
@@ -104,6 +105,7 @@ enum BenefitType {
   FIXED_PRICE
   FREE_ITEM
   BUNDLE
+  MYSTERY_BAG
 }
 
 enum OfferApprovalStatus {
@@ -281,6 +283,7 @@ model User {
   coinTransactions     CoinTransaction[]
   createdGroupDeals    GroupDeal[]       @relation("GroupDealCreator")
   groupDealMembers     GroupDealMember[] @relation("GroupDealMember")
+  corporateEmployment  CorporateEmployee[]
 
   @@index([email])
   @@index([role])
@@ -701,6 +704,7 @@ model Offer {
   redemptionChannel RedemptionChannel    @default(IN_STORE)
   onlineUrl         String?
   promoCode         String?
+  metadata          Json?
   createdByUserId   String
   createdAt         DateTime             @default(now())
   updatedAt         DateTime             @updatedAt
@@ -1534,6 +1538,8 @@ enum CoinTransactionType {
   STREAK_BONUS
   SUBSCRIPTION_PAYMENT
   MANUAL_ADJUSTMENT
+  REVIEW_REWARD
+  CORPORATE_CREDIT
 }
 
 model CoinTransaction {
@@ -1585,4 +1591,63 @@ model GroupDealMember {
 
   @@unique([groupDealId, userId])
   @@index([userId])
+}
+
+// ─── Corporate Plans (B2B) ───────────────────────────────────────────────────
+
+enum CorporatePlanStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  CANCELED
+}
+
+model CorporatePlan {
+  id              String              @id @default(cuid())
+  companyName     String
+  legalName       String?
+  inn             String?
+  billingEmail    String
+  billingPhone    String?
+  contactName     String
+  maxSeats        Int
+  monthlyBudget   Int                 // kopecks per employee per month
+  status          CorporatePlanStatus @default(PENDING)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  employees CorporateEmployee[]
+  invoices  CorporateInvoice[]
+
+  @@index([status])
+}
+
+model CorporateEmployee {
+  id              String   @id @default(cuid())
+  corporatePlanId String
+  userId          String
+  isActive        Boolean  @default(true)
+  addedAt         DateTime @default(now())
+
+  plan CorporatePlan @relation(fields: [corporatePlanId], references: [id], onDelete: Cascade)
+  user User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([corporatePlanId, userId])
+  @@index([userId])
+}
+
+model CorporateInvoice {
+  id              String        @id @default(cuid())
+  corporatePlanId String
+  periodStart     DateTime
+  periodEnd       DateTime
+  amount          Int           // kopecks
+  status          PaymentStatus @default(PENDING)
+  pdfUrl          String?
+  createdAt       DateTime      @default(now())
+
+  plan CorporatePlan @relation(fields: [corporatePlanId], references: [id], onDelete: Cascade)
+
+  @@index([corporatePlanId])
+  @@index([status])
 }

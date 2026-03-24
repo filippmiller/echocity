@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { getSession } from '@/modules/auth/session'
 import { prisma } from '@/lib/prisma'
 import { checkAndProgressMissions, checkBadgeEligibility } from '@/modules/gamification/service'
+import { awardReviewCoins } from '@/modules/reviews/rewards'
 
 const reviewSchema = z.object({
   redemptionId: z.string().uuid(),
@@ -147,6 +148,10 @@ export async function POST(
     },
   })
 
+  // Award coins for review (non-blocking)
+  const hasPhotos = (photoUrls?.length ?? 0) > 0
+  const coinReward = await awardReviewCoins(session.userId, review.id, hasPhotos).catch(() => null)
+
   // Non-blocking gamification progress
   checkAndProgressMissions(session.userId, 'review').catch(() => {})
   checkBadgeEligibility(session.userId).catch(() => {})
@@ -161,6 +166,7 @@ export async function POST(
         createdAt: review.createdAt,
         authorName: [review.user.firstName, review.user.lastName].filter(Boolean).join(' ') || 'Пользователь',
       },
+      coinReward: coinReward?.coins ?? 0,
     },
     { status: 201 }
   )

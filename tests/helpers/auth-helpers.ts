@@ -1,18 +1,63 @@
 import type { Page, BrowserContext, Browser } from '@playwright/test'
 import { TIMEOUTS } from './constants'
 
+const BASE_URL = process.env.BASE_URL || 'https://echocity.filippmiller.com'
+
 /**
- * Login via the /auth/login page.
- * Waits for redirect away from login page (indicating success).
+ * Login via API call, then navigate to set the cookie in the browser context.
+ * Falls back to UI login if API login fails.
+ * Retries up to 3 times with backoff to handle rate limiting.
  */
 export async function login(page: Page, email: string, password: string) {
-  await page.goto('/auth/login', { waitUntil: 'domcontentloaded', timeout: 30000 })
-  await page.locator('input[name="email"]').fill(email)
-  await page.locator('input[name="password"]').first().fill(password)
-  await page.getByRole('button', { name: 'Войти', exact: true }).click()
-  await page.waitForURL((url) => !url.pathname.endsWith('/auth/login'), {
-    timeout: TIMEOUTS.navigation,
-  })
+  const maxRetries = 3
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      // Try API-based login first (faster, more reliable)
+      await page.goto('/auth/login', { waitUntil: 'domcontentloaded', timeout: 30000 })
+
+      // Use page.evaluate to call the login API directly (sets session cookie)
+      const result = await page.evaluate(
+        async ({ email, password }) => {
+          const response = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password }),
+            credentials: 'same-origin',
+          })
+          return { status: response.status, ok: response.ok }
+        },
+        { email, password },
+      )
+
+      if (result.ok) {
+        // Cookie is set — navigate away from login to confirm session
+        await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 30000 })
+        return
+      }
+
+      if (result.status === 429) {
+        // Rate-limited — wait and retry
+        const backoffMs = (attempt + 1) * 5000
+        await page.waitForTimeout(backoffMs)
+        continue
+      }
+
+      // Non-rate-limit failure — try UI login as fallback
+      await page.getByRole('button', { name: 'Email' }).click()
+      await page.waitForTimeout(300)
+      await page.locator('#email').fill(email)
+      await page.locator('#password').fill(password)
+      await page.getByRole('button', { name: 'Войти', exact: true }).click()
+      await page.waitForURL((url) => !url.pathname.endsWith('/auth/login'), {
+        timeout: TIMEOUTS.navigation,
+      })
+      return
+    } catch (err) {
+      if (attempt === maxRetries - 1) throw err
+      await page.waitForTimeout((attempt + 1) * 3000)
+    }
+  }
 }
 
 /**
@@ -24,7 +69,7 @@ export async function newAuthedPage(browser: Browser, email: string, password: s
     storageState: {
       cookies: [],
       origins: [{
-        origin: process.env.BASE_URL || 'https://echocity.filippmiller.com',
+        origin: BASE_URL,
         localStorage: [{ name: 'echocity_onboarded', value: '1' }],
       }],
     },

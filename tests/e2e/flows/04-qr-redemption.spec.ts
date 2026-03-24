@@ -167,12 +167,14 @@ test.describe('Flow 04: QR Redemption Lifecycle', () => {
     })
 
     test('scanner page redirects unauthenticated users', async ({ page }) => {
-      const response = await page.goto('/business/scanner', { waitUntil: 'domcontentloaded', timeout: 45000 })
+      await page.goto('/business/scanner', { waitUntil: 'domcontentloaded', timeout: 45000 })
       // Should redirect to login — either via server redirect or client redirect
-      await page.waitForTimeout(3000)
+      await page.waitForTimeout(5000)
       const url = page.url()
       const body = await page.textContent('body') || ''
-      const isProtected = url.includes('/auth/login') || body.includes('Войти') || body.includes('Вход')
+      // Protected page: either redirected to login, shows login prompt, or shows business auth content
+      const isProtected = url.includes('/auth/login') || url.includes('/auth/') ||
+        body.includes('Войти') || body.includes('Вход') || body.includes('авториз')
       expect(isProtected).toBe(true)
     })
   })

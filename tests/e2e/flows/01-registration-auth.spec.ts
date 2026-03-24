@@ -6,9 +6,16 @@ import { registerCitizen, generateTestEmail } from '../../helpers/test-user-fact
 test.describe('Flow 01: Registration & Authentication', () => {
 
   test.describe('Citizen Registration', () => {
-    test('register page renders with all required fields', async ({ page }) => {
+    test('register page renders with phone tab by default', async ({ page }) => {
       await page.goto('/auth/register', { waitUntil: 'domcontentloaded' })
       await expect(page.locator('h1')).toContainText('Регистрация')
+      await expect(page.locator('#regPhone')).toBeVisible()
+      await expect(page.getByRole('button', { name: 'Получить код' })).toBeVisible()
+    })
+
+    test('register email tab has all required fields', async ({ page }) => {
+      await page.goto('/auth/register', { waitUntil: 'domcontentloaded' })
+      await page.getByRole('button', { name: 'Email' }).click()
       await expect(page.locator('#email')).toBeVisible()
       await expect(page.locator('#password')).toBeVisible()
       await expect(page.locator('#confirmPassword')).toBeVisible()
@@ -17,23 +24,25 @@ test.describe('Flow 01: Registration & Authentication', () => {
 
     test('account type toggle switches between citizen and business', async ({ page }) => {
       await page.goto('/auth/register', { waitUntil: 'domcontentloaded' })
+      await page.getByRole('button', { name: 'Email' }).click()
       await page.waitForTimeout(TIMEOUTS.render)
       const citizenBtn = page.getByRole('button', { name: 'Пользователь' })
       const bizBtn = page.getByRole('button', { name: 'Бизнес' })
       await expect(citizenBtn).toBeVisible()
       await expect(bizBtn).toBeVisible()
 
-      // Click business — should show business-specific fields
+      // Click business — should show business redirect notice
       await bizBtn.click()
       await page.waitForTimeout(1000)
       const body = await page.textContent('body') || ''
-      const hasBizField = body.includes('Название') || body.includes('бизнес') ||
+      const hasBizNotice = body.includes('мастер регистрации') || body.includes('бизнес') ||
         await page.locator('#businessName').isVisible().catch(() => false)
-      expect(hasBizField).toBe(true)
+      expect(hasBizNotice).toBe(true)
     })
 
     test('registration rejects weak passwords', async ({ page }) => {
       await page.goto('/auth/register', { waitUntil: 'domcontentloaded' })
+      await page.getByRole('button', { name: 'Email' }).click()
       await page.locator('#email').fill(generateTestEmail('weak-pwd'))
       await page.locator('#firstName').fill('Test')
       await page.locator('#password').fill('123')
@@ -46,6 +55,7 @@ test.describe('Flow 01: Registration & Authentication', () => {
 
     test('registration rejects mismatched passwords', async ({ page }) => {
       await page.goto('/auth/register', { waitUntil: 'domcontentloaded' })
+      await page.getByRole('button', { name: 'Email' }).click()
       await page.locator('#email').fill(generateTestEmail('mismatch'))
       await page.locator('#firstName').fill('Test')
       await page.locator('#password').fill('StrongPass1234!')
@@ -64,18 +74,26 @@ test.describe('Flow 01: Registration & Authentication', () => {
   })
 
   test.describe('Login', () => {
-    test('login page renders with email and password fields', async ({ page }) => {
+    test('login page renders with phone tab by default', async ({ page }) => {
       await page.goto('/auth/login', { waitUntil: 'domcontentloaded' })
       await expect(page.locator('h1')).toContainText('Вход в аккаунт')
-      await expect(page.locator('input[name="email"]')).toBeVisible()
-      await expect(page.locator('input[name="password"]')).toBeVisible()
+      await expect(page.locator('#phone')).toBeVisible()
+      await expect(page.getByRole('button', { name: 'Получить код' })).toBeVisible()
+    })
+
+    test('email tab shows email and password fields', async ({ page }) => {
+      await page.goto('/auth/login', { waitUntil: 'domcontentloaded' })
+      await page.getByRole('button', { name: 'Email' }).click()
+      await expect(page.locator('#email')).toBeVisible()
+      await expect(page.locator('#password')).toBeVisible()
       await expect(page.getByRole('button', { name: 'Войти', exact: true })).toBeVisible()
     })
 
     test('login with invalid credentials stays on login page', async ({ page }) => {
       await page.goto('/auth/login', { waitUntil: 'domcontentloaded' })
-      await page.locator('input[name="email"]').fill('nonexistent@test.com')
-      await page.locator('input[name="password"]').first().fill('WrongPassword123!')
+      await page.getByRole('button', { name: 'Email' }).click()
+      await page.locator('#email').fill('nonexistent@test.com')
+      await page.locator('#password').fill('WrongPassword123!')
       await page.getByRole('button', { name: 'Войти', exact: true }).click()
       await page.waitForTimeout(TIMEOUTS.render)
       expect(page.url()).toContain('/auth/login')
@@ -134,7 +152,6 @@ test.describe('Flow 01: Registration & Authentication', () => {
     test('/profile page shows auth prompt for unauthenticated users', async ({ page }) => {
       await page.goto('/profile')
       await page.waitForTimeout(TIMEOUTS.render)
-      // Either redirects to login or shows auth prompt
       const url = page.url()
       const body = await page.textContent('body') || ''
       const isProtected = url.includes('/auth/login') || body.includes('Войдите')
@@ -159,11 +176,9 @@ test.describe('Flow 01: Registration & Authentication', () => {
     test('logout clears session and redirects to login', async ({ browser }) => {
       const { context, page } = await newAuthedPage(browser, CREDS.user.email, CREDS.user.password)
       try {
-        // Call logout API
         const result = await api(page, '/api/auth/logout', { method: 'POST' })
         expect(result.ok).toBe(true)
 
-        // After logout, accessing protected page should redirect to login
         await page.goto('/profile')
         await page.waitForTimeout(TIMEOUTS.render)
         const body = await page.textContent('body') || ''

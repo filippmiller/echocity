@@ -249,3 +249,79 @@ export async function checkStreaksAtRisk(): Promise<number> {
   logger.info('checkStreaksAtRisk.done', { count: atRiskUsers.length })
   return atRiskUsers.length
 }
+
+/**
+ * Notify users about a flash deal happening right now.
+ * Targets users in the same city with push enabled.
+ */
+export async function notifyFlashDealNearby(offerId: string): Promise<void> {
+  try {
+    const offer = await prisma.offer.findUnique({
+      where: { id: offerId },
+      select: {
+        id: true,
+        title: true,
+        endAt: true,
+        branch: { select: { title: true, city: true } },
+        merchant: { select: { name: true } },
+      },
+    })
+
+    if (!offer) {
+      logger.warn('notifyFlashDealNearby.offerNotFound', { offerId })
+      return
+    }
+
+    const placeName = offer.branch.title || offer.merchant.name
+    const city = offer.branch.city
+    const minutesLeft = offer.endAt
+      ? Math.round((offer.endAt.getTime() - Date.now()) / 60000)
+      : 30
+
+    let cursor: string | undefined = undefined
+    let batchCount = 0
+
+    for (;;) {
+      if (batchCount >= 6) break
+
+      const users = await prisma.user.findMany({
+        where: {
+          city,
+          isActive: true,
+          profile: {
+            notificationsEnabled: true,
+            pushNotifications: true,
+          },
+        },
+        select: { id: true },
+        take: BATCH_SIZE,
+        orderBy: { id: 'asc' as const },
+        cursor: cursor ? { id: cursor } : undefined,
+        skip: cursor ? 1 : undefined,
+      })
+
+      if (users.length === 0) break
+
+      await Promise.allSettled(
+        users.map((u) =>
+          sendPushNotification(u.id, {
+            title: 'Скидка прямо сейчас!',
+            body: `${offer.title} в ${placeName} — осталось ${minutesLeft} мин`,
+            url: `/offers/${offerId}`,
+            type: NotificationType.FLASH_DEAL,
+          }).catch((err) =>
+            logger.error('notifyFlashDealNearby.failed', { userId: u.id, error: String(err) })
+          )
+        )
+      )
+
+      if (users.length < BATCH_SIZE) break
+      cursor = users[users.length - 1].id
+      batchCount++
+    }
+
+    logger.info('notifyFlashDealNearby.done', { offerId })
+  } catch (err) {
+    logger.error('notifyFlashDealNearby.error', { offerId, error: String(err) })
+  }
+}
