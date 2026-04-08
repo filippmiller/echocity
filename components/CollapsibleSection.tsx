@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, type ReactNode } from 'react'
+import { useState, useEffect, useRef, type ReactNode } from 'react'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 
 interface CollapsibleSectionProps {
@@ -12,11 +12,14 @@ interface CollapsibleSectionProps {
 /**
  * Wraps a feed section with collapse/expand. Remembers state in localStorage.
  * First-time visitors see all sections open. Returning visitors see remembered state.
+ * Hides the toggle when children render as empty (no visible content).
  */
 export function CollapsibleSection({ id, children, defaultOpen = true }: CollapsibleSectionProps) {
   const storageKey = `echocity_section_${id}`
   const [isOpen, setIsOpen] = useState(defaultOpen)
   const [initialized, setInitialized] = useState(false)
+  const [hasContent, setHasContent] = useState(true)
+  const contentRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     try {
@@ -29,6 +32,25 @@ export function CollapsibleSection({ id, children, defaultOpen = true }: Collaps
     }
     setInitialized(true)
   }, [storageKey])
+
+  // Detect whether children actually rendered visible content
+  useEffect(() => {
+    if (!contentRef.current || !isOpen) return
+    const observer = new MutationObserver(() => {
+      if (contentRef.current) {
+        const text = contentRef.current.textContent?.trim() || ''
+        const childElements = contentRef.current.querySelectorAll('a, button, img, [role]')
+        setHasContent(text.length > 0 || childElements.length > 0)
+      }
+    })
+    // Check immediately
+    const text = contentRef.current.textContent?.trim() || ''
+    const childElements = contentRef.current.querySelectorAll('a, button, img, [role]')
+    setHasContent(text.length > 0 || childElements.length > 0)
+    // Watch for async content loading
+    observer.observe(contentRef.current, { childList: true, subtree: true, characterData: true })
+    return () => observer.disconnect()
+  }, [isOpen, children])
 
   const toggle = () => {
     setIsOpen((prev) => {
@@ -44,7 +66,7 @@ export function CollapsibleSection({ id, children, defaultOpen = true }: Collaps
   return (
     <div>
       {isOpen ? (
-        children
+        <div ref={contentRef}>{children}</div>
       ) : (
         <button
           onClick={toggle}
@@ -54,7 +76,7 @@ export function CollapsibleSection({ id, children, defaultOpen = true }: Collaps
           Показать раздел
         </button>
       )}
-      {isOpen && (
+      {isOpen && hasContent && (
         <button
           onClick={toggle}
           className="w-full flex items-center justify-center gap-1 py-1 text-[10px] text-gray-300 hover:text-gray-500 transition-colors"
