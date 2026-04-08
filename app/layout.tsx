@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'ГдеСейчас — скидки рядом с вами',
     description: 'Находите скидки в кафе, ресторанах и салонах Санкт-Петербурга. Активируйте через QR и экономьте каждый день.',
-    url: 'https://echocity.filippmiller.com',
+    url: 'https://echocity.vsedomatut.com',
     siteName: 'ГдеСейчас',
     locale: 'ru_RU',
     type: 'website',

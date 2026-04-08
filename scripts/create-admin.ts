@@ -1,5 +1,5 @@
 import { prisma } from '../lib/prisma'
-import { hashPassword } from '../lib/password'
+import bcrypt from 'bcrypt'
 
 async function createAdmin() {
   const email = 'filippmiller@gmail.com'
@@ -8,60 +8,31 @@ async function createAdmin() {
   const lastName = 'Miller'
 
   try {
-    // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    })
+    const passwordHash = await bcrypt.hash(password, 10)
 
-    if (existingUser) {
-      // Update existing user to ADMIN role
-      const passwordHash = await hashPassword(password)
-      const updatedUser = await prisma.user.update({
-        where: { email },
-        data: {
-          role: 'ADMIN',
-          passwordHash,
-          firstName,
-          lastName,
-        },
-      })
-      console.log('✅ User updated to ADMIN:', updatedUser.email)
-    } else {
-      // Create new admin user
-      const passwordHash = await hashPassword(password)
-      const newUser = await prisma.user.create({
-        data: {
-          email,
-          passwordHash,
-          role: 'ADMIN',
-          firstName,
-          lastName,
-          city: 'Санкт-Петербург',
-          language: 'ru',
-          isActive: true,
-        },
-      })
-      console.log('✅ Admin user created:', newUser.email)
-    }
-
-    // Verify the user
-    const user = await prisma.user.findUnique({
+    const user = await prisma.user.upsert({
       where: { email },
-      select: {
-        id: true,
-        email: true,
-        role: true,
-        firstName: true,
-        lastName: true,
+      update: {
+        role: 'ADMIN',
+        passwordHash,
+        firstName,
+        lastName,
+      },
+      create: {
+        email,
+        passwordHash,
+        role: 'ADMIN',
+        firstName,
+        lastName,
+        city: 'Санкт-Петербург',
+        language: 'ru',
         isActive: true,
       },
     })
 
-    console.log('\n📋 User details:')
-    console.log(JSON.stringify(user, null, 2))
-    console.log('\n✅ Admin user ready!')
+    console.log('Admin user ready:', user.email, user.role)
   } catch (error) {
-    console.error('❌ Error creating admin:', error)
+    console.error('Error creating admin:', error)
     throw error
   } finally {
     await prisma.$disconnect()
@@ -69,4 +40,3 @@ async function createAdmin() {
 }
 
 createAdmin()
-

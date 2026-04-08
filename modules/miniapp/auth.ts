@@ -46,7 +46,7 @@ export async function verifyVKLaunchParams(
 
     // Find or create user via OAuthAccount
     let account = await prisma.oAuthAccount.findUnique({
-      where: { providerUserId: `vk_${vkUserId}` },
+      where: { provider_providerUserId: { provider: 'vk', providerUserId: `vk_${vkUserId}` } },
       select: { userId: true },
     })
 
@@ -99,7 +99,7 @@ export async function verifyMaxLaunchParams(
 
     // Find or create user
     let account = await prisma.oAuthAccount.findUnique({
-      where: { providerUserId: `max_${maxUserId}` },
+      where: { provider_providerUserId: { provider: 'max', providerUserId: `max_${maxUserId}` } },
       select: { userId: true },
     })
 

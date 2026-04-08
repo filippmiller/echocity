@@ -53,3 +53,8 @@ sessions/
 logs/
 *.log
 .claude/worktrees/
+
+# audit artifacts
+/docs/audit/
+/screenshots/
+audit-*.png

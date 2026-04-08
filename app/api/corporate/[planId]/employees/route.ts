@@ -68,7 +68,7 @@ export async function POST(
       SEATS_FULL: 'Все места заняты',
     }
     return NextResponse.json(
-      { error: messages[result.error] || result.error },
+      { error: (result.error && messages[result.error]) || result.error },
       { status: 400 }
     )
   }

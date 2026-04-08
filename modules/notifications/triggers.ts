@@ -284,7 +284,7 @@ export async function notifyFlashDealNearby(offerId: string): Promise<void> {
     for (;;) {
       if (batchCount >= 6) break
 
-      const users = await prisma.user.findMany({
+      const users: { id: string }[] = await prisma.user.findMany({
         where: {
           city,
           isActive: true,

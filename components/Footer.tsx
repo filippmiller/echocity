@@ -33,8 +33,12 @@ export function Footer() {
           </div>
         </div>
       </div>
-      <div className="max-w-6xl mx-auto mt-8 pt-6 border-t border-gray-800 text-xs text-gray-500">
-        &copy; {new Date().getFullYear()} ГдеСейчас. Все права защищены.
+      <div className="max-w-6xl mx-auto mt-8 pt-6 border-t border-gray-800 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-gray-500">
+        <span>&copy; {new Date().getFullYear()} ГдеСейчас. Все права защищены.</span>
+        <div className="flex gap-4">
+          <Link href="/privacy" className="hover:text-white transition-colors">Политика конфиденциальности</Link>
+          <Link href="/terms" className="hover:text-white transition-colors">Условия использования</Link>
+        </div>
       </div>
     </footer>
   )

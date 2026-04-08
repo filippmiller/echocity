@@ -19,10 +19,17 @@ const CATEGORIES = [
   { name: 'Бары', slug: 'bars', emoji: '🍺', types: ['BAR'] },
   { name: 'Красота', slug: 'beauty', emoji: '💅', types: ['BEAUTY', 'NAILS', 'HAIR'] },
   { name: 'Услуги', slug: 'services', emoji: '🔧', types: ['DRYCLEANING', 'OTHER'] },
-  { name: 'Развлечения', slug: 'entertainment', emoji: '🎭', types: [] },
-  { name: 'Магазины', slug: 'shops', emoji: '🛍', types: [] },
-  { name: 'Туристам', slug: 'tourist', emoji: '🌍', types: [] },
 ]
+
+/** Russian numeral agreement: 1 скидка, 2 скидки, 5 скидок */
+function plural(n: number, one: string, few: string, many: string): string {
+  const abs = Math.abs(n) % 100
+  const lastDigit = abs % 10
+  if (abs > 10 && abs < 20) return many
+  if (lastDigit === 1) return one
+  if (lastDigit >= 2 && lastDigit <= 4) return few
+  return many
+}
 
 async function getHomeData() {
   const now = new Date()
@@ -198,12 +205,16 @@ export default async function Home() {
             </Link>
           </div>
 
-          {/* Stats */}
-          <div className="flex justify-center gap-6 text-xs text-blue-200">
-            <span><strong className="text-white">{placeCount}</strong> заведений</span>
-            <span><strong className="text-white">{allActive}</strong> скидок</span>
-            <span><strong className="text-white">{demandCount}</strong> запросов</span>
-          </div>
+          {/* Stats — only show when numbers are meaningful */}
+          {placeCount >= 20 ? (
+            <div className="flex justify-center gap-6 text-xs text-blue-200">
+              <span><strong className="text-white">{placeCount}</strong> {plural(placeCount, 'заведение', 'заведения', 'заведений')}</span>
+              <span><strong className="text-white">{allActive}</strong> {plural(allActive, 'скидка', 'скидки', 'скидок')}</span>
+              <span><strong className="text-white">{demandCount}</strong> {plural(demandCount, 'запрос', 'запроса', 'запросов')}</span>
+            </div>
+          ) : (
+            <p className="text-xs text-blue-200">Новые скидки каждый день</p>
+          )}
 
           {/* Savings counter */}
           <div className="mt-4">
@@ -240,6 +251,36 @@ export default async function Home() {
                 <span className="text-sm text-gray-700 font-medium whitespace-nowrap">{cat.name}</span>
               </Link>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* How it works — 3-step explainer */}
+      <section className="py-6 px-4 bg-gray-50 border-b border-gray-100">
+        <div className="max-w-5xl mx-auto">
+          <h2 className="text-center font-bold text-gray-900 mb-5">Как это работает</h2>
+          <div className="grid grid-cols-3 gap-4 text-center">
+            <div>
+              <div className="w-12 h-12 bg-brand-100 rounded-xl flex items-center justify-center mx-auto mb-2">
+                <span className="text-2xl">&#x1F50D;</span>
+              </div>
+              <p className="text-sm font-semibold text-gray-800">Найдите скидку</p>
+              <p className="text-xs text-gray-500 mt-1">Рядом с вами или по категории</p>
+            </div>
+            <div>
+              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mx-auto mb-2">
+                <span className="text-2xl">&#x1F4F1;</span>
+              </div>
+              <p className="text-sm font-semibold text-gray-800">Покажите QR</p>
+              <p className="text-xs text-gray-500 mt-1">На кассе в заведении</p>
+            </div>
+            <div>
+              <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center mx-auto mb-2">
+                <span className="text-2xl">&#x1F389;</span>
+              </div>
+              <p className="text-sm font-semibold text-gray-800">Получите скидку</p>
+              <p className="text-xs text-gray-500 mt-1">Мгновенно и без хлопот</p>
+            </div>
           </div>
         </div>
       </section>
@@ -375,8 +416,8 @@ export default async function Home() {
         </section>
       )}
 
-      {/* Free Deals — no subscription needed */}
-      {freeOffers.length > 0 && (
+      {/* Free Deals — only show when we have enough offers to avoid repeating the same cards */}
+      {freeOffers.length > 0 && allActive >= 15 && (
         <section className="py-6 px-4">
           <div className="max-w-5xl mx-auto">
             <div className="flex items-center justify-between mb-4">
