@@ -5,10 +5,10 @@ import { createDemandRequest } from '@/modules/demand/service'
 import { prisma } from '@/lib/prisma'
 
 const createDemandSchema = z.object({
-  placeId: z.string().uuid().optional(),
+  placeId: z.string().min(1).optional(),
   placeName: z.string().min(1).max(200).optional(),
-  categoryId: z.string().uuid().optional(),
-  cityId: z.string().uuid().optional(),
+  categoryId: z.string().min(1).optional(),
+  cityId: z.string().min(1).optional(),
   lat: z.number().min(-90).max(90).optional(),
   lng: z.number().min(-180).max(180).optional(),
 })
