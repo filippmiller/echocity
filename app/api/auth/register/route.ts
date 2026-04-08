@@ -13,6 +13,9 @@ const registerUserSchema = z.object({
   phone: z.string().max(30).optional(),
   city: z.string().max(200).optional(),
   language: z.enum(['ru', 'en']).optional(),
+  termsAccepted: z.literal(true, {
+    errorMap: () => ({ message: 'Необходимо принять условия использования' }),
+  }),
 }).refine(
   (data) => data.accountType !== 'CITIZEN' || (data.firstName && data.firstName.length > 0),
   { message: 'Имя обязательно для регистрации', path: ['firstName'] },

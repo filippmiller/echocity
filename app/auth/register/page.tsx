@@ -40,7 +40,8 @@ export default function RegisterPage() {
 function RegisterContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const redirectTo = searchParams.get('redirect')
+  const rawRedirect = searchParams.get('redirect')
+  const redirectTo = rawRedirect && rawRedirect.startsWith('/') && !rawRedirect.startsWith('//') ? rawRedirect : null
 
   const [activeTab, setActiveTab] = useState<RegisterTab>('phone')
   const [accountType, setAccountType] = useState<AccountType>('CITIZEN')
@@ -132,7 +133,7 @@ function RegisterContent() {
     setLoading(true)
 
     try {
-      const payload: Record<string, unknown> = { accountType, email, password }
+      const payload: Record<string, unknown> = { accountType, email, password, termsAccepted: true }
 
       if (accountType === 'CITIZEN') {
         payload.firstName = firstName
@@ -156,7 +157,7 @@ function RegisterContent() {
       }
 
       toast.success('Аккаунт создан!')
-      redirectAfterLogin(data.user.role)
+      redirectAfterLogin(data.user?.role ?? 'CITIZEN')
     } catch {
       toast.error('Ошибка при регистрации. Попробуйте позже.')
     } finally {
@@ -208,7 +209,7 @@ function RegisterContent() {
       const response = await fetch('/api/auth/phone/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: apiPhone, code }),
+        body: JSON.stringify({ phone: apiPhone, code, termsAccepted: true }),
       })
       const data = await response.json()
       if (!response.ok) {
@@ -216,7 +217,7 @@ function RegisterContent() {
         return
       }
       toast.success('Аккаунт создан!')
-      redirectAfterLogin(data.user.role)
+      redirectAfterLogin(data.user?.role ?? 'CITIZEN')
     } catch {
       toast.error('Ошибка при проверке кода. Попробуйте позже.')
     } finally {
@@ -294,11 +295,31 @@ function RegisterContent() {
               />
             </div>
 
+            {/* Terms acceptance (shared with email tab) */}
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={termsAccepted}
+                onChange={(e) => setTermsAccepted(e.target.checked)}
+                className="mt-1 h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
+              />
+              <span className="text-sm text-gray-600">
+                Я принимаю{' '}
+                <Link href="/terms" target="_blank" className="text-brand-600 hover:underline">
+                  Условия использования
+                </Link>{' '}
+                и{' '}
+                <Link href="/privacy" target="_blank" className="text-brand-600 hover:underline">
+                  Политику конфиденциальности
+                </Link>
+              </span>
+            </label>
+
             {!otpSent ? (
               <button
                 type="button"
                 onClick={handleSendOtp}
-                disabled={phoneLoading}
+                disabled={phoneLoading || !termsAccepted}
                 className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-base font-semibold text-white bg-brand-600 hover:bg-brand-700 active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 disabled:opacity-60 disabled:pointer-events-none transition-all min-h-[48px]"
               >
                 {phoneLoading ? (
@@ -500,7 +521,7 @@ function RegisterContent() {
                         id="city"
                         value={city}
                         onChange={(e) => setCity(e.target.value)}
-                        className={inputClassName}
+                        className={`${inputClassName} bg-white`}
                       >
                         <option value="Санкт-Петербург">Санкт-Петербург</option>
                         {cities

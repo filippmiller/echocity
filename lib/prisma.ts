@@ -4,13 +4,8 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }
 
-export const prisma =
-  globalForPrisma.prisma ??
-  new PrismaClient({
-    datasourceUrl: process.env.DATABASE_URL,
-    // Connection pool: limit concurrent connections to avoid exhaustion under load
-    // Prisma default is num_cpus * 2 + 1, which can overwhelm small DB instances
-  })
+// Connection pool configured via DATABASE_URL params: ?connection_limit=10&pool_timeout=30
+export const prisma = globalForPrisma.prisma ?? new PrismaClient()
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
 

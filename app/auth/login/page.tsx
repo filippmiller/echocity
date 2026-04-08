@@ -41,7 +41,8 @@ function toApiPhone(formatted: string): string {
 function LoginContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const redirectTo = searchParams.get('redirect')
+  const rawRedirect = searchParams.get('redirect')
+  const redirectTo = rawRedirect && rawRedirect.startsWith('/') && !rawRedirect.startsWith('//') ? rawRedirect : null
 
   const [activeTab, setActiveTab] = useState<Tab>('phone')
 
