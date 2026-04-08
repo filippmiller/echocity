@@ -4,7 +4,6 @@
  */
 
 import { prisma } from '@/lib/prisma'
-import { createSession } from '@/modules/auth/session'
 import { logger } from '@/lib/logger'
 import crypto from 'crypto'
 
@@ -46,7 +45,7 @@ export async function verifyVKLaunchParams(
 
     // Find or create user via OAuthAccount
     let account = await prisma.oAuthAccount.findUnique({
-      where: { provider_providerUserId: { provider: 'vk', providerUserId: `vk_${vkUserId}` } },
+      where: { provider_providerUserId: { provider: 'vk', providerUserId: String(vkUserId) } },
       select: { userId: true },
     })
 
@@ -63,7 +62,7 @@ export async function verifyVKLaunchParams(
           oauthAccounts: {
             create: {
               provider: 'vk',
-              providerUserId: `vk_${vkUserId}`,
+              providerUserId: String(vkUserId),
               providerLogin: vkUserId,
             },
           },
@@ -99,7 +98,7 @@ export async function verifyMaxLaunchParams(
 
     // Find or create user
     let account = await prisma.oAuthAccount.findUnique({
-      where: { provider_providerUserId: { provider: 'max', providerUserId: `max_${maxUserId}` } },
+      where: { provider_providerUserId: { provider: 'max', providerUserId: String(maxUserId) } },
       select: { userId: true },
     })
 
@@ -115,7 +114,7 @@ export async function verifyMaxLaunchParams(
           oauthAccounts: {
             create: {
               provider: 'max',
-              providerUserId: `max_${maxUserId}`,
+              providerUserId: String(maxUserId),
               providerLogin: String(maxUserId),
             },
           },

@@ -67,7 +67,7 @@ export function CollapsibleSection({ id, children, defaultOpen = true }: Collaps
     <div>
       {isOpen ? (
         <div ref={contentRef}>{children}</div>
-      ) : (
+      ) : hasContent ? (
         <button
           onClick={toggle}
           className="w-full flex items-center justify-center gap-1.5 py-3 text-xs text-gray-400 hover:text-gray-600 transition-colors"
@@ -75,7 +75,7 @@ export function CollapsibleSection({ id, children, defaultOpen = true }: Collaps
           <ChevronDown className="w-3.5 h-3.5" />
           Показать раздел
         </button>
-      )}
+      ) : null}
       {isOpen && hasContent && (
         <button
           onClick={toggle}

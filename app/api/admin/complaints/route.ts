@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/modules/auth/session'
 import { prisma } from '@/lib/prisma'
 
+const VALID_STATUSES = ['OPEN', 'IN_REVIEW', 'RESOLVED', 'DISMISSED'] as const
+const VALID_PRIORITIES = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] as const
+const VALID_TYPES = ['OFFER_NOT_HONORED', 'RUDE_STAFF', 'FALSE_ADVERTISING', 'WRONG_DISCOUNT', 'FRAUD', 'CONTENT_ISSUE', 'OTHER'] as const
+
 /**
  * GET /api/admin/complaints
  * List all complaints with optional filters.
@@ -21,10 +25,11 @@ export async function GET(req: NextRequest) {
   const limit = Math.min(Math.max(parseInt(searchParams.get('limit') || '50') || 50, 1), 100)
   const offset = Math.max(parseInt(searchParams.get('offset') || '0') || 0, 0)
 
+  // Validate enum params to prevent Prisma runtime errors on invalid values
   const where: Record<string, unknown> = {}
-  if (status) where.status = status
-  if (priority) where.priority = priority
-  if (type) where.type = type
+  if (status && (VALID_STATUSES as readonly string[]).includes(status)) where.status = status
+  if (priority && (VALID_PRIORITIES as readonly string[]).includes(priority)) where.priority = priority
+  if (type && (VALID_TYPES as readonly string[]).includes(type)) where.type = type
 
   const orderBy = sort === 'oldest'
     ? { createdAt: 'asc' as const }

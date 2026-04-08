@@ -1,6 +1,21 @@
 /**
- * Password validation and strength checking
+ * Password validation, strength checking, and hashing.
+ * Single source of truth for all password operations.
  */
+
+import bcrypt from 'bcrypt'
+
+const BCRYPT_ROUNDS = 10
+
+/** Hash a plaintext password. Use this everywhere — do NOT call bcrypt.hash directly. */
+export async function hashPassword(password: string): Promise<string> {
+  return bcrypt.hash(password, BCRYPT_ROUNDS)
+}
+
+/** Compare plaintext against hash. */
+export async function verifyPassword(password: string, hash: string): Promise<boolean> {
+  return bcrypt.compare(password, hash)
+}
 
 const WEAK_PASSWORDS = [
   '1234', '12345', '123456', '1234567', '12345678', '123456789',

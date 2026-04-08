@@ -115,7 +115,7 @@ export function OfferCard({
             <img src={imageUrl} alt={title} className="w-full h-full object-cover" loading="lazy" />
           ) : (
             <img
-              src={`/images/offers/offer-placeholder-${((id.charCodeAt(id.length - 1) % 4) + 1)}.jpg`}
+              src={`/images/offers/offer-placeholder-${id.length > 0 ? ((id.charCodeAt(id.length - 1) % 4) + 1) : 1}.jpg`}
               alt={title}
               className="w-full h-full object-cover opacity-80"
               loading="lazy"

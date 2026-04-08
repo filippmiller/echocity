@@ -1,5 +1,5 @@
 import { prisma } from '../lib/prisma'
-import bcrypt from 'bcrypt'
+import { hashPassword } from '../lib/password'
 
 async function createAdmin() {
   const email = 'filippmiller@gmail.com'
@@ -8,7 +8,7 @@ async function createAdmin() {
   const lastName = 'Miller'
 
   try {
-    const passwordHash = await bcrypt.hash(password, 10)
+    const passwordHash = await hashPassword(password)
 
     const user = await prisma.user.upsert({
       where: { email },
