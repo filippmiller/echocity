@@ -17,7 +17,7 @@ const TYPE_LABELS: Record<string, string> = {
   REFERRAL_BONUS: 'Бонус за приглашение',
   STREAK_BONUS: 'Бонус за серию',
   SUBSCRIPTION_PAYMENT: 'Оплата подписки',
-  MANUAL_ADJUSTMENT: 'Ручная корректировка',
+  MANUAL_ADJUSTMENT: 'Бонус от ГдеСейчас',
 }
 
 export default function WalletPage() {

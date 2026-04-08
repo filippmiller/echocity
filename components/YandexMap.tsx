@@ -37,31 +37,56 @@ export default function YandexMap({
   const mapRef = useRef<HTMLDivElement>(null)
   const [mapInstance, setMapInstance] = useState<any>(null)
   const [isLoaded, setIsLoaded] = useState(false)
+  const [loadError, setLoadError] = useState(false)
   const markersRef = useRef<any[]>([])
 
   useEffect(() => {
-    // Load Yandex Maps API 2.1
+    const apiKey = process.env.NEXT_PUBLIC_YANDEX_MAPS_API_KEY || ''
+
+    // If no API key, show fallback immediately
+    if (!apiKey) {
+      setLoadError(true)
+      return
+    }
+
+    // Already loaded from a previous mount
     if (window.ymaps) {
-      window.ymaps.ready(() => setIsLoaded(true))
+      try {
+        window.ymaps.ready(() => setIsLoaded(true))
+      } catch {
+        setLoadError(true)
+      }
       return
     }
 
     const script = document.createElement('script')
-    // API key can be set via NEXT_PUBLIC_YANDEX_MAPS_API_KEY env variable
-    // For development, can work without key (with limitations)
-    // Next.js will replace this at build time
-    const apiKey = process.env.NEXT_PUBLIC_YANDEX_MAPS_API_KEY || ''
     script.src = `https://api-maps.yandex.ru/2.1/?apikey=${apiKey}&lang=ru_RU`
     script.async = true
+
+    // Hard timeout — if API doesn't load within 8s, show fallback
+    const timeout = setTimeout(() => {
+      setLoadError(true)
+    }, 8000)
+
     script.onload = () => {
-      window.ymaps.ready(() => {
-        setIsLoaded(true)
-      })
+      try {
+        window.ymaps.ready(() => {
+          clearTimeout(timeout)
+          setIsLoaded(true)
+        })
+      } catch {
+        clearTimeout(timeout)
+        setLoadError(true)
+      }
+    }
+    script.onerror = () => {
+      clearTimeout(timeout)
+      setLoadError(true)
     }
     document.head.appendChild(script)
 
     return () => {
-      // Cleanup
+      clearTimeout(timeout)
     }
   }, [])
 
@@ -131,6 +156,21 @@ export default function YandexMap({
       markersRef.current.push(marker)
     })
   }, [mapInstance, places, onPlaceClick, isLoaded])
+
+  if (loadError) {
+    return (
+      <div
+        style={{ height, width: '100%' }}
+        className="bg-gray-100 rounded-lg flex items-center justify-center"
+      >
+        <div className="text-center p-8">
+          <div className="text-4xl mb-3">&#x1F5FA;&#xFE0F;</div>
+          <p className="text-gray-600 font-medium mb-1">Карта временно недоступна</p>
+          <p className="text-gray-400 text-sm">Не удалось загрузить Yandex Maps. Попробуйте позже.</p>
+        </div>
+      </div>
+    )
+  }
 
   if (!isLoaded) {
     return (

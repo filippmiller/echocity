@@ -42,8 +42,8 @@ const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
     className: 'bg-amber-50 text-amber-700 border border-amber-200',
   },
   FRAUD_SUSPECTED: {
-    label: 'Подозрительно',
-    className: 'bg-red-50 text-red-700 border border-red-200',
+    label: 'На проверке',
+    className: 'bg-gray-50 text-gray-600 border border-gray-200',
   },
 }
 

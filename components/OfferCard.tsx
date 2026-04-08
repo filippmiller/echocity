@@ -114,14 +114,12 @@ export function OfferCard({
           {imageUrl ? (
             <img src={imageUrl} alt={title} className="w-full h-full object-cover" loading="lazy" />
           ) : (
-            <div className={`w-full h-full flex flex-col items-center justify-center ${
-              isFlash ? 'bg-gradient-to-br from-rose-100 to-orange-100' :
-              isMembersOnly ? 'bg-gradient-to-br from-violet-100 to-purple-100' :
-              'bg-gradient-to-br from-blue-50 to-indigo-100'
-            }`}>
-              <span className="text-3xl font-bold text-gray-400/60">{badge}</span>
-              <span className="text-[10px] text-gray-400 mt-1 uppercase tracking-wide">{branchName.split(' — ')[0]}</span>
-            </div>
+            <img
+              src={`/images/offers/offer-placeholder-${((id.charCodeAt(id.length - 1) % 4) + 1)}.jpg`}
+              alt={title}
+              className="w-full h-full object-cover opacity-80"
+              loading="lazy"
+            />
           )}
 
           {/* Discount badge */}
