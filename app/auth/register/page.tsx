@@ -56,6 +56,8 @@ function RegisterContent() {
   const [phone, setPhone] = useState('')
   const [city, setCity] = useState('Санкт-Петербург')
   const [language, setLanguage] = useState<'ru' | 'en'>('ru')
+  const [termsAccepted, setTermsAccepted] = useState(false)
+  const [cities, setCities] = useState<{ id: string; name: string }[]>([])
 
   // Phone tab state
   const [phoneDisplay, setPhoneDisplay] = useState('')
@@ -78,6 +80,16 @@ function RegisterContent() {
     return () => clearInterval(timer)
   }, [cooldown])
 
+  useEffect(() => {
+    fetch('/api/public/cities')
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data)) setCities(data)
+        else if (data.cities) setCities(data.cities)
+      })
+      .catch(() => {})
+  }, [])
+
   const redirectAfterLogin = (role: string) => {
     if (redirectTo) {
       router.push(redirectTo)
@@ -99,6 +111,11 @@ function RegisterContent() {
   // ---- Email registration ----
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (!termsAccepted) {
+      toast.error('Необходимо принять условия использования')
+      return
+    }
 
     if (password !== confirmPassword) {
       toast.error('Пароли не совпадают')
@@ -479,13 +496,21 @@ function RegisterContent() {
                       <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1.5">
                         Город
                       </label>
-                      <input
+                      <select
                         id="city"
-                        type="text"
                         value={city}
                         onChange={(e) => setCity(e.target.value)}
                         className={inputClassName}
-                      />
+                      >
+                        <option value="Санкт-Петербург">Санкт-Петербург</option>
+                        {cities
+                          .filter((c) => c.name !== 'Санкт-Петербург')
+                          .map((c) => (
+                            <option key={c.id} value={c.name}>
+                              {c.name}
+                            </option>
+                          ))}
+                      </select>
                     </div>
                   </div>
 
@@ -531,10 +556,30 @@ function RegisterContent() {
                 </div>
               )}
 
+              {/* Terms acceptance */}
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={termsAccepted}
+                  onChange={(e) => setTermsAccepted(e.target.checked)}
+                  className="mt-1 h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
+                />
+                <span className="text-sm text-gray-600">
+                  Я принимаю{' '}
+                  <Link href="/terms" target="_blank" className="text-brand-600 hover:underline">
+                    Условия использования
+                  </Link>{' '}
+                  и{' '}
+                  <Link href="/privacy" target="_blank" className="text-brand-600 hover:underline">
+                    Политику конфиденциальности
+                  </Link>
+                </span>
+              </label>
+
               {/* Submit */}
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || !termsAccepted}
                 className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-base font-semibold text-white bg-brand-600 hover:bg-brand-700 active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 disabled:opacity-60 disabled:pointer-events-none transition-all min-h-[48px]"
               >
                 {loading ? (

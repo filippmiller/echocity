@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '@/lib/auth-client'
 import { Users, UserPlus, Trash2, Crown, ShieldCheck } from 'lucide-react'
 import Link from 'next/link'
-import { Footer } from '@/components/Footer'
 
 interface FamilyMember {
   id: string
@@ -157,7 +156,7 @@ export default function FamilyPage() {
             </p>
           </div>
         </div>
-        <Footer />
+
       </div>
     )
   }
@@ -293,7 +292,7 @@ export default function FamilyPage() {
         )}
       </div>
 
-      <Footer />
+
     </div>
   )
 }

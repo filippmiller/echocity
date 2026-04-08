@@ -5,7 +5,6 @@ import { useSearchParams } from 'next/navigation'
 import { useAuth } from '@/lib/auth-client'
 import { Check, X, Crown, Zap, Star, Loader2 } from 'lucide-react'
 import Link from 'next/link'
-import { Footer } from '@/components/Footer'
 import { SubscriptionSavingsCard } from '@/components/SubscriptionSavingsCard'
 import { SatisfactionGuarantee } from '@/components/SatisfactionGuarantee'
 
@@ -341,7 +340,6 @@ function SubscriptionContent() {
         </div>
       </div>
 
-      <Footer />
     </div>
   )
 }

@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
+import { Footer } from '@/components/Footer'
 import { QrCode, BarChart3, Users, Clock, Zap, Shield, ArrowRight, CheckCircle2, Star } from 'lucide-react'
 
 const OFFER_TEMPLATES = [
@@ -340,6 +341,8 @@ export default async function ForBusinessesPage() {
           </p>
         </div>
       </section>
+
+      <Footer />
     </main>
   )
 }

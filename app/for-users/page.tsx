@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
+import { Footer } from '@/components/Footer'
 
 export const metadata: Metadata = {
   title: 'Для пользователей — ГдеСейчас',
@@ -124,6 +125,8 @@ export default function ForUsersPage() {
           <p className="text-gray-400 text-xs mt-3">от 199 руб/мес. Отмена в любой момент.</p>
         </div>
       </section>
+
+      <Footer />
     </div>
   )
 }

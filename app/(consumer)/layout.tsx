@@ -2,6 +2,7 @@ import { SavingsMilestoneCelebration } from '@/components/SavingsMilestoneCelebr
 import { PWAInstallPrompt } from '@/components/PWAInstallPrompt'
 import { OfflineIndicator } from '@/components/OfflineIndicator'
 import { PushPermissionBanner } from '@/components/PushPermissionBanner'
+import { Footer } from '@/components/Footer'
 
 export default function ConsumerLayout({
   children,
@@ -13,6 +14,7 @@ export default function ConsumerLayout({
       <PushPermissionBanner />
       <OfflineIndicator />
       {children}
+      <Footer />
       <SavingsMilestoneCelebration />
       <PWAInstallPrompt />
     </>
