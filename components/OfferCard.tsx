@@ -119,6 +119,7 @@ export function OfferCard({
               alt={title}
               className="w-full h-full object-cover opacity-80"
               loading="lazy"
+              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
             />
           )}
 

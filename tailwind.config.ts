@@ -7,6 +7,9 @@ const config: Config = {
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
+    fontFamily: {
+      sans: ['var(--font-manrope)', 'system-ui', '-apple-system', 'sans-serif'],
+    },
     extend: {
       colors: {
         brand: {
@@ -58,6 +61,6 @@ const config: Config = {
       },
     },
   },
-  plugins: [],
+  plugins: [require('@tailwindcss/typography')],
 };
 export default config;

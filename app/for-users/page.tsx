@@ -27,7 +27,7 @@ export default function ForUsersPage() {
             </Link>
             <Link
               href="/offers"
-              className="px-8 py-3 bg-white/10 text-white font-semibold rounded-xl hover:bg-white/20 transition-colors"
+              className="px-8 py-3 border-2 border-white text-white font-semibold rounded-xl hover:bg-white/20 transition-colors"
             >
               Смотреть скидки
             </Link>

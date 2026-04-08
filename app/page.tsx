@@ -179,9 +179,9 @@ export default async function Home() {
   return (
     <main className="min-h-screen bg-white">
       {/* Hero — compact, punchy, with photo background */}
-      <section className="relative bg-gradient-to-br from-brand-600 via-brand-700 to-blue-800 text-white pt-4 pb-8 px-4 overflow-hidden">
+      <section className="relative bg-gradient-to-br from-brand-600 via-brand-700 to-blue-800 text-white pt-8 pb-12 px-4 overflow-hidden">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/images/hero-bg.jpg" alt="" className="absolute inset-0 w-full h-full object-cover opacity-15" />
+        <img src="/images/hero-bg.jpg" alt="" className="absolute inset-0 w-full h-full object-cover opacity-25 mix-blend-soft-light" />
         <div className="max-w-5xl mx-auto text-center relative z-10">
           <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-3 py-1 text-xs font-medium text-blue-100 mb-4">
             <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
