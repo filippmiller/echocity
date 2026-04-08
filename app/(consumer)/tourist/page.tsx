@@ -2,7 +2,6 @@ export const dynamic = 'force-dynamic'
 import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
 import { OfferCard } from '@/components/OfferCard'
-import { Footer } from '@/components/Footer'
 
 const TOURIST_CATEGORIES = [
   { slug: 'all', label: 'Все', labelEn: 'All', emoji: '🌍' },
@@ -341,7 +340,6 @@ export default async function TouristPage() {
         </div>
       </section>
 
-      <Footer />
     </main>
   )
 }

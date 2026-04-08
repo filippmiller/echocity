@@ -9,7 +9,6 @@ import { ForYouOffers } from '@/components/ForYouOffers'
 import { HomeStoriesBar } from '@/components/HomeStoriesBar'
 import { FeaturedCollections } from '@/components/FeaturedCollections'
 import { TopRatedOffers } from '@/components/TopRatedOffers'
-import { Footer } from '@/components/Footer'
 import { PullToRefresh } from '@/components/PullToRefresh'
 import { RecentlyViewed } from '@/components/RecentlyViewed'
 import { NearbyOffers } from '@/components/NearbyOffers'
@@ -304,7 +303,6 @@ function OffersContent() {
       </PullToRefresh>
 
       <CompareBar ids={compare.ids} onClear={compare.clear} />
-      <Footer />
     </div>
   )
 }

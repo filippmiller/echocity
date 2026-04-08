@@ -303,7 +303,7 @@ export default function FavoritesPage() {
                   />
                   <button
                     onClick={() => removeFavorite('OFFER', offer.id)}
-                    className="absolute top-1.5 right-1.5 z-20 w-7 h-7 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute top-1.5 right-1.5 z-20 w-7 h-7 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 transition-opacity"
                     aria-label="Удалить из избранного"
                   >
                     <X className="w-4 h-4 text-white" />
@@ -345,7 +345,7 @@ export default function FavoritesPage() {
                   </Link>
                   <button
                     onClick={() => removeFavorite('PLACE', place.id)}
-                    className="absolute top-3 right-3 z-10 w-7 h-7 rounded-full bg-gray-100 hover:bg-rose-100 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
+                    className="absolute top-3 right-3 z-10 w-7 h-7 rounded-full bg-gray-100 hover:bg-rose-100 flex items-center justify-center [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 transition-all"
                     aria-label="Удалить из избранного"
                   >
                     <X className="w-4 h-4 text-gray-400 hover:text-rose-500" />

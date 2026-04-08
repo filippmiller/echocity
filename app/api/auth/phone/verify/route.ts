@@ -7,6 +7,9 @@ import { logger } from '@/lib/logger'
 const verifySchema = z.object({
   phone: z.string().regex(/^\+7\d{10}$/, 'Номер телефона должен быть в формате +7XXXXXXXXXX'),
   code: z.string().length(4, 'Код должен состоять из 4 цифр'),
+  termsAccepted: z.literal(true, {
+    errorMap: () => ({ message: 'Необходимо принять условия использования' }),
+  }),
 })
 
 export async function POST(request: NextRequest) {

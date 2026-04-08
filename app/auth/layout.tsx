@@ -31,8 +31,17 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       </main>
 
       {/* Footer */}
-      <footer className="text-center py-4 text-xs text-gray-400">
-        &copy; 2024-2026 ГдеСейчас
+      <footer className="text-center py-4 text-xs text-gray-400 space-y-1">
+        <div className="flex items-center justify-center gap-3">
+          <Link href="/privacy" className="hover:text-gray-600 transition-colors">
+            Политика конфиденциальности
+          </Link>
+          <span>&middot;</span>
+          <Link href="/terms" className="hover:text-gray-600 transition-colors">
+            Условия использования
+          </Link>
+        </div>
+        <p>&copy; 2024-2026 ГдеСейчас</p>
       </footer>
     </div>
   )
