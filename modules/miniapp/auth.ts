@@ -86,12 +86,23 @@ export async function verifyMaxLaunchParams(
   maxAppSecret: string,
 ): Promise<MiniAppAuthResult> {
   try {
-    // Max uses a JWT-like token. For now, decode and verify basic structure.
-    // In production, verify against Max API.
+    // Max uses JWT tokens signed with HMAC-SHA256 using the app secret
     const parts = token.split('.')
-    if (parts.length < 2) return { success: false, error: 'INVALID_TOKEN' }
+    if (parts.length !== 3) return { success: false, error: 'INVALID_TOKEN' }
 
-    const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString())
+    // Verify signature — CRITICAL: prevents forged tokens
+    const [header, payloadB64, signature] = parts
+    const expectedSig = crypto
+      .createHmac('sha256', maxAppSecret)
+      .update(`${header}.${payloadB64}`)
+      .digest('base64url')
+
+    if (signature !== expectedSig) {
+      logger.warn('miniapp.verifyMax.invalidSignature', { token: token.substring(0, 20) + '...' })
+      return { success: false, error: 'INVALID_SIGNATURE' }
+    }
+
+    const payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString())
     const maxUserId = payload.sub || payload.user_id
 
     if (!maxUserId) return { success: false, error: 'MISSING_USER_ID' }

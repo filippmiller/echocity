@@ -125,6 +125,9 @@ export default function YandexMap({
     })
     markersRef.current = []
 
+    // Escape HTML to prevent XSS via place names/addresses
+    const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+
     // Add markers for places
     places.forEach((place) => {
       if (!place.latitude || !place.longitude) return
@@ -134,12 +137,12 @@ export default function YandexMap({
         {
           balloonContent: `
             <div style="padding: 8px;">
-              <h3 style="margin: 0 0 8px 0; font-weight: 600;">${place.name}</h3>
-              ${place.addressLine1 ? `<p style="margin: 0; color: #666;">${place.addressLine1}</p>` : ''}
-              ${place.placeType ? `<p style="margin: 4px 0 0 0; color: #999; font-size: 12px;">${place.placeType}</p>` : ''}
+              <h3 style="margin: 0 0 8px 0; font-weight: 600;">${esc(place.name)}</h3>
+              ${place.addressLine1 ? `<p style="margin: 0; color: #666;">${esc(place.addressLine1)}</p>` : ''}
+              ${place.placeType ? `<p style="margin: 4px 0 0 0; color: #999; font-size: 12px;">${esc(place.placeType)}</p>` : ''}
             </div>
           `,
-          iconCaption: place.name,
+          iconCaption: esc(place.name),
         },
         {
           preset: 'islands#blueDotIconWithCaption',
