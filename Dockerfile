@@ -30,4 +30,7 @@ ENV HOSTNAME="0.0.0.0"
 
 USER app
 
-CMD ["sh", "-c", "npx prisma migrate deploy && npm start"]
+# Resolve any previously-failed migrations (idempotent — harmless if already applied).
+# Fixes P3009 loop after migration squash in d24f159. The 0_init schema IS applied to
+# the DB; only the _prisma_migrations tracker row is in a failed state.
+CMD ["sh", "-c", "(npx prisma migrate resolve --applied 0_init || true) && npx prisma migrate deploy && npm start"]
