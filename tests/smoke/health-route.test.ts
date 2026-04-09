@@ -72,6 +72,19 @@ describe('health route', () => {
     expect(body.environment).toBeDefined()
   })
 
+  it('keeps the public response when detail is requested without admin access', async () => {
+    mockQueryRaw.mockResolvedValueOnce([{ '?column?': 1 }])
+    const { GET } = await import('@/app/api/health/route')
+
+    const response = await GET(new NextRequest('http://localhost:3000/api/health?detail=1'))
+    const body = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(body.ok).toBe(true)
+    expect(body.checks).toBeUndefined()
+    expect(body.environment).toBeUndefined()
+  })
+
   it('returns 503 when database is unavailable', async () => {
     mockQueryRaw.mockRejectedValueOnce(new Error('db down'))
     const { GET } = await import('@/app/api/health/route')
@@ -83,7 +96,7 @@ describe('health route', () => {
     expect(body.ok).toBe(false)
   })
 
-  it('returns 503 for admin when session secret is missing', async () => {
+  it('keeps the public response when the session secret is missing', async () => {
     mockGetSession.mockResolvedValue({ userId: '1', role: 'ADMIN', email: 'a@b.com' })
     vi.stubEnv('SESSION_SECRET', '')
     mockQueryRaw.mockResolvedValueOnce([{ '?column?': 1 }])
@@ -92,9 +105,9 @@ describe('health route', () => {
     const response = await GET(makeRequest({ withSession: true }))
     const body = await response.json()
 
-    expect(response.status).toBe(503)
-    expect(body.ok).toBe(false)
-    expect(body.checks.sessionSecret).toBe(false)
-    expect(body.checks.database).toBe(true)
+    expect(response.status).toBe(200)
+    expect(body.ok).toBe(true)
+    expect(body.checks).toBeUndefined()
+    expect(body.environment).toBeUndefined()
   })
 })

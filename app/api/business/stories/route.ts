@@ -5,11 +5,11 @@ import { prisma } from '@/lib/prisma'
 import { createStory, getStoriesByMerchant } from '@/modules/stories/service'
 
 const createStorySchema = z.object({
-  branchId: z.string().uuid(),
+  branchId: z.string().cuid(),
   mediaUrl: z.string().url().max(2000),
   mediaType: z.enum(['IMAGE', 'VIDEO']).default('IMAGE'),
   caption: z.string().max(500).optional(),
-  linkOfferId: z.string().uuid().optional(),
+  linkOfferId: z.string().cuid().optional(),
 })
 
 export async function GET() {

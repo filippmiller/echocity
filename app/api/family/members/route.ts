@@ -8,7 +8,7 @@ const addMemberSchema = z.object({
 })
 
 const removeMemberSchema = z.object({
-  memberId: z.string().uuid(),
+  memberId: z.string().cuid(),
 })
 
 export async function POST(req: NextRequest) {

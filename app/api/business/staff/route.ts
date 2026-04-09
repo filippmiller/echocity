@@ -5,8 +5,8 @@ import { prisma } from '@/lib/prisma'
 
 const addStaffSchema = z.object({
   email: z.string().email().max(255),
-  merchantId: z.string().uuid(),
-  branchId: z.string().uuid().optional(),
+  merchantId: z.string().cuid(),
+  branchId: z.string().cuid().optional(),
   staffRole: z.enum(['CASHIER', 'MANAGER']).default('CASHIER'),
 })
 

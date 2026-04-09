@@ -4,7 +4,7 @@ import { getSession } from '@/modules/auth/session'
 import { createRedemptionSession } from '@/modules/redemptions/service'
 
 const createSessionSchema = z.object({
-  offerId: z.string().uuid(),
+  offerId: z.string().cuid(),
   lat: z.number().min(-90).max(90).optional(),
   lng: z.number().min(-180).max(180).optional(),
 })

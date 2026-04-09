@@ -1,6 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+async function getAdminSession() {
+  if (!process.env.SESSION_SECRET) {
+    return null
+  }
+
+  try {
+    const { getSession } = await import('@/modules/auth/session')
+    return await getSession()
+  } catch {
+    return null
+  }
+}
+
+function publicResponse(dbOk: boolean, startedAt: number) {
+  return NextResponse.json(
+    { ok: dbOk, durationMs: Date.now() - startedAt },
+    { status: dbOk ? 200 : 503, headers: { 'Cache-Control': 'no-store' } }
+  )
+}
+
 export async function GET(request: NextRequest) {
   const startedAt = Date.now()
 
@@ -12,14 +32,10 @@ export async function GET(request: NextRequest) {
     // DB down
   }
 
-  // Admin detail: only if ?detail=1 query param (no DB session lookup)
-  const wantDetail = request.nextUrl.searchParams.get('detail') === '1'
+  const session = await getAdminSession()
 
-  if (!wantDetail) {
-    return NextResponse.json(
-      { ok: dbOk, durationMs: Date.now() - startedAt },
-      { status: dbOk ? 200 : 503, headers: { 'Cache-Control': 'no-store' } }
-    )
+  if (!session || session.role !== 'ADMIN') {
+    return publicResponse(dbOk, startedAt)
   }
 
   const checks = {

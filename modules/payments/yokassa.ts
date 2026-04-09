@@ -2,6 +2,16 @@ import { prisma } from '@/lib/prisma'
 import { logger } from '@/lib/logger'
 import crypto from 'crypto'
 
+export class YookassaWebhookError extends Error {
+  status: number
+
+  constructor(message: string, status: number) {
+    super(message)
+    this.name = 'YookassaWebhookError'
+    this.status = status
+  }
+}
+
 function addOneMonth(date: Date): Date {
   const result = new Date(date)
   const day = result.getDate()
@@ -90,7 +100,7 @@ export async function handleWebhookEvent(body: any, rawBody?: string) {
   if (webhookSecret) {
     if (!rawBody) {
       logger.warn('ЮKassa webhook: rawBody required for signature verification')
-      throw new Error('Webhook signature verification failed: no rawBody')
+      throw new YookassaWebhookError('Webhook signature verification failed: no rawBody', 400)
     }
     const expectedSignature = crypto
       .createHmac('sha256', webhookSecret)
@@ -101,11 +111,11 @@ export async function handleWebhookEvent(body: any, rawBody?: string) {
         Buffer.byteLength(receivedSignature) !== Buffer.byteLength(expectedSignature) ||
         !crypto.timingSafeEqual(Buffer.from(receivedSignature), Buffer.from(expectedSignature))) {
       logger.warn('ЮKassa webhook: invalid or missing signature')
-      throw new Error('Webhook signature verification failed')
+      throw new YookassaWebhookError('Webhook signature verification failed', 401)
     }
   } else if (process.env.NODE_ENV === 'production') {
     logger.error('ЮKassa webhook: YOKASSA_WEBHOOK_SECRET not set in production')
-    throw new Error('Webhook secret not configured')
+    throw new YookassaWebhookError('Webhook secret not configured', 500)
   }
 
   const event = body.event
@@ -114,7 +124,10 @@ export async function handleWebhookEvent(body: any, rawBody?: string) {
   // Validate required fields
   if (!event || !payment?.id || !payment?.metadata?.userId) {
     logger.warn('ЮKassa webhook: missing required fields (event, object.id, object.metadata.userId)')
-    return
+    throw new YookassaWebhookError(
+      'Missing required fields: event, object.id, object.metadata.userId',
+      400
+    )
   }
 
   const { userId, planCode, subscriptionId } = payment.metadata

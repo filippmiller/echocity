@@ -25,8 +25,8 @@ const VALID_TYPES = [
 ] as const
 
 const complaintSchema = z.object({
-  placeId: z.string().uuid().optional(),
-  offerId: z.string().uuid().optional(),
+  placeId: z.string().cuid().optional(),
+  offerId: z.string().cuid().optional(),
   type: z.enum(VALID_TYPES),
   description: z.string().min(20, 'Description must be at least 20 characters').max(5000),
 })

@@ -4,7 +4,7 @@ import { getSession } from '@/modules/auth/session'
 import { supportDemandRequest } from '@/modules/demand/service'
 
 const supportSchema = z.object({
-  demandRequestId: z.string().uuid('demandRequestId must be a valid UUID'),
+  demandRequestId: z.string().cuid('demandRequestId must be a valid CUID'),
 })
 
 export async function POST(req: NextRequest) {

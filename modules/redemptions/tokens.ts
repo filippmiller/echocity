@@ -1,9 +1,16 @@
 import crypto from 'crypto'
 
-if (!process.env.NEXTAUTH_SECRET && process.env.NODE_ENV === 'production') {
-  throw new Error('NEXTAUTH_SECRET environment variable is required in production')
+function getHmacSecret(): string {
+  const secret = process.env.NEXTAUTH_SECRET
+  if (!secret) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('NEXTAUTH_SECRET environment variable is required in production')
+    }
+    return 'dev-secret-change-me'
+  }
+
+  return secret
 }
-const HMAC_SECRET = process.env.NEXTAUTH_SECRET || 'dev-secret-change-me'
 
 export function generateSessionToken(): string {
   return crypto.randomUUID()
@@ -20,7 +27,7 @@ export function generateShortCode(): string {
 }
 
 export function signToken(token: string): string {
-  return crypto.createHmac('sha256', HMAC_SECRET).update(token).digest('hex')
+  return crypto.createHmac('sha256', getHmacSecret()).update(token).digest('hex')
 }
 
 export function verifyTokenSignature(token: string, signature: string): boolean {

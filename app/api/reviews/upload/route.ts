@@ -46,17 +46,16 @@ export async function POST(request: NextRequest) {
 
   const ext = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg'
   const key = `reviews/${session.userId}/${randomUUID()}.${ext}`
+  const buffer = Buffer.from(await file.arrayBuffer())
 
   try {
-    const buffer = Buffer.from(await file.arrayBuffer())
     const url = await uploadFile(key, buffer, file.type)
     return NextResponse.json({ url })
   } catch (err) {
     logger.error('reviews.upload.storage.error', { error: String(err) })
-    // Fallback: return a data URL so the review can still be submitted
-    const buffer = Buffer.from(await file.arrayBuffer())
-    const base64 = buffer.toString('base64')
-    const dataUrl = `data:${file.type};base64,${base64}`
-    return NextResponse.json({ url: dataUrl })
+    return NextResponse.json(
+      { error: 'Не удалось загрузить файл. Попробуйте еще раз позже.' },
+      { status: 503 }
+    )
   }
 }

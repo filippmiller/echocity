@@ -54,21 +54,22 @@ describe('Prisma Enums — OfferType', () => {
     'OFF_PEAK',
     'FLASH',
     'REQUEST_ONLY',
+    'MYSTERY_BAG',
   ]
 
-  it('contains all 8 offer types', () => {
+  it('contains all 9 offer types', () => {
     for (const val of expected) {
       expect(OfferType).toHaveProperty(val)
     }
   })
 
-  it('has exactly 8 values', () => {
-    expect(Object.values(OfferType)).toHaveLength(8)
+  it('has exactly 9 values', () => {
+    expect(Object.values(OfferType)).toHaveLength(9)
   })
 })
 
 describe('Prisma Enums — BenefitType', () => {
-  const expected = ['PERCENT', 'FIXED_AMOUNT', 'FIXED_PRICE', 'FREE_ITEM', 'BUNDLE']
+  const expected = ['PERCENT', 'FIXED_AMOUNT', 'FIXED_PRICE', 'FREE_ITEM', 'BUNDLE', 'MYSTERY_BAG']
 
   it('contains all benefit types', () => {
     for (const val of expected) {
@@ -76,8 +77,8 @@ describe('Prisma Enums — BenefitType', () => {
     }
   })
 
-  it('has exactly 5 values', () => {
-    expect(Object.values(BenefitType)).toHaveLength(5)
+  it('has exactly 6 values', () => {
+    expect(Object.values(BenefitType)).toHaveLength(6)
   })
 })
 

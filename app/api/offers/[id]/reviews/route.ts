@@ -6,7 +6,7 @@ import { checkAndProgressMissions, checkBadgeEligibility } from '@/modules/gamif
 import { awardReviewCoins } from '@/modules/reviews/rewards'
 
 const reviewSchema = z.object({
-  redemptionId: z.string().uuid(),
+  redemptionId: z.string().cuid(),
   rating: z.number().int().min(1).max(5),
   comment: z.string().max(5000).optional(),
   photoUrls: z.array(z.string().url()).max(3).optional(),
