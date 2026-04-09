@@ -13,6 +13,26 @@ if (!process.env.SESSION_SECRET && process.env.NODE_ENV === 'production') {
 }
 const SESSION_SECRET = process.env.SESSION_SECRET || 'dev-session-secret-change-in-production'
 
+// In-memory session cache — avoids DB lookup on every request
+const SESSION_CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
+type CachedSession = { data: SessionData | null; expiresAt: number }
+
+declare global {
+  // eslint-disable-next-line no-var
+  var __sessionCache: Map<string, CachedSession> | undefined
+}
+const sessionCache = globalThis.__sessionCache ?? new Map<string, CachedSession>()
+globalThis.__sessionCache = sessionCache
+
+let sessionCachePruneCounter = 0
+function pruneSessionCache(now: number) {
+  sessionCachePruneCounter++
+  if (sessionCachePruneCounter % 50 !== 0) return
+  for (const [key, entry] of sessionCache.entries()) {
+    if (entry.expiresAt <= now) sessionCache.delete(key)
+  }
+}
+
 export interface SessionData {
   userId: string
   email: string
@@ -97,9 +117,18 @@ export async function getSession(): Promise<SessionData | null> {
     return null
   }
 
-  if (parsed.exp <= Date.now()) {
+  const now = Date.now()
+
+  if (parsed.exp <= now) {
     await deleteSession()
     return null
+  }
+
+  // Check session cache before hitting DB
+  pruneSessionCache(now)
+  const cached = sessionCache.get(parsed.userId)
+  if (cached && cached.expiresAt > now) {
+    return cached.data
   }
 
   const user = await prisma.user.findUnique({
@@ -113,21 +142,25 @@ export async function getSession(): Promise<SessionData | null> {
   })
 
   if (!user || !user.isActive) {
+    sessionCache.set(parsed.userId, { data: null, expiresAt: now + SESSION_CACHE_TTL_MS })
     await deleteSession()
     return null
   }
 
-  return {
+  const sessionData: SessionData = {
     userId: user.id,
     email: user.email,
     role: user.role,
   }
+  sessionCache.set(parsed.userId, { data: sessionData, expiresAt: now + SESSION_CACHE_TTL_MS })
+  return sessionData
 }
 
 /**
  * Delete session (logout)
  */
-export async function deleteSession(): Promise<void> {
+export async function deleteSession(userId?: string): Promise<void> {
+  if (userId) sessionCache.delete(userId)
   const cookieStore = await cookies()
   cookieStore.delete(SESSION_COOKIE_NAME)
 }

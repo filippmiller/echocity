@@ -186,12 +186,14 @@ export async function GET() {
       ? Math.round((totalRedemptionsThisMonth / uniqueRedeemersMonth) * 10) / 10
       : 0
 
-  // MRR estimate: fetch active plan prices
-  const activeSubs = await prisma.userSubscription.findMany({
-    where: { status: 'ACTIVE' },
-    include: { plan: { select: { monthlyPrice: true } } },
-  })
-  const mrrKopecks = activeSubs.reduce((sum, s) => sum + s.plan.monthlyPrice, 0)
+  // MRR estimate: aggregate active subscription plan prices
+  const mrrResult = await prisma.$queryRaw<[{ total: bigint | null }]>`
+    SELECT COALESCE(SUM(p."monthlyPrice"), 0) as total
+    FROM "UserSubscription" s
+    JOIN "SubscriptionPlan" p ON s."planId" = p."id"
+    WHERE s."status" = 'ACTIVE'
+  `
+  const mrrKopecks = Number(mrrResult[0]?.total ?? 0)
 
   // Demand conversion rate
   const demandConversionRate =
