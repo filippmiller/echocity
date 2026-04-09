@@ -1,5 +1,14 @@
 # EchoCity - Project Instructions
 
+## Session Start Protocol
+
+1. Read `.claude/deploy-instructions.md` for deployment details
+2. Read this full `CLAUDE.md` for project rules and conventions
+3. Report to user: "I've read the deployment instructions and all important notices for **echocity**. Deploy target: https://echocity.vsedomatut.com. Last verified: 2026-04-09. Build status: OK. WARNING: root URL returns 404."
+4. Run `git status` and report current branch and any uncommitted changes
+
+---
+
 ## Deployment
 
 **Production**: Laptop server via Coolify (vsedomatut.com)
