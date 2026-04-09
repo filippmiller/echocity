@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getSession } from '@/modules/auth/session'
 
 export async function GET(request: NextRequest) {
   const startedAt = Date.now()
@@ -13,23 +12,16 @@ export async function GET(request: NextRequest) {
     // DB down
   }
 
-  // Skip admin check if no cookie header present (load balancer probes)
-  const cookieHeader = request.headers.get('cookie')
-  let isAdmin = false
-  if (cookieHeader?.includes('cityecho_session')) {
-    const session = await getSession()
-    isAdmin = session?.role === 'ADMIN'
-  }
+  // Admin detail: only if ?detail=1 query param (no DB session lookup)
+  const wantDetail = request.nextUrl.searchParams.get('detail') === '1'
 
-  // Public response: minimal
-  if (!isAdmin) {
+  if (!wantDetail) {
     return NextResponse.json(
       { ok: dbOk, durationMs: Date.now() - startedAt },
-      { status: dbOk ? 200 : 503 }
+      { status: dbOk ? 200 : 503, headers: { 'Cache-Control': 'no-store' } }
     )
   }
 
-  // Admin response: detailed diagnostics
   const checks = {
     database: dbOk,
     sessionSecret: Boolean(process.env.SESSION_SECRET),
@@ -52,6 +44,6 @@ export async function GET(request: NextRequest) {
       checks,
       timestamp: new Date().toISOString(),
     },
-    { status: healthy ? 200 : 503 }
+    { status: healthy ? 200 : 503, headers: { 'Cache-Control': 'no-store' } }
   )
 }

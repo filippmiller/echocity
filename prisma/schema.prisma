@@ -433,6 +433,7 @@ model Place {
   @@index([cityId])
   @@index([placeType])
   @@index([isActive])
+  @@index([cityId, placeType, isActive])
 }
 
 model Franchise {
@@ -732,6 +733,8 @@ model Offer {
   @@index([lifecycleStatus])
   @@index([visibility])
   @@index([offerType])
+  @@index([lifecycleStatus, approvalStatus, branchId])
+  @@index([lifecycleStatus, visibility, startAt, endAt])
 }
 
 model OfferSchedule {
@@ -927,6 +930,8 @@ model DemandRequest {
   @@index([placeId])
   @@index([cityId])
   @@index([status])
+  @@index([cityId, status, supportCount])
+
 }
 
 model DemandSupport {
