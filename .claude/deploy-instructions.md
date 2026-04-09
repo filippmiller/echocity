@@ -1,5 +1,10 @@
 # EchoCity — Deployment Instructions
 
+> **⚠️ DEPLOY STATUS: BROKEN (as of 2026-04-09)**
+> Both `https://echocity.vsedomatut.com/` and `/en` return HTTP 404.
+> The Coolify container is running (domain resolves), but the app does not serve any routes.
+> **Do not mark a deploy as successful until root cause is found.** Investigate: Next.js build output, Coolify reverse proxy routing, server logs.
+
 ## Quick Deploy
 
 1. Push to `main` branch (Coolify auto-deploys)

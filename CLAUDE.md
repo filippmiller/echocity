@@ -18,7 +18,7 @@
 | URL | https://echocity.vsedomatut.com |
 | Coolify UUID | ki5yt1xyoo1lgsbp5lv39p96 |
 | Coolify API | https://coolify.vsedomatut.com/api/v1 |
-| Coolify Token | `4\|ePUn53pwokOoe9Z89kZHCc2HDurHbvFW5sq6uhREe396c13d` |
+| Coolify Token | `$COOLIFY_API_TOKEN` (see `~/.claude/projects/C--dev/memory/hetzner-vps.md`) |
 | Build pack | dockerfile (`/Dockerfile`) |
 | Git repo | git@github.com:filippmiller/echocity.git (main) |
 | DB UUID | b13rk5k1ix7mckiqotydobja (separate Coolify resource) |
@@ -27,7 +27,7 @@
 
 ```bash
 # Trigger deploy via Coolify API
-curl -s -H "Authorization: Bearer 4|ePUn53pwokOoe9Z89kZHCc2HDurHbvFW5sq6uhREe396c13d" \
+curl -s -H "Authorization: Bearer $COOLIFY_API_TOKEN" \
   "https://coolify.vsedomatut.com/api/v1/deploy?uuid=ki5yt1xyoo1lgsbp5lv39p96&force=true"
 ```
 
