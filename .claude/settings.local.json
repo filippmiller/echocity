@@ -3,7 +3,19 @@
     "allow": [
       "Bash(bd onboard:*)",
       "Bash(bd prime:*)",
-      "Bash(npx next:*)"
+      "Bash(npx next:*)",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash(node:*)",
+      "Bash(gemini:*)",
+      "Bash(curl:*)",
+      "Bash(git:*)",
+      "Bash(ls:*)",
+      "Bash(mkdir:*)",
+      "Bash(cat:*)",
+      "Bash(jq:*)",
+      "Bash(which:*)"
     ]
   }
 }

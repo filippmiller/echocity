@@ -1,0 +1,43 @@
+[
+  {
+    "name": "echocity-offers-mobile",
+    "status": 200,
+    "url": "https://echocity.vsedomatut.com/offers",
+    "file": ".claude/reviews/screenshots/echocity-offers-mobile.png"
+  },
+  {
+    "name": "echocity-offers-desktop",
+    "status": 200,
+    "url": "https://echocity.vsedomatut.com/offers",
+    "file": ".claude/reviews/screenshots/echocity-offers-desktop.png"
+  },
+  {
+    "name": "echocity-root",
+    "status": 500,
+    "url": "https://echocity.vsedomatut.com/",
+    "file": ".claude/reviews/screenshots/echocity-root.png"
+  },
+  {
+    "name": "biglion-mobile",
+    "status": 200,
+    "url": "https://www.biglion.ru/",
+    "file": ".claude/reviews/screenshots/biglion-mobile.png"
+  },
+  {
+    "name": "biglion-desktop",
+    "status": 200,
+    "url": "https://www.biglion.ru/",
+    "file": ".claude/reviews/screenshots/biglion-desktop.png"
+  },
+  {
+    "name": "frendi-mobile",
+    "status": 200,
+    "url": "https://frendi.ru/",
+    "file": ".claude/reviews/screenshots/frendi-mobile.png"
+  },
+  {
+    "name": "kuponator-mobile",
+    "error": "page.goto: net::ERR_CERT_AUTHORITY_INVALID at https://kuponator.ru/\nCall log:\n\u001b[2m  - navigating to \"https://kuponator.ru/\", waiting until \"domcontentloaded\"\u001b[22m\n",
+    "url": "https://kuponator.ru/"
+  }
+]

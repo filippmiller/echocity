@@ -9,6 +9,95 @@ Each entry tracks: timestamp, area, files changed, functions/symbols used, datab
 
 ---
 
+## 2026-04-09 — Main Sync, Production Blockers Fix, Verification, Push
+
+**Area:** Full-Stack / Production / Auth / API / Deploy
+**Type:** bugfix + hardening + infra
+**Category:** bugs (40%), production (30%), security (15%), infra (10%), docs (5%)
+**Duration:** ~1 full session
+**Commits:** 1 (928917c)
+**PRs:** N/A (direct fix on `main`)
+
+### Summary
+
+Synced this machine to fresh `origin/main`, preserved stale local work as an OpsVault backup patch, and then audited the actual remote code on `main`. The freshly synced branch was not green: smoke tests failed, auth/session behavior regressed, the health route contract had drifted, schema smoke tests were stale, and `next build` crashed during route-data collection because production secret guards threw at import time.
+
+Fixed the blockers directly on `main`, then expanded the pass to production-readiness issues that would survive a green unit suite: incorrect CUID-vs-UUID route validation, env/deploy drift, duplicate Prisma migrate on container startup, review-upload masking of storage outages, noisy/incorrect YooKassa webhook error handling, and Next workspace-root inference.
+
+### Key Fixes
+
+- Removed import-time prod env crashes from `modules/auth/session.ts` and `modules/redemptions/tokens.ts`; runtime guards remain enforced when signing/verification is actually used
+- Removed stale in-memory session cache regression and restored DB-backed session correctness
+- Restored admin-only detailed diagnostics in `/api/health`
+- Updated stale Prisma enum smoke expectations to match current schema (`MYSTERY_BAG`)
+- Swept bad `.uuid()` validators from CUID-backed API routes
+- Removed review-photo data-URL fallback; storage failures now return `503`
+- Added structured YooKassa webhook error responses so invalid JSON/signature/malformed payloads return proper 4xx
+- Aligned `.env.example` and `scripts/check-coolify-env.ts` with real runtime env usage (MinIO, Yandex, YooKassa, VK/MAX)
+- Removed double Prisma migration by making `npm start` a pure app start and keeping migrate in Docker startup only
+- Set `outputFileTracingRoot` in `next.config.ts` to eliminate workspace-root inference warning
+
+### Files Changed
+
+- `.env.example`
+- `Dockerfile`
+- `package.json`
+- `next.config.ts`
+- `scripts/check-coolify-env.ts`
+- `modules/auth/session.ts`
+- `modules/redemptions/tokens.ts`
+- `modules/payments/yokassa.ts`
+- `app/api/health/route.ts`
+- `app/api/payments/yokassa/webhook/route.ts`
+- `app/api/reviews/upload/route.ts`
+- `app/api/business/staff/route.ts`
+- `app/api/business/stories/route.ts`
+- `app/api/complaints/route.ts`
+- `app/api/demand/support/route.ts`
+- `app/api/family/members/route.ts`
+- `app/api/offers/[id]/reviews/route.ts`
+- `app/api/redemptions/create-session/route.ts`
+- `app/api/reservations/route.ts`
+- `tests/smoke/health-route.test.ts`
+- `tests/smoke/schema.test.ts`
+
+### Functions/Symbols Modified
+
+- `getSessionSecret()`, `sign()`, `getSession()` in `modules/auth/session.ts`
+- `getHmacSecret()`, `signToken()` in `modules/redemptions/tokens.ts`
+- `YookassaWebhookError`, `handleWebhookEvent()` in `modules/payments/yokassa.ts`
+- `GET()` in `app/api/health/route.ts`
+- `POST()` in `app/api/payments/yokassa/webhook/route.ts`
+- `POST()` in `app/api/reviews/upload/route.ts`
+
+### Database Tables
+
+- No schema/data mutation in this session
+- Route validation corrected for IDs referencing CUID-backed models (Offer, DemandRequest, Family, Complaint-linked entities, reservation-linked entities)
+
+### Verification
+
+- `npm test` — PASS (14 files, 170 tests)
+- `npm run build` — PASS
+- `npx tsc --noEmit` — PASS
+- `rg -n "\.uuid\(" app/api` — no matches
+
+### Deployment Status
+
+- Commit created on `main`: `928917c`
+- Pushed to `origin/main`
+- Local `HEAD` matches `origin/main`
+
+### Known Remaining Operational Notes
+
+- Push notifications still require real VAPID env vars in deployment; without them build/runtime logs warn that push is unavailable
+- `baseline-browser-mapping` dev dependency is stale and emits a non-blocking warning during test/build
+
+### Session Notes
+→ `.claude/sessions/2026-04-09-main-sync-and-production-fixes.md`
+
+---
+
 ## 2026-04-08/09 — Re-Audit, Critic Review, UX Fixes, Scalability Hardening
 
 **Area:** Full-Stack / Security / Performance / UX / Audit
