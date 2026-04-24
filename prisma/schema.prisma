@@ -239,12 +239,12 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  streakCurrent      Int       @default(0)
-  streakLongest      Int       @default(0)
-  streakLastDate     DateTime?
-  freezeTokensUsed   Int       @default(0)
-  rouletteLastSpun   DateTime?
-  showOnLeaderboard  Boolean   @default(true)
+  streakCurrent     Int       @default(0)
+  streakLongest     Int       @default(0)
+  streakLastDate    DateTime?
+  freezeTokensUsed  Int       @default(0)
+  rouletteLastSpun  DateTime?
+  showOnLeaderboard Boolean   @default(true)
 
   profile              UserProfile?
   businessAccount      BusinessAccount?
@@ -264,25 +264,25 @@ model User {
   demandRequests       DemandRequest[]
   demandSupports       DemandSupport[]
   favorites            Favorite[]
-  complaints           Complaint[]     @relation("UserComplaints")
-  referralCode         ReferralCode?   @relation("UserReferralCode")
-  invitedByReferral    Referral?       @relation("InvitedByReferral")
-  savings              UserSavings[]   @relation("UserSavingsHistory")
+  complaints           Complaint[]         @relation("UserComplaints")
+  referralCode         ReferralCode?       @relation("UserReferralCode")
+  invitedByReferral    Referral?           @relation("InvitedByReferral")
+  savings              UserSavings[]       @relation("UserSavingsHistory")
   pushSubscriptions    PushSubscription[]
   storyViews           StoryView[]
   userMissions         UserMission[]
   userBadges           UserBadge[]
   userXp               UserXP?
   offerReviews         OfferReview[]
-  familyPlanOwned      FamilyPlan?     @relation("FamilyPlanOwner")
-  familyMemberships    FamilyMember[]  @relation("FamilyMemberUser")
+  familyPlanOwned      FamilyPlan?         @relation("FamilyPlanOwner")
+  familyMemberships    FamilyMember[]      @relation("FamilyMemberUser")
   reservations         Reservation[]
-  createdBundles       Bundle[]        @relation("BundleCreator")
+  createdBundles       Bundle[]            @relation("BundleCreator")
   bundleRedemptions    BundleRedemption[]
-  coinBalance          Int             @default(0)
+  coinBalance          Int                 @default(0)
   coinTransactions     CoinTransaction[]
-  createdGroupDeals    GroupDeal[]       @relation("GroupDealCreator")
-  groupDealMembers     GroupDealMember[] @relation("GroupDealMember")
+  createdGroupDeals    GroupDeal[]         @relation("GroupDealCreator")
+  groupDealMembers     GroupDealMember[]   @relation("GroupDealMember")
   corporateEmployment  CorporateEmployee[]
 
   @@index([email])
@@ -353,12 +353,12 @@ model Business {
   yandexVerifiedAt         DateTime?
   yandexVerificationMethod String? // e.g. 'places_api_soft'
 
-  isVerified    Boolean   @default(false)
-  verifiedAt    DateTime?
+  isVerified Boolean   @default(false)
+  verifiedAt DateTime?
 
-  places        Place[]
-  offers        Offer[]
-  redemptions   Redemption[]
+  places          Place[]
+  offers          Offer[]
+  redemptions     Redemption[]
   staff           MerchantStaff[]
   billingEvents   MerchantBillingEvent[]
   stories         Story[]
@@ -395,7 +395,7 @@ model Place {
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
 
-  nearestMetro     String?
+  nearestMetro String?
 
   // Legacy fields (for backward compatibility)
   publicName       String?
@@ -724,7 +724,7 @@ model Offer {
   billingEvents   MerchantBillingEvent[]
   stories         Story[]
   offerReviews    OfferReview[]
-  demandResponses DemandResponse[] @relation("DemandResponseOffer")
+  demandResponses DemandResponse[]       @relation("DemandResponseOffer")
   bundleItems     BundleItem[]
   groupDeals      GroupDeal[]
 
@@ -931,7 +931,6 @@ model DemandRequest {
   @@index([cityId])
   @@index([status])
   @@index([cityId, status, supportCount])
-
 }
 
 model DemandSupport {
@@ -1126,12 +1125,12 @@ model CollectionItem {
 // ==============================
 
 model UserSavings {
-  id             String   @id @default(cuid())
-  userId         String
-  redemptionId   String   @unique
-  savedAmount    Int // in kopecks
-  currency       String   @default("RUB")
-  savedAt        DateTime @default(now())
+  id           String   @id @default(cuid())
+  userId       String
+  redemptionId String   @unique
+  savedAmount  Int // in kopecks
+  currency     String   @default("RUB")
+  savedAt      DateTime @default(now())
 
   user User @relation("UserSavingsHistory", fields: [userId], references: [id], onDelete: Cascade)
 
@@ -1172,10 +1171,10 @@ model Story {
   mediaUrl    String
   mediaType   StoryMediaType @default(IMAGE)
   caption     String?
-  linkOfferId String?        // optional link to an offer
+  linkOfferId String? // optional link to an offer
   viewCount   Int            @default(0)
   isActive    Boolean        @default(true)
-  expiresAt   DateTime       // auto-expire after 24h
+  expiresAt   DateTime // auto-expire after 24h
   createdAt   DateTime       @default(now())
 
   merchant Business @relation(fields: [merchantId], references: [id], onDelete: Cascade)
@@ -1191,10 +1190,10 @@ model Story {
 }
 
 model StoryView {
-  id        String   @id @default(cuid())
-  storyId   String
-  userId    String
-  viewedAt  DateTime @default(now())
+  id       String   @id @default(cuid())
+  storyId  String
+  userId   String
+  viewedAt DateTime @default(now())
 
   story Story @relation(fields: [storyId], references: [id], onDelete: Cascade)
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -1232,11 +1231,11 @@ model Mission {
   description String
   iconEmoji   String      @default("🎯")
   type        MissionType
-  targetValue Int         // e.g. "redeem 5 times" → 5
+  targetValue Int // e.g. "redeem 5 times" → 5
   xpReward    Int         @default(10)
   isActive    Boolean     @default(true)
   sortOrder   Int         @default(0)
-  expiresAt   DateTime?   // null = permanent mission
+  expiresAt   DateTime? // null = permanent mission
   createdAt   DateTime    @default(now())
 
   userMissions UserMission[]
@@ -1246,14 +1245,14 @@ model Mission {
 }
 
 model UserMission {
-  id            String        @id @default(cuid())
-  userId        String
-  missionId     String
-  currentValue  Int           @default(0)
-  status        MissionStatus @default(ACTIVE)
-  completedAt   DateTime?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id           String        @id @default(cuid())
+  userId       String
+  missionId    String
+  currentValue Int           @default(0)
+  status       MissionStatus @default(ACTIVE)
+  completedAt  DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
 
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   mission Mission @relation(fields: [missionId], references: [id], onDelete: Cascade)
@@ -1264,13 +1263,13 @@ model UserMission {
 }
 
 model Badge {
-  id          String @id @default(cuid())
-  code        String @unique
+  id          String  @id @default(cuid())
+  code        String  @unique
   title       String
   description String
-  iconEmoji   String @default("🏅")
-  category    String @default("general") // general, loyalty, social, explorer
-  sortOrder   Int    @default(0)
+  iconEmoji   String  @default("🏅")
+  category    String  @default("general") // general, loyalty, social, explorer
+  sortOrder   Int     @default(0)
   isActive    Boolean @default(true)
 
   userBadges UserBadge[]
@@ -1280,10 +1279,10 @@ model Badge {
 }
 
 model UserBadge {
-  id        String   @id @default(cuid())
-  userId    String
-  badgeId   String
-  earnedAt  DateTime @default(now())
+  id       String   @id @default(cuid())
+  userId   String
+  badgeId  String
+  earnedAt DateTime @default(now())
 
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
   badge Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
@@ -1293,10 +1292,10 @@ model UserBadge {
 }
 
 model UserXP {
-  id        String @id @default(cuid())
-  userId    String @unique
-  totalXp   Int    @default(0)
-  level     Int    @default(1)
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  totalXp   Int      @default(0)
+  level     Int      @default(1)
   updatedAt DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -1311,7 +1310,7 @@ model OfferReview {
   offerId      String
   userId       String
   redemptionId String   @unique // one review per redemption
-  rating       Int      // 1-5
+  rating       Int // 1-5
   comment      String?  @db.Text
   photoUrls    String[] @default([])
   isPublished  Boolean  @default(true)
@@ -1341,7 +1340,7 @@ model DemandResponse {
   id              String               @id @default(cuid())
   demandRequestId String
   merchantId      String
-  offerId         String?              // linked offer created in response
+  offerId         String? // linked offer created in response
   message         String?              @db.Text
   status          DemandResponseStatus @default(PENDING)
   createdAt       DateTime             @default(now())
@@ -1361,11 +1360,11 @@ model DemandResponse {
 // ==============================
 
 model FamilyPlan {
-  id              String   @id @default(cuid())
-  ownerUserId     String
-  subscriptionId  String   @unique
-  maxMembers      Int      @default(2) // +1 plan = 2 total
-  createdAt       DateTime @default(now())
+  id             String   @id @default(cuid())
+  ownerUserId    String
+  subscriptionId String   @unique
+  maxMembers     Int      @default(2) // +1 plan = 2 total
+  createdAt      DateTime @default(now())
 
   owner        User             @relation("FamilyPlanOwner", fields: [ownerUserId], references: [id], onDelete: Cascade)
   subscription UserSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
@@ -1403,8 +1402,8 @@ enum ReservationStatus {
 model TableConfig {
   id          String  @id @default(cuid())
   placeId     String
-  tableNumber String  // "1", "2", "A1", "Терраса"
-  seats       Int     // number of seats
+  tableNumber String // "1", "2", "A1", "Терраса"
+  seats       Int // number of seats
   zone        String? // "main", "terrace", "vip", "bar"
   isActive    Boolean @default(true)
 
@@ -1416,23 +1415,23 @@ model TableConfig {
 }
 
 model Reservation {
-  id            String            @id @default(cuid())
-  placeId       String
-  tableId       String?
-  userId        String
-  guestName     String
-  guestPhone    String?
-  partySize     Int
-  date          DateTime          // date only (YYYY-MM-DD)
-  timeSlot      String            // "19:00"
-  durationMin   Int               @default(90) // default 1.5h
-  status        ReservationStatus @default(PENDING)
-  note          String?
-  confirmedAt   DateTime?
-  canceledAt    DateTime?
-  cancelReason  String?
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
+  id           String            @id @default(cuid())
+  placeId      String
+  tableId      String?
+  userId       String
+  guestName    String
+  guestPhone   String?
+  partySize    Int
+  date         DateTime // date only (YYYY-MM-DD)
+  timeSlot     String // "19:00"
+  durationMin  Int               @default(90) // default 1.5h
+  status       ReservationStatus @default(PENDING)
+  note         String?
+  confirmedAt  DateTime?
+  canceledAt   DateTime?
+  cancelReason String?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
 
   place Place        @relation(fields: [placeId], references: [id], onDelete: Cascade)
   table TableConfig? @relation(fields: [tableId], references: [id], onDelete: SetNull)
@@ -1450,7 +1449,7 @@ model Reservation {
 
 enum BundleStatus {
   DRAFT
-  PENDING_PARTNERS   // waiting for all merchants to accept
+  PENDING_PARTNERS // waiting for all merchants to accept
   ACTIVE
   PAUSED
   EXPIRED
@@ -1458,16 +1457,16 @@ enum BundleStatus {
 
 model Bundle {
   id              String          @id @default(cuid())
-  title           String          // "Свидание: ужин + кино"
+  title           String // "Свидание: ужин + кино"
   subtitle        String?
   description     String?         @db.Text
   imageUrl        String?
-  totalPrice      Int?            // bundle fixed price in kopecks (optional)
-  discountPercent Int?            // or % off combined total
+  totalPrice      Int? // bundle fixed price in kopecks (optional)
+  discountPercent Int? // or % off combined total
   visibility      OfferVisibility @default(PUBLIC)
   status          BundleStatus    @default(DRAFT)
   cityId          String?
-  createdByUserId String          // admin or merchant who initiated
+  createdByUserId String // admin or merchant who initiated
   validFrom       DateTime
   validUntil      DateTime?
   createdAt       DateTime        @default(now())
@@ -1489,8 +1488,8 @@ model BundleItem {
   offerId    String? // link to existing offer (optional)
   placeId    String
   merchantId String
-  itemTitle  String  // "Ужин в Ресторане X"
-  itemValue  Int?    // item price contribution in kopecks
+  itemTitle  String // "Ужин в Ресторане X"
+  itemValue  Int? // item price contribution in kopecks
   sortOrder  Int     @default(0)
   accepted   Boolean @default(false) // merchant accepted participation
 
@@ -1550,10 +1549,10 @@ enum CoinTransactionType {
 model CoinTransaction {
   id          String              @id @default(cuid())
   userId      String
-  amount      Int                 // positive = earned, negative = spent (1 coin = 1₽)
+  amount      Int // positive = earned, negative = spent (1 coin = 1₽)
   type        CoinTransactionType
   description String
-  referenceId String?             // redemptionId, subscriptionId, etc.
+  referenceId String? // redemptionId, subscriptionId, etc.
   createdAt   DateTime            @default(now())
 
   user User @relation(fields: [userId], references: [id])
@@ -1576,8 +1575,8 @@ model GroupDeal {
   expiresAt    DateTime
   createdAt    DateTime        @default(now())
 
-  offer   Offer @relation(fields: [offerId], references: [id])
-  creator User  @relation("GroupDealCreator", fields: [creatorId], references: [id])
+  offer   Offer             @relation(fields: [offerId], references: [id])
+  creator User              @relation("GroupDealCreator", fields: [creatorId], references: [id])
   members GroupDealMember[]
 
   @@index([offerId])
@@ -1608,18 +1607,18 @@ enum CorporatePlanStatus {
 }
 
 model CorporatePlan {
-  id              String              @id @default(cuid())
-  companyName     String
-  legalName       String?
-  inn             String?
-  billingEmail    String
-  billingPhone    String?
-  contactName     String
-  maxSeats        Int
-  monthlyBudget   Int                 // kopecks per employee per month
-  status          CorporatePlanStatus @default(PENDING)
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
+  id            String              @id @default(cuid())
+  companyName   String
+  legalName     String?
+  inn           String?
+  billingEmail  String
+  billingPhone  String?
+  contactName   String
+  maxSeats      Int
+  monthlyBudget Int // kopecks per employee per month
+  status        CorporatePlanStatus @default(PENDING)
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
 
   employees CorporateEmployee[]
   invoices  CorporateInvoice[]
@@ -1646,7 +1645,7 @@ model CorporateInvoice {
   corporatePlanId String
   periodStart     DateTime
   periodEnd       DateTime
-  amount          Int           // kopecks
+  amount          Int // kopecks
   status          PaymentStatus @default(PENDING)
   pdfUrl          String?
   createdAt       DateTime      @default(now())
@@ -1655,4 +1654,99 @@ model CorporateInvoice {
 
   @@index([corporatePlanId])
   @@index([status])
+}
+
+// ==============================
+// SPRINT B — FINANCIAL INTEGRITY
+// ==============================
+
+/// Deterministic idempotence cache for payment & cron operations.
+/// - `scope` namespaces the key space (e.g. "yokassa:createPayment", "cron:expire-subscriptions")
+/// - `key` is a hash derived from the logical operation (not a random UUID) so retries collapse
+/// - `status` tracks in-flight calls (IN_PROGRESS) so concurrent duplicates wait/fail fast
+/// - `expiresAt` lets a background sweep reclaim rows; 24 h default set at application layer
+model Idempotency {
+  id        String   @id @default(cuid())
+  scope     String
+  key       String
+  status    String   @default("IN_PROGRESS") // IN_PROGRESS | COMPLETED | FAILED
+  response  Json?
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+
+  @@unique([scope, key])
+  @@index([expiresAt])
+  @@index([status, createdAt])
+}
+
+/// Append-only financial ledger.
+/// Every state change on Payment / UserSubscription produces a row here.
+/// Audit queries (investigating a disputed charge, rebuilding a user's
+/// billing timeline) read this table rather than reconstructing from
+/// Payment snapshots. Never UPDATE, never DELETE.
+enum FinancialEventType {
+  PAYMENT_INTENT_CREATED
+  PAYMENT_SUCCEEDED
+  PAYMENT_CANCELED
+  PAYMENT_REFUNDED
+  PAYMENT_FAILED
+  SUBSCRIPTION_STARTED
+  SUBSCRIPTION_RENEWED
+  SUBSCRIPTION_CANCELED
+  SUBSCRIPTION_EXPIRED
+  MANUAL_ADJUSTMENT
+}
+
+model FinancialEvent {
+  id             String             @id @default(cuid())
+  eventType      FinancialEventType
+  userId         String
+  paymentId      String?
+  subscriptionId String?
+  amount         Int? // kopecks; null for non-monetary events
+  currency       String             @default("RUB")
+  metadata       Json?
+  createdAt      DateTime           @default(now())
+
+  @@index([userId, createdAt])
+  @@index([paymentId])
+  @@index([subscriptionId])
+  @@index([eventType, createdAt])
+}
+
+/// Structured audit trail for admin + system actions (user bans, offer
+/// approvals, manual subscription adjustments, etc). Separate from
+/// FinancialEvent because these are not always money-moving and may
+/// include IP / user-agent for forensics.
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorUserId String? // null for system / unauthenticated actors
+  action      String // e.g. "admin.business.approve", "admin.user.ban"
+  targetType  String? // "business" | "user" | "offer" | ...
+  targetId    String?
+  metadata    Json?
+  ip          String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  @@index([actorUserId, createdAt])
+  @@index([targetType, targetId])
+  @@index([action, createdAt])
+}
+
+/// Execution log for every scheduled job. Combined with pg_try_advisory_lock
+/// in the cron wrapper, this guarantees: (a) only one instance runs a given
+/// job per period across a horizontal fleet, (b) the observability layer can
+/// tell "did the 05:00 expire-subscriptions job run at all?" from one query.
+model CronRun {
+  id         String    @id @default(cuid())
+  jobName    String
+  startedAt  DateTime  @default(now())
+  finishedAt DateTime?
+  ok         Boolean?
+  error      String?   @db.Text
+  metadata   Json?
+
+  @@index([jobName, startedAt])
+  @@index([startedAt])
 }

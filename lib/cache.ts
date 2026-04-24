@@ -1,7 +1,7 @@
 type CacheEntry<T> = { data: T; expiresAt: number }
 
 declare global {
-  // eslint-disable-next-line no-var
+   
   var __appCache: Map<string, CacheEntry<unknown>> | undefined
 }
 

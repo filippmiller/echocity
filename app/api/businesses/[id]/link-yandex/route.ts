@@ -58,7 +58,7 @@ export async function POST(
 
     // Extract data from Yandex feature object if provided
     let yandexOrgName: string | null = null
-    let updateData: any = {
+    const updateData: any = {
       yandexOrgId,
       yandexOrgRaw: yandexData || null,
       yandexVerifiedAt: new Date(),
