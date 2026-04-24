@@ -40,8 +40,8 @@ supabase_keys.txt
 *.tsbuildinfo
 next-env.d.ts
 
-# prisma
-/prisma/migrations
+# NOTE: prisma/migrations is COMMITTED (CI runs `prisma migrate deploy`).
+# A prior .gitignore entry excluded it — Sprint B.7 corrected that.
 
 .env.*
 *.p12
@@ -58,3 +58,23 @@ logs/
 /docs/audit/
 /screenshots/
 audit-*.png
+
+# Sprint B — in-session working artifacts, not part of repo history
+**/*.bak-*
+.claude/reviews/.prompts/_*
+.claude/reviews/_*
+.claude/reviews/T1-T3-*
+.claude/reviews/*.exitok
+.claude/reviews/*.exitcode
+.claude/reviews/*.pid
+.claude/reviews/npm-*
+.claude/reviews/prisma-*
+.claude/reviews/tsc-*
+.claude/reviews/typecheck-*
+.claude/reviews/vitest-*
+.claude/reviews/git-*
+.claude/reviews/project-critic-paths.txt
+.claude/reviews/_claude-help.txt
+.claude/reviews/branch-protection.json
+.claude/reviews/branch-protection.response.json
+.claude/reviews/*.bak-*

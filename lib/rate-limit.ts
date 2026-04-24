@@ -18,7 +18,7 @@ type Bucket = {
 }
 
 declare global {
-  // eslint-disable-next-line no-var
+   
   var __cityechoRateLimitStore: Map<string, Bucket> | undefined
 }
 

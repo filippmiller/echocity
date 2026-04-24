@@ -1,0 +1,43 @@
+# gitleaks configuration — see https://github.com/gitleaks/gitleaks
+# Extends the default ruleset (100+ rules: AWS, GitHub, Stripe, generic API keys, ...).
+# Additions below target services specific to this repo.
+
+title = "echocity gitleaks config"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "yookassa-secret-key"
+description = "YooKassa live secret key"
+regex = '''live_[A-Za-z0-9_-]{30,}'''
+tags = ["key", "yookassa", "payment"]
+
+[[rules]]
+id = "yookassa-test-key"
+description = "YooKassa test secret key"
+regex = '''test_[A-Za-z0-9_-]{30,}'''
+tags = ["key", "yookassa", "payment", "sandbox"]
+
+[[rules]]
+id = "telegram-bot-token"
+description = "Telegram Bot API token"
+regex = '''[0-9]{8,10}:[A-Za-z0-9_-]{35}'''
+tags = ["key", "telegram"]
+
+[[rules]]
+id = "yandex-cloud-oauth"
+description = "Yandex Cloud OAuth token"
+regex = '''y[0-3]_[A-Za-z0-9_-]{30,}'''
+tags = ["key", "yandex-cloud"]
+
+[allowlist]
+description = "Fixtures and documentation that contain fake tokens on purpose."
+paths = [
+  '''(^|/)tests/.*\.(ts|tsx|json|md)$''',
+  '''(^|/)\.claude/reviews/.*\.md$''',
+  '''(^|/)docs?/.*\.md$''',
+  '''(^|/)README(\.[a-z]+)?$''',
+  '''(^|/)\.env\.example$''',
+  '''(^|/)\.env\.local\.example$''',
+]

@@ -1,0 +1,20 @@
+#!/usr/bin/env sh
+# Husky v9 — this file is sourced by git hooks. See package.json `prepare` script.
+#
+# Runs lint-staged (eslint --fix + tsc-files + gitleaks protect) on changed files only.
+# Install hooks locally with: npm install (triggers `prepare`).
+#
+# If gitleaks is not installed on the developer's machine, the hook exits with
+# a hint instead of silently passing. CI still has the same step so a missed
+# local hook cannot leak a secret.
+
+set -e
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "[pre-commit] gitleaks not found on PATH."
+  echo "[pre-commit] Install: https://github.com/gitleaks/gitleaks  (brew / choco / winget / go install)."
+  echo "[pre-commit] Aborting commit to avoid bypassing the secret scan."
+  exit 1
+fi
+
+npx --no-install lint-staged

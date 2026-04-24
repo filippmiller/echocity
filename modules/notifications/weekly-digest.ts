@@ -25,7 +25,7 @@ export async function sendWeeklyDigests(): Promise<number> {
   let cursor: string | undefined = undefined
   let notifiedCount = 0
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   type DigestUser = { id: string; city: string; profile: { favoriteCity: string | null } | null }
 
   for (;;) {
