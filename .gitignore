@@ -58,3 +58,8 @@ logs/
 /docs/audit/
 /screenshots/
 audit-*.png
+
+# Beads / Dolt files (added by bd init)
+.dolt/
+*.db
+.beads-credential-key
