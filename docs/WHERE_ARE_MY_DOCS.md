@@ -4,3 +4,4 @@ All local docs, sessions, and secrets are stored in C:\\Dev\\_OpsVault\\echocity
 
 - Agents must write new sessions/logs to the vault folder above.
 - Secrets are not stored in this repo.
+- Current project passport: C:\\Dev\\_OpsVault\\echocity\\Docs\\PROJECT_PASSPORT.md
