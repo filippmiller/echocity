@@ -89,6 +89,7 @@ interface FilterState {
   activeNow: boolean
   benefitType: string
   metro: string
+  district: string
   showNearby: boolean
 }
 
@@ -99,6 +100,7 @@ function buildSearchParams(filters: FilterState): URLSearchParams {
   if (filters.activeNow) params.set('activeNow', 'true')
   if (filters.benefitType) params.set('benefitType', filters.benefitType)
   if (filters.metro) params.set('metro', filters.metro)
+  if (filters.district) params.set('district', filters.district)
   return params
 }
 
@@ -107,8 +109,9 @@ function OffersContent() {
   const router = useRouter()
   const pathname = usePathname()
   const compare = useCompare()
-  const { city } = useCity()
+  const { city, districts, district: selectedDistrict } = useCity()
   const [showMetroDropdown, setShowMetroDropdown] = useState(false)
+  const [showDistrictDropdown, setShowDistrictDropdown] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
   const [categoryCounts, setCategoryCounts] = useState<Record<string, number>>({})
 
@@ -118,6 +121,7 @@ function OffersContent() {
     activeNow: searchParams.get('activeNow') === 'true',
     benefitType: searchParams.get('benefitType') || '',
     metro: searchParams.get('metro') || '',
+    district: searchParams.get('district') || '',
     showNearby: false,
   }), [])
 
@@ -131,6 +135,7 @@ function OffersContent() {
       activeNow: searchParams.get('activeNow') === 'true',
       benefitType: searchParams.get('benefitType') || '',
       metro: searchParams.get('metro') || '',
+      district: searchParams.get('district') || '',
       showNearby: filters.showNearby,
     }
     if (
@@ -138,7 +143,8 @@ function OffersContent() {
       next.category !== filters.category ||
       next.activeNow !== filters.activeNow ||
       next.benefitType !== filters.benefitType ||
-      next.metro !== filters.metro
+      next.metro !== filters.metro ||
+      next.district !== filters.district
     ) {
       setFilters(next)
     }
@@ -169,7 +175,7 @@ function OffersContent() {
       .catch(() => {})
   }, [city])
 
-  const { section, category, activeNow, benefitType, metro, showNearby } = filters
+  const { section, category, activeNow, benefitType, metro, district, showNearby } = filters
 
 
 
@@ -332,6 +338,57 @@ function OffersContent() {
               </div>
             )}
           </div>
+
+          {/* District filter */}
+          {districts.length > 0 && (
+            <div className="relative">
+              <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar">
+                <button
+                  onClick={() => setShowDistrictDropdown((v) => !v)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors chip shrink-0 ${
+                    district
+                      ? 'bg-emerald-600 text-white'
+                      : 'bg-gray-50 text-gray-600 border border-gray-200 active:bg-gray-100'
+                  }`}
+                >
+                  <span>🏘️</span>
+                  {district ? selectedDistrict?.name || district : 'Район'}
+                </button>
+
+                {district && (
+                  <button
+                    onClick={() => updateFilters({ district: '' })}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap bg-gray-100 text-gray-500 active:bg-gray-200 chip shrink-0"
+                  >
+                    Сбросить район
+                  </button>
+                )}
+              </div>
+
+              {showDistrictDropdown && (
+                <div className="absolute top-full left-0 mt-1 z-40 bg-white rounded-xl shadow-lg border border-gray-100 p-2 w-64 max-h-60 overflow-y-auto">
+                  <div className="flex flex-wrap gap-1.5">
+                    {districts.map((d) => (
+                      <button
+                        key={d.slug}
+                        onClick={() => {
+                          updateFilters({ district: d.slug === district ? '' : d.slug })
+                          setShowDistrictDropdown(false)
+                        }}
+                        className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors chip ${
+                          district === d.slug
+                            ? 'bg-emerald-600 text-white'
+                            : 'bg-gray-100 text-gray-600 active:bg-gray-200'
+                        }`}
+                      >
+                        {d.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -361,6 +418,7 @@ function OffersContent() {
               category={category === 'all' ? undefined : category}
               activeNow={activeNow}
               metro={metro || undefined}
+              district={district || undefined}
               benefitType={benefitType || undefined}
             />
           </div>

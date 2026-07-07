@@ -20,7 +20,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
 
   const { access } = await getBusinessAccess(session, offer.merchantId, offer.branchId)
   if (!canManageOffers(access)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
   try {

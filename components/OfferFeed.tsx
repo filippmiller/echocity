@@ -39,7 +39,7 @@ interface OfferData {
   metadata?: unknown
 }
 
-export function OfferFeed({ city, visibility, category, activeNow, metro, benefitType }: { city?: string; visibility?: string; category?: string; activeNow?: boolean; metro?: string; benefitType?: string }) {
+export function OfferFeed({ city, visibility, category, activeNow, metro, district, benefitType }: { city?: string; visibility?: string; category?: string; activeNow?: boolean; metro?: string; district?: string; benefitType?: string }) {
   const [offers, setOffers] = useState<OfferData[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -50,6 +50,7 @@ export function OfferFeed({ city, visibility, category, activeNow, metro, benefi
     if (category && category !== 'all') params.set('category', category)
     if (activeNow) params.set('activeNow', 'true')
     if (metro) params.set('metro', metro)
+    if (district) params.set('district', district)
     if (benefitType) params.set('benefitType', benefitType)
 
     fetch(`/api/offers?${params}`)
@@ -59,7 +60,7 @@ export function OfferFeed({ city, visibility, category, activeNow, metro, benefi
         setLoading(false)
       })
       .catch(() => setLoading(false))
-  }, [city, visibility, category, activeNow, metro, benefitType])
+  }, [city, visibility, category, activeNow, metro, district, benefitType])
 
   if (loading) {
     return (

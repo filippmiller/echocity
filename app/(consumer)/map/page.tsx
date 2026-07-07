@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react'
 import YandexMap from '@/components/YandexMap'
 import { MapBottomSheet } from '@/components/MapBottomSheet'
+import { useCity } from '@/components/CitySelector'
 import { toast } from 'sonner'
 import Link from 'next/link'
-import { MapPin } from 'lucide-react'
+import { MapPin, ChevronDown } from 'lucide-react'
 
 interface Place {
   id: string
@@ -16,14 +17,30 @@ interface Place {
   placeType?: string | null
 }
 
+interface DistrictOption {
+  id: string
+  name: string
+  slug: string
+}
+
 export default function MapPage() {
+  const { city, district: storedDistrict, changeDistrict, districts } = useCity()
   const [places, setPlaces] = useState<Place[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null)
   const [sheetOpen, setSheetOpen] = useState(true)
+  const [district, setDistrict] = useState<DistrictOption | null>(storedDistrict)
+  const [showDistrictDropdown, setShowDistrictDropdown] = useState(false)
 
   useEffect(() => {
-    fetch('/api/places')
+    setDistrict(storedDistrict)
+  }, [storedDistrict])
+
+  useEffect(() => {
+    setLoading(true)
+    const params = new URLSearchParams()
+    if (district?.slug) params.set('district', district.slug)
+    fetch(`/api/places?${params}`)
       .then((r) => r.json())
       .then((data) => {
         setPlaces(data.places || [])
@@ -33,15 +50,61 @@ export default function MapPage() {
         toast.error('Не удалось загрузить места')
         setLoading(false)
       })
-  }, [])
+  }, [district])
 
   const handlePlaceClick = (place: Place) => {
     setSelectedPlace(place)
     setSheetOpen(true)
   }
 
+  const handleDistrictSelect = (d: DistrictOption | null) => {
+    setDistrict(d)
+    changeDistrict(d)
+    setShowDistrictDropdown(false)
+  }
+
   return (
     <div className="relative" style={{ height: 'calc(100vh - 56px)' }}>
+      {/* District filter chip */}
+      {districts.length > 0 && (
+        <div className="absolute top-4 left-4 right-4 md:right-auto z-20">
+          <div className="relative inline-block">
+            <button
+              onClick={() => setShowDistrictDropdown((v) => !v)}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-medium shadow-md transition-colors ${
+                district
+                  ? 'bg-emerald-600 text-white'
+                  : 'bg-white text-gray-700 border border-gray-200'
+              }`}
+            >
+              <span>🏘️</span>
+              {district ? district.name : 'Район'}
+              <ChevronDown className={`w-3 h-3 transition-transform ${showDistrictDropdown ? 'rotate-180' : ''}`} />
+            </button>
+
+            {showDistrictDropdown && (
+              <div className="absolute top-full left-0 mt-1 w-56 bg-white rounded-xl shadow-lg border border-gray-100 py-1 max-h-60 overflow-y-auto">
+                <button
+                  onClick={() => handleDistrictSelect(null)}
+                  className={`w-full text-left px-3 py-2 text-sm ${!district ? 'text-brand-600 bg-brand-50 font-medium' : 'text-gray-700 hover:bg-gray-50'}`}
+                >
+                  Все районы
+                </button>
+                {districts.map((d) => (
+                  <button
+                    key={d.slug}
+                    onClick={() => handleDistrictSelect(d)}
+                    className={`w-full text-left px-3 py-2 text-sm ${district?.slug === d.slug ? 'text-brand-600 bg-brand-50 font-medium' : 'text-gray-700 hover:bg-gray-50'}`}
+                  >
+                    {d.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Full-screen map */}
       {loading ? (
         <div className="w-full h-full flex items-center justify-center bg-gray-100">
@@ -69,7 +132,7 @@ export default function MapPage() {
       />
 
       {/* Desktop: sidebar */}
-      <div className="hidden md:block absolute top-4 left-4 w-80 max-h-[calc(100vh-120px)] overflow-y-auto bg-white rounded-xl shadow-lg">
+      <div className="hidden md:block absolute top-16 left-4 w-80 max-h-[calc(100vh-160px)] overflow-y-auto bg-white rounded-xl shadow-lg">
         <div className="p-4">
           <h2 className="font-bold text-gray-900 mb-3">Места ({places.length})</h2>
           <div className="space-y-2">

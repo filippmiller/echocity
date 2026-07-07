@@ -21,6 +21,7 @@ import {
   Eye,
   XCircle,
 } from 'lucide-react'
+import { ExportReportsCard } from '@/components/admin/ExportReportsCard'
 
 export const dynamic = 'force-dynamic'
 
@@ -759,6 +760,11 @@ export default async function AdminAnalyticsPage() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Export reports */}
+      <div className="mt-8 max-w-xl">
+        <ExportReportsCard />
       </div>
     </div>
   )

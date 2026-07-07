@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { getSession } from '@/modules/auth/session'
 import { prisma } from '@/lib/prisma'
+import { getBusinessAccessSummary } from '@/lib/business-access'
+import { canViewAnalytics } from '@/lib/permissions'
 
 /**
  * GET /api/business/analytics/heatmap
@@ -13,15 +15,11 @@ export async function GET() {
   if (!session) {
     return NextResponse.json({ error: 'Необходимо войти в аккаунт' }, { status: 401 })
   }
-  if (session.role !== 'BUSINESS_OWNER') {
-    return NextResponse.json({ error: 'Доступ запрещён' }, { status: 403 })
-  }
 
-  const businesses = await prisma.business.findMany({
-    where: { ownerId: session.userId },
-    select: { id: true },
-  })
-  const merchantIds = businesses.map((b) => b.id)
+  const { merchantIds, access } = await getBusinessAccessSummary(session)
+  if (!canViewAnalytics(access)) {
+    return NextResponse.json({ error: 'Доступ запрещён' }, { status: 401 })
+  }
 
   if (merchantIds.length === 0) {
     return NextResponse.json({ cells: [] })

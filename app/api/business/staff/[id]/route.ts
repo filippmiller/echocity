@@ -28,7 +28,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const { access } = await getBusinessAccess(session, existing.merchantId, existing.branchId)
   if (!canManageStaff(access)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
   let body: z.infer<typeof updateStaffSchema>
@@ -106,7 +106,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
 
   const { access } = await getBusinessAccess(session, existing.merchantId, existing.branchId)
   if (!canManageStaff(access)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
   // Managers cannot remove other managers

@@ -135,3 +135,46 @@ describe('modules/subscriptions/service exports', () => {
     expect(typeof mod.expireSubscriptions).toBe('function')
   })
 })
+
+describe('modules/collections/curated exports', () => {
+  it('exports curated collection helpers', async () => {
+    const mod = await import('@/modules/collections/curated')
+    expect(typeof mod.getCuratedCollections).toBe('function')
+    expect(typeof mod.getCuratedCollectionBySlug).toBe('function')
+    expect(typeof mod.upsertCuratedCollections).toBe('function')
+  })
+})
+
+describe('modules/notifications/expiring-offer-reminders exports', () => {
+  it('exports reminder scheduling functions', async () => {
+    const mod = await import('@/modules/notifications/expiring-offer-reminders')
+    expect(typeof mod.findExpiringSavedOffers).toBe('function')
+    expect(typeof mod.sendReminder).toBe('function')
+    expect(typeof mod.processExpiringOfferReminders).toBe('function')
+  })
+})
+
+describe('modules/districts/service exports', () => {
+  it('exports district seeding helpers', async () => {
+    const mod = await import('@/modules/districts/service')
+    expect(typeof mod.seedDistricts).toBe('function')
+    expect(typeof mod.getDistrictsByCitySlug).toBe('function')
+  })
+})
+
+describe('lib/feature-flags exports', () => {
+  it('exports flag resolution helpers', async () => {
+    const mod = await import('@/lib/feature-flags')
+    expect(typeof mod.getFeatureFlag).toBe('function')
+    expect(typeof mod.getAllFeatureFlags).toBe('function')
+    expect(typeof mod.getPublicFeatureFlags).toBe('function')
+    expect(Array.isArray(mod.FEATURE_FLAGS)).toBe(true)
+  })
+})
+
+describe('lib/useFeatureFlag exports', () => {
+  it('exports the useFeatureFlag hook', async () => {
+    const mod = await import('@/lib/useFeatureFlag')
+    expect(typeof mod.useFeatureFlag).toBe('function')
+  })
+})

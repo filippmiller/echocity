@@ -19,6 +19,12 @@ export async function POST(req: NextRequest) {
   } catch (e) {
     logger.error('ЮKassa webhook processing error', { error: String(e) })
     if (e instanceof YookassaWebhookError) {
+      logger.error('payment.critical_failure', {
+        reason: 'webhook_processing_error',
+        provider: 'YOKASSA',
+        status: e.status,
+        message: e.message,
+      })
       return NextResponse.json({ error: e.message }, { status: e.status })
     }
     return NextResponse.json({ error: 'Processing failed' }, { status: 500 })

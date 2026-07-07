@@ -7,14 +7,15 @@ interface CollectionCardProps {
   title: string
   description?: string | null
   coverUrl?: string | null
+  emoji?: string | null
   itemCount: number
 }
 
-export function CollectionCard({ slug, title, description, coverUrl, itemCount }: CollectionCardProps) {
+export function CollectionCard({ slug, title, description, coverUrl, emoji, itemCount }: CollectionCardProps) {
   return (
     <Link href={`/collections/${slug}`} className="block group">
       <div className="relative w-[240px] h-[160px] rounded-2xl overflow-hidden shrink-0 shadow-sm">
-        {/* Cover image or gradient fallback */}
+        {/* Cover image, emoji, or gradient fallback */}
         {coverUrl ? (
           <img
             src={coverUrl}
@@ -22,6 +23,10 @@ export function CollectionCard({ slug, title, description, coverUrl, itemCount }
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             loading="lazy"
           />
+        ) : emoji ? (
+          <div className="w-full h-full bg-gradient-to-br from-brand-600 via-brand-700 to-blue-800 flex items-center justify-center">
+            <span className="text-5xl">{emoji}</span>
+          </div>
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-brand-600 via-brand-700 to-blue-800" />
         )}

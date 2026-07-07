@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { getSession } from '@/modules/auth/session'
 import { prisma } from '@/lib/prisma'
 import { createAuditEntry, AuditAction } from '@/lib/audit'
+import { calculateBusinessRiskScore } from '@/modules/moderation/risk-score'
 import type { BusinessStatus } from '@prisma/client'
 
 const updateBusinessSchema = z.object({
@@ -106,5 +107,44 @@ export async function GET(
     return NextResponse.json({ error: 'Business not found' }, { status: 404 })
   }
 
-  return NextResponse.json({ business })
+  const offerIds = business.offers.map((o) => o.id)
+  const placeIds = business.places.map((p) => p.id)
+
+  const [businessFraudFlags, complaints] = await Promise.all([
+    prisma.fraudFlag.findMany({
+      where: { entityType: 'BUSINESS', entityId: id, status: 'OPEN' },
+      select: { status: true },
+    }),
+    prisma.complaint.findMany({
+      where: {
+        status: { in: ['OPEN', 'IN_REVIEW'] },
+        OR: [
+          ...(offerIds.length > 0 ? [{ offerId: { in: offerIds } }] : []),
+          ...(placeIds.length > 0 ? [{ placeId: { in: placeIds } }] : []),
+        ],
+      },
+      select: { status: true },
+    }),
+  ])
+
+  const risk = calculateBusinessRiskScore(
+    {
+      status: business.status,
+      createdAt: business.createdAt,
+      isVerified: business.isVerified,
+      supportEmail: business.supportEmail,
+      supportPhone: business.supportPhone,
+      placesCount: business._count.places,
+    },
+    complaints,
+    businessFraudFlags,
+  )
+
+  return NextResponse.json({
+    business: {
+      ...business,
+      riskScore: risk.score,
+      riskReasons: risk.reasons,
+    },
+  })
 }

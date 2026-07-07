@@ -19,6 +19,7 @@ export const AuditAction = {
   REDEEM: 'REDEEM',
   FLAG_FRAUD: 'FLAG_FRAUD',
   DISMISS_FRAUD: 'DISMISS_FRAUD',
+  EXPORT: 'EXPORT',
 } as const
 
 export type AuditAction = (typeof AuditAction)[keyof typeof AuditAction]

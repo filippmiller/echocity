@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { MapPin, Plus, X, Loader2 } from 'lucide-react'
+import { MapPin, Plus, X, Loader2, RefreshCw, AlertTriangle, CheckCircle2 } from 'lucide-react'
 
 interface City {
   id: string
@@ -29,6 +29,22 @@ interface Franchise {
   status: string
 }
 
+interface ConsistencyReport {
+  citiesWithoutFranchise: Array<{ id: string; name: string; slug: string; franchiseId: string | null }>
+  franchisesWithoutOwner: Array<{ id: string; code: string; name: string; ownerUserId: string }>
+  placesWithInvalidCity: Array<{ id: string; cityId: string | null }>
+  orphanedCities: Array<{ id: string; name: string; slug: string }>
+  summary: {
+    totalCities: number
+    totalFranchises: number
+    totalPlaces: number
+    citiesWithoutFranchiseCount: number
+    franchisesWithoutOwnerCount: number
+    placesWithInvalidCityCount: number
+    orphanedCitiesCount: number
+  }
+}
+
 export default function AdminCitiesPage() {
   const router = useRouter()
   const [cities, setCities] = useState<City[]>([])
@@ -44,10 +60,13 @@ export default function AdminCitiesPage() {
     franchiseId: '',
   })
   const [submitting, setSubmitting] = useState(false)
+  const [report, setReport] = useState<ConsistencyReport | null>(null)
+  const [reportLoading, setReportLoading] = useState(false)
 
   useEffect(() => {
     loadCities()
     loadFranchises()
+    loadConsistency()
   }, [])
 
   const loadCities = async () => {
@@ -75,6 +94,21 @@ export default function AdminCitiesPage() {
       }
     } catch {
       // Ignore — franchise list is optional for form
+    }
+  }
+
+  const loadConsistency = async () => {
+    setReportLoading(true)
+    try {
+      const res = await fetch('/api/admin/consistency')
+      if (res.ok) {
+        const data = await res.json()
+        setReport(data)
+      }
+    } catch {
+      // Ignore — consistency report is optional
+    } finally {
+      setReportLoading(false)
     }
   }
 
@@ -340,6 +374,101 @@ export default function AdminCitiesPage() {
           )}
         </div>
       )}
+
+      {/* Consistency report */}
+      <div className="mt-8 bg-white rounded-xl border border-gray-200 p-5 sm:p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center">
+              {report && report.summary.citiesWithoutFranchiseCount + report.summary.franchisesWithoutOwnerCount + report.summary.placesWithInvalidCityCount === 0 ? (
+                <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+              ) : (
+                <AlertTriangle className="w-5 h-5 text-amber-500" />
+              )}
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">Проверка консистентности</h2>
+              <p className="text-sm text-gray-500">
+                {reportLoading
+                  ? 'Загрузка...'
+                  : report
+                  ? `${report.summary.citiesWithoutFranchiseCount + report.summary.franchisesWithoutOwnerCount + report.summary.placesWithInvalidCityCount} проблем`
+                  : '—'}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={loadConsistency}
+            disabled={reportLoading}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50 transition-colors"
+          >
+            <RefreshCw className={`w-4 h-4 ${reportLoading ? 'animate-spin' : ''}`} />
+            Обновить
+          </button>
+        </div>
+
+        {report && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+              <div className="bg-gray-50 rounded-lg p-3">
+                <p className="text-xs text-gray-500">Городов без франшизы</p>
+                <p className="font-semibold text-gray-900">{report.summary.citiesWithoutFranchiseCount}</p>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-3">
+                <p className="text-xs text-gray-500">Франшиз без владельца</p>
+                <p className="font-semibold text-gray-900">{report.summary.franchisesWithoutOwnerCount}</p>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-3">
+                <p className="text-xs text-gray-500">Мест с невалидным городом</p>
+                <p className="font-semibold text-gray-900">{report.summary.placesWithInvalidCityCount}</p>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-3">
+                <p className="text-xs text-gray-500">Городов без мест</p>
+                <p className="font-semibold text-gray-900">{report.summary.orphanedCitiesCount}</p>
+              </div>
+            </div>
+
+            {report.citiesWithoutFranchise.length > 0 && (
+              <div>
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Города с отсутствующей франшизой</h3>
+                <ul className="text-sm text-gray-600 space-y-1">
+                  {report.citiesWithoutFranchise.map((city) => (
+                    <li key={city.id}>
+                      {city.name} <code className="text-xs bg-gray-100 rounded px-1">{city.slug}</code>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {report.franchisesWithoutOwner.length > 0 && (
+              <div>
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Франшизы без владельца</h3>
+                <ul className="text-sm text-gray-600 space-y-1">
+                  {report.franchisesWithoutOwner.map((franchise) => (
+                    <li key={franchise.id}>
+                      {franchise.name} <code className="text-xs bg-gray-100 rounded px-1">{franchise.code}</code>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {report.placesWithInvalidCity.length > 0 && (
+              <div>
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Места с невалидным cityId</h3>
+                <ul className="text-sm text-gray-600 space-y-1">
+                  {report.placesWithInvalidCity.map((place) => (
+                    <li key={place.id}>
+                      Place {place.id} <code className="text-xs bg-gray-100 rounded px-1">cityId={place.cityId}</code>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

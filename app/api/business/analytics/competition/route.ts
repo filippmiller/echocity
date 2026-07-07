@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { getSession } from '@/modules/auth/session'
 import { prisma } from '@/lib/prisma'
+import { getBusinessAccessSummary } from '@/lib/business-access'
+import { canViewAnalytics } from '@/lib/permissions'
 
 const BUSINESS_TYPE_LABELS: Record<string, string> = {
   CAFE: 'Кафе',
@@ -16,13 +18,18 @@ const BUSINESS_TYPE_LABELS: Record<string, string> = {
 
 export async function GET() {
   const session = await getSession()
-  if (!session || session.role !== 'BUSINESS_OWNER') {
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const { merchantIds, access } = await getBusinessAccessSummary(session)
+  if (!canViewAnalytics(access)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   // Get the merchant's businesses
   const businesses = await prisma.business.findMany({
-    where: { ownerId: session.userId, status: 'APPROVED' },
+    where: { id: { in: merchantIds }, status: 'APPROVED' },
     select: { id: true, type: true },
   })
 
@@ -31,7 +38,6 @@ export async function GET() {
   }
 
   // Use the type of the first business as the "category"
-  const merchantIds = businesses.map((b) => b.id)
   const categoryType = businesses[0].type
   const categoryLabel = BUSINESS_TYPE_LABELS[categoryType] || categoryType
 

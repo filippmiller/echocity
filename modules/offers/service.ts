@@ -156,11 +156,24 @@ export async function getOfferById(offerId: string): Promise<OfferWithDetails | 
 
 export async function getActiveOffersByCity(
   cityName: string,
-  options?: { visibility?: string; category?: string; metro?: string; benefitType?: string; limit?: number; offset?: number },
+  options?: { visibility?: string; category?: string; metro?: string; districtSlug?: string; benefitType?: string; limit?: number; offset?: number },
 ) {
   const now = new Date()
   const isSurprise = options?.category === 'surprise'
   const placeTypes = (!isSurprise && options?.category) ? CATEGORY_PLACE_TYPE_MAP[options.category] : undefined
+
+  let districtId: string | undefined
+  if (options?.districtSlug) {
+    const city = await prisma.city.findFirst({
+      where: { name: { equals: cityName, mode: 'insensitive' } },
+    })
+    if (city) {
+      const district = await prisma.district.findUnique({
+        where: { cityId_slug: { cityId: city.id, slug: options.districtSlug } },
+      })
+      districtId = district?.id
+    }
+  }
 
   return prisma.offer.findMany({
     where: {
@@ -178,6 +191,7 @@ export async function getActiveOffersByCity(
         isActive: true,
         ...(placeTypes?.length ? { placeType: { in: placeTypes as any } } : {}),
         ...(options?.metro ? { nearestMetro: { contains: options.metro, mode: 'insensitive' } } : {}),
+        ...(districtId ? { districtId } : {}),
       },
       ...(options?.visibility ? { visibility: options.visibility as any } : {}),
       ...(options?.benefitType ? { benefitType: options.benefitType as any } : {}),

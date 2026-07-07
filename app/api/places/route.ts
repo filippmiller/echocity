@@ -8,6 +8,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const cityId = searchParams.get('cityId')
+    const districtSlug = searchParams.get('district')
     const bounds = searchParams.get('bounds') // "lat1,lon1,lat2,lon2"
 
     const where: any = {
@@ -20,6 +21,21 @@ export async function GET(request: NextRequest) {
 
     if (cityId) {
       where.cityId = cityId
+    }
+
+    // Filter by district slug if provided
+    if (districtSlug) {
+      const city = cityId
+        ? await prisma.city.findUnique({ where: { id: cityId } })
+        : await prisma.city.findFirst({ where: { slug: 'spb' } })
+      if (city) {
+        const district = await prisma.district.findUnique({
+          where: { cityId_slug: { cityId: city.id, slug: districtSlug } },
+        })
+        if (district) {
+          where.districtId = district.id
+        }
+      }
     }
 
     // Filter by bounds if provided

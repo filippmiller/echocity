@@ -1,4 +1,6 @@
 import { PrismaClient } from '@prisma/client'
+import { upsertCuratedCollections } from '../modules/collections/curated'
+import { seedDistricts } from '../modules/districts/service'
 
 const prisma = new PrismaClient()
 
@@ -203,6 +205,14 @@ async function main() {
   console.log('✅ Seed completed!')
   console.log(`   Cities: ${spb.name}, ${moscow.name}`)
   console.log(`   Categories: ${beautyCategory.name}, ${hairCategory.name}, ${cleaningCategory.name}, ${cafeCategory.name}`)
+
+  // Curated collections
+  await upsertCuratedCollections()
+  console.log('✅ Created curated collections: coffee-nearby, lunch-under-500, tonight-plans')
+
+  // Districts
+  await seedDistricts()
+  console.log('✅ Seeded districts for SPB and Moscow')
 }
 
 main()

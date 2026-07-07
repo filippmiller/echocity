@@ -10,6 +10,10 @@ export interface RiskScoreOffer {
 export interface RiskScoreBusiness {
   status: string
   createdAt: Date
+  isVerified?: boolean
+  supportEmail?: string | null
+  supportPhone?: string | null
+  placesCount?: number
 }
 
 export interface RiskScoreComplaint {
@@ -86,6 +90,60 @@ export function calculateRiskScore(
       score += 10
       reasons.push('Offer duration is less than 24 hours')
     }
+  }
+
+  const businessAgeMs = Date.now() - business.createdAt.getTime()
+  if (businessAgeMs >= 0 && businessAgeMs < SEVEN_DAYS_MS) {
+    score += 10
+    reasons.push('Business is less than 7 days old')
+  }
+
+  return {
+    score: Math.min(100, score),
+    reasons,
+  }
+}
+
+export function calculateBusinessRiskScore(
+  business: RiskScoreBusiness,
+  complaints: RiskScoreComplaint[],
+  fraudFlags: RiskScoreFraudFlag[],
+): RiskScoreResult {
+  let score = 0
+  const reasons: string[] = []
+
+  if (business.status === 'PENDING') {
+    score += 15
+    reasons.push('Business approval status is PENDING')
+  }
+
+  if (!business.placesCount || business.placesCount === 0) {
+    score += 10
+    reasons.push('Business has no places')
+  }
+
+  const hasVerifiedContact =
+    business.isVerified === true ||
+    Boolean(business.supportEmail?.trim()) ||
+    Boolean(business.supportPhone?.trim())
+
+  if (!hasVerifiedContact) {
+    score += 10
+    reasons.push('Business has no verified contact')
+  }
+
+  const activeComplaints = complaints.filter((c) => c.status === 'OPEN' || c.status === 'IN_REVIEW')
+  if (activeComplaints.length > 0) {
+    const complaintScore = Math.min(activeComplaints.length * 10, 20)
+    score += complaintScore
+    reasons.push(`${activeComplaints.length} active complaint(s)`)
+  }
+
+  const activeFlags = fraudFlags.filter((f) => f.status === 'OPEN')
+  if (activeFlags.length > 0) {
+    const flagScore = Math.min(activeFlags.length * 15, 30)
+    score += flagScore
+    reasons.push(`${activeFlags.length} active fraud flag(s)`)
   }
 
   const businessAgeMs = Date.now() - business.createdAt.getTime()

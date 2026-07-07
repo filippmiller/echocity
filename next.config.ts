@@ -1,6 +1,17 @@
 import type { NextConfig } from 'next'
 import path from 'node:path'
 
+// Wrap with Sentry only when the package is installed. This lets the app
+// build and run without a real DSN or Sentry project being configured.
+let withSentryConfig: ((config: NextConfig) => NextConfig) | undefined
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const sentry = require('@sentry/nextjs')
+  withSentryConfig = sentry.withSentryConfig
+} catch {
+  // Sentry is optional; instrumentation is skipped if the package is missing.
+}
+
 const nextConfig: NextConfig = {
   outputFileTracingRoot: path.join(__dirname),
   async headers() {
@@ -32,5 +43,7 @@ const nextConfig: NextConfig = {
   },
 }
 
-export default nextConfig
+const config = withSentryConfig ? withSentryConfig(nextConfig) : nextConfig
+
+export default config
 

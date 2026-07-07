@@ -3,7 +3,8 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAuth } from '@/lib/auth-client'
-import { Home, Tag, MapPin, Heart, User } from 'lucide-react'
+import { useFeatureFlag } from '@/lib/useFeatureFlag'
+import { Home, Tag, MapPin, Heart, User, Package } from 'lucide-react'
 import { useState } from 'react'
 import { AuthPrompt } from '@/components/AuthPrompt'
 
@@ -15,7 +16,7 @@ interface Tab {
   authReason?: string
 }
 
-const TABS: Tab[] = [
+const BASE_TABS: Tab[] = [
   { href: '/', label: 'Главная', icon: Home },
   { href: '/offers', label: 'Скидки', icon: Tag },
   { href: '/map', label: 'Карта', icon: MapPin },
@@ -26,10 +27,19 @@ const TABS: Tab[] = [
 export function MobileBottomNav() {
   const pathname = usePathname()
   const { user } = useAuth()
+  const { enabled: bundlesEnabled } = useFeatureFlag('ENABLE_BUNDLE_EXPERIMENT')
   const [authPrompt, setAuthPrompt] = useState<{ isOpen: boolean; reason: string; redirectTo?: string }>({
     isOpen: false,
     reason: '',
   })
+
+  const tabs: Tab[] = bundlesEnabled
+    ? [
+        ...BASE_TABS.slice(0, 2),
+        { href: '/bundles', label: 'Бандлы', icon: Package },
+        ...BASE_TABS.slice(2),
+      ]
+    : BASE_TABS
 
   // Don't show on business/admin/auth pages
   if (pathname.startsWith('/business') || pathname.startsWith('/admin') || pathname.startsWith('/auth')) return null
@@ -63,7 +73,7 @@ export function MobileBottomNav() {
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         <div className="flex justify-around items-center h-14">
-          {TABS.map((tab) => {
+          {tabs.map((tab) => {
             const href = getHref(tab)
             const isActive = tab.href === '/'
               ? pathname === '/'

@@ -19,11 +19,13 @@ import {
   Webhook,
   HeartPulse,
   ClipboardCheck,
+  ToggleLeft,
 } from 'lucide-react'
 
 const NAV_ITEMS = [
   { href: '/admin', icon: LayoutDashboard, label: 'Дашборд' },
   { href: '/admin/launch', icon: Rocket, label: 'Launch' },
+  { href: '/admin/flags', icon: ToggleLeft, label: 'Флаги' },
   { href: '/admin/moderation', icon: ShieldCheck, label: 'Модерация' },
   { href: '/admin/offers', icon: Tag, label: 'Офферы' },
   { href: '/admin/businesses', icon: Store, label: 'Бизнесы' },

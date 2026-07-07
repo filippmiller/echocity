@@ -12,6 +12,7 @@ import {
   ChevronDown,
   ChevronUp,
   Filter,
+  AlertCircle,
 } from 'lucide-react'
 
 interface BusinessItem {
@@ -25,6 +26,8 @@ interface BusinessItem {
   createdAt: string
   owner: { id: string; email: string; firstName: string; lastName: string | null }
   _count: { places: number; offers: number }
+  riskScore?: number
+  riskReasons?: string[]
 }
 
 interface BusinessDetail {
@@ -44,6 +47,14 @@ interface BusinessDetail {
   places: Array<{ id: string; title: string; address: string; city: string; isActive: boolean }>
   offers: Array<{ id: string; title: string; offerType: string; approvalStatus: string; lifecycleStatus: string }>
   _count: { places: number; offers: number; staff: number; redemptions: number }
+  riskScore?: number
+  riskReasons?: string[]
+}
+
+function riskBadgeClass(score: number) {
+  if (score >= 70) return 'bg-rose-100 text-rose-700 border-rose-200'
+  if (score >= 40) return 'bg-orange-100 text-orange-700 border-orange-200'
+  return 'bg-green-100 text-green-700 border-green-200'
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -258,6 +269,11 @@ export default function AdminBusinessesPage() {
                       <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLES[biz.status] || STATUS_STYLES.PENDING}`}>
                         {STATUS_LABELS[biz.status] || biz.status}
                       </span>
+                      {typeof biz.riskScore === 'number' && (
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${riskBadgeClass(biz.riskScore)}`}>
+                          Risk {biz.riskScore}
+                        </span>
+                      )}
                       <span className="text-xs text-gray-400">
                         {TYPE_LABELS[biz.type] || biz.type}
                       </span>
@@ -325,6 +341,23 @@ export default function AdminBusinessesPage() {
                       </div>
                     ) : detailData && detailData.id === biz.id ? (
                       <div className="space-y-4">
+                        {/* Risk factors */}
+                        {detailData.riskReasons && detailData.riskReasons.length > 0 && (
+                          <div>
+                            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                              Факторы риска
+                            </h4>
+                            <ul className="space-y-1">
+                              {detailData.riskReasons.map((r, idx) => (
+                                <li key={idx} className="flex items-start gap-2 text-sm text-gray-700">
+                                  <AlertCircle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                                  {r}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
                         {/* Owner info */}
                         <div>
                           <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Владелец</h4>

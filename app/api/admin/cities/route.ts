@@ -72,15 +72,21 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // If franchiseId provided, verify it exists
+    // If franchiseId provided, verify it exists and is in a valid status
     if (validated.franchiseId) {
       const franchise = await prisma.franchise.findUnique({
         where: { id: validated.franchiseId },
       })
       if (!franchise) {
         return NextResponse.json(
-          { error: 'Франшиза не найдена' },
-          { status: 404 }
+          { error: 'Указанная франшиза не существует' },
+          { status: 400 }
+        )
+      }
+      if (franchise.status === 'SUSPENDED' || franchise.status === 'EXPIRED') {
+        return NextResponse.json(
+          { error: 'Нельзя привязать город к приостановленной или истекшей франшизе' },
+          { status: 400 }
         )
       }
     }

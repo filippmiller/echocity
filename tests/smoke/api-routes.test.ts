@@ -52,6 +52,12 @@ describe('API Route Exports', () => {
     expect(typeof mod.GET).toBe('function')
   })
 
+  it('GET /api/districts exports a GET handler', async () => {
+    const mod = await import('@/app/api/districts/route')
+    expect(mod.GET).toBeDefined()
+    expect(typeof mod.GET).toBe('function')
+  })
+
   it('GET /api/offers/recommended exports a GET handler', async () => {
     const mod = await import('@/app/api/offers/recommended/route')
     expect(mod.GET).toBeDefined()
@@ -94,6 +100,20 @@ describe('API Route Exports', () => {
 
   it('GET /api/admin/analytics exports a GET handler', async () => {
     const mod = await import('@/app/api/admin/analytics/route')
+    expect(mod.GET).toBeDefined()
+    expect(typeof mod.GET).toBe('function')
+  })
+
+  it('GET /api/admin/flags exports GET/PATCH/POST/DELETE handlers', async () => {
+    const mod = await import('@/app/api/admin/flags/route')
+    expect(mod.GET).toBeDefined()
+    expect(mod.PATCH).toBeDefined()
+    expect(mod.POST).toBeDefined()
+    expect(mod.DELETE).toBeDefined()
+  })
+
+  it('GET /api/feature-flags exports a GET handler', async () => {
+    const mod = await import('@/app/api/feature-flags/route')
     expect(mod.GET).toBeDefined()
     expect(typeof mod.GET).toBe('function')
   })

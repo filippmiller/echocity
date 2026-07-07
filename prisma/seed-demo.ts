@@ -1,5 +1,7 @@
 import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcrypt'
+import { upsertCuratedCollections } from '../modules/collections/curated'
+import { seedDistricts } from '../modules/districts/service'
 
 const prisma = new PrismaClient()
 
@@ -342,6 +344,14 @@ async function main() {
   })
 
   console.log('Created reviews')
+
+  // === CURATED COLLECTIONS ===
+  await upsertCuratedCollections()
+  console.log('Created curated collections: coffee-nearby, lunch-under-500, tonight-plans')
+
+  // === DISTRICTS ===
+  await seedDistricts()
+  console.log('Created districts for SPB and Moscow')
 
   console.log('\n=== Demo data seeded! ===')
   console.log('Login credentials (password: password123):')

@@ -134,6 +134,11 @@ export async function handleWebhookEvent(body: any, rawBody?: string) {
         Buffer.byteLength(receivedSignature) !== Buffer.byteLength(expectedSignature) ||
         !crypto.timingSafeEqual(Buffer.from(receivedSignature), Buffer.from(expectedSignature))) {
       logger.warn('ЮKassa webhook: invalid or missing signature')
+      logger.error('payment.critical_failure', {
+        reason: 'invalid_signature',
+        provider: 'YOKASSA',
+        externalPaymentId: payment?.id,
+      })
       await logWebhook({
         provider: 'YOKASSA',
         eventType: event || 'unknown',
@@ -146,6 +151,11 @@ export async function handleWebhookEvent(body: any, rawBody?: string) {
     }
   } else if (process.env.NODE_ENV === 'production') {
     logger.error('ЮKassa webhook: YOKASSA_WEBHOOK_SECRET not set in production')
+    logger.error('payment.critical_failure', {
+      reason: 'webhook_secret_missing',
+      provider: 'YOKASSA',
+      environment: 'production',
+    })
     await logWebhook({
       provider: 'YOKASSA',
       eventType: event || 'unknown',
@@ -283,6 +293,14 @@ export async function handleWebhookEvent(body: any, rawBody?: string) {
         failureReason: payment.cancellation_details?.reason,
         rawPayload: payment,
       },
+    })
+
+    logger.error('payment.critical_failure', {
+      reason: 'payment_failed',
+      provider: 'YOKASSA',
+      externalPaymentId: payment.id,
+      userId,
+      failureReason: payment.cancellation_details?.reason,
     })
 
     logger.info('ЮKassa payment canceled', { paymentId: payment.id, userId })

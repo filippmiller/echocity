@@ -20,6 +20,13 @@ export async function POST(request: NextRequest) {
     })
 
     if (!result.success || !result.user) {
+      if (result.errorCode === 'INVALID_CREDENTIALS' || result.errorCode === 'ACCOUNT_LOCKED') {
+        logger.error('auth.login.critical_failure', {
+          errorCode: result.errorCode,
+          email: validated.email,
+        })
+      }
+
       return NextResponse.json(
         { error: result.error, errorCode: result.errorCode },
         { status: result.errorCode === 'INVALID_CREDENTIALS' ? 401 : 403 }

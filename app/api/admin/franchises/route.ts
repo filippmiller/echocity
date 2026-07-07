@@ -61,15 +61,20 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const validated = createFranchiseSchema.parse(body)
 
-    // Check if code already exists
-    const existingFranchise = await prisma.franchise.findUnique({
-      where: { code: validated.code },
+    // Check if code already exists (case-insensitive)
+    const existingFranchise = await prisma.franchise.findFirst({
+      where: {
+        code: {
+          equals: validated.code,
+          mode: 'insensitive',
+        },
+      },
     })
 
     if (existingFranchise) {
       return NextResponse.json(
         { error: 'Франшиза с таким кодом уже существует' },
-        { status: 409 }
+        { status: 400 }
       )
     }
 
@@ -81,7 +86,7 @@ export async function POST(request: NextRequest) {
     if (!ownerUser) {
       return NextResponse.json(
         { error: 'Пользователь с таким email не найден' },
-        { status: 404 }
+        { status: 400 }
       )
     }
 

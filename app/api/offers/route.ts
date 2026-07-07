@@ -34,6 +34,7 @@ export async function GET(req: NextRequest) {
     : undefined
   const category = req.nextUrl.searchParams.get('category') || undefined
   const metro = req.nextUrl.searchParams.get('metro') || undefined
+  const districtSlug = req.nextUrl.searchParams.get('district') || undefined
   const rawBenefitType = req.nextUrl.searchParams.get('benefitType')
   const benefitType = rawBenefitType && VALID_BENEFIT_TYPES.includes(rawBenefitType as BenefitType)
     ? rawBenefitType
@@ -43,7 +44,7 @@ export async function GET(req: NextRequest) {
   const offset = Math.max(parseInt(req.nextUrl.searchParams.get('offset') || '0') || 0, 0)
 
   const [rawOffers, trendingIds] = await Promise.all([
-    getActiveOffersByCity(city, { visibility, category, metro, benefitType, limit, offset }),
+    getActiveOffersByCity(city, { visibility, category, metro, districtSlug, benefitType, limit, offset }),
     getTrendingOfferIds(city),
   ])
 

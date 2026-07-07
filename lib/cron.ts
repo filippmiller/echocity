@@ -6,6 +6,7 @@ import { expireStories } from '@/modules/stories/service'
 import { completeExpiredReservations } from '@/modules/reservations/service'
 import { sendWeeklyDigests } from '@/modules/notifications/weekly-digest'
 import { checkExpiringFavorites, checkStreaksAtRisk } from '@/modules/notifications/triggers'
+import { processExpiringOfferReminders } from '@/modules/notifications/expiring-offer-reminders'
 import { sendPendingReviewNudges } from '@/modules/notifications/review-nudge'
 import { distributeAllCorporateCredits } from '@/modules/corporate/service'
 import { logger } from '@/lib/logger'
@@ -80,12 +81,12 @@ export function initCronJobs() {
     } catch (e) { logger.error('Cron checkStreaksAtRisk failed', { error: String(e) }) }
   })
 
-  // Daily at 8pm Moscow (17:00 UTC): expiring-favorite notifications
+  // Daily at 8pm Moscow (17:00 UTC): expiring saved offer reminders
   cron.schedule('0 17 * * *', async () => {
     try {
-      const count = await checkExpiringFavorites()
-      if (count > 0) logger.info(`Expiring-favorite notifications sent to ${count} users`)
-    } catch (e) { logger.error('Cron checkExpiringFavorites failed', { error: String(e) }) }
+      const count = await processExpiringOfferReminders(24)
+      if (count > 0) logger.info(`Expiring-offer reminders sent: ${count}`)
+    } catch (e) { logger.error('Cron processExpiringOfferReminders failed', { error: String(e) }) }
   })
 
   // Every 30 minutes: post-redemption review nudge (2h after redemption)

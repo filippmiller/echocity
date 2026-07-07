@@ -13,6 +13,7 @@ import { ForYouSection } from "@/components/ForYouSection"
 import { NearYouSection } from "@/components/NearYouSection"
 import { DealOfTheDay } from "@/components/DealOfTheDay"
 import { getSeasonalCollections, type SeasonalCollection } from "@/modules/collections/seasonal"
+import { getCuratedCollections, type CuratedCollection } from "@/modules/collections/curated"
 
 const CATEGORIES = [
   { name: 'Кофе', slug: 'coffee', emoji: '☕', types: ['CAFE'] },
@@ -41,7 +42,7 @@ async function getHomeData() {
   )
   const startOfToday = new Date(startOfTodayMoscow.getTime() - 3 * 60 * 60_000)
 
-  const [freeOffers, memberOffers, flashOffers, allActive, demandCount, placeCount, collections, activeBundles, seasonalCollections, dealOfTheDay] = await Promise.all([
+  const [freeOffers, memberOffers, flashOffers, allActive, demandCount, placeCount, collections, activeBundles, seasonalCollections, dealOfTheDay, curatedCollections] = await Promise.all([
     // Free deals
     prisma.offer.findMany({
       where: {
@@ -151,9 +152,23 @@ async function getHomeData() {
       },
       orderBy: { redemptions: { _count: 'desc' } },
     }).catch(() => null),
+    // Curated collections (always present, dynamically populated)
+    getCuratedCollections().catch(() => [] as CuratedCollection[]),
   ])
 
-  return { freeOffers, memberOffers, flashOffers, allActive, demandCount, placeCount, collections: collections ?? [], activeBundles: activeBundles ?? [], dealOfTheDay: dealOfTheDay ?? null, seasonalCollections: seasonalCollections ?? [] }
+  return {
+    freeOffers,
+    memberOffers,
+    flashOffers,
+    allActive,
+    demandCount,
+    placeCount,
+    collections: (collections ?? []) as Array<{ id: string; slug: string; title: string; description: string | null; coverUrl: string | null; items: Array<{ id: string }> }>,
+    activeBundles: activeBundles ?? [],
+    dealOfTheDay: dealOfTheDay ?? null,
+    seasonalCollections: seasonalCollections ?? [],
+    curatedCollections: curatedCollections ?? [],
+  }
 }
 
 function mapOfferToCard(offer: any) {
@@ -178,7 +193,7 @@ function mapOfferToCard(offer: any) {
 }
 
 export default async function Home() {
-  const { freeOffers, memberOffers, flashOffers, allActive, demandCount, placeCount, collections, activeBundles, dealOfTheDay, seasonalCollections } = await getHomeData()
+  const { freeOffers, memberOffers, flashOffers, allActive, demandCount, placeCount, collections, activeBundles, dealOfTheDay, seasonalCollections, curatedCollections } = await getHomeData()
 
   return (
     <main className="min-h-screen bg-white">
@@ -297,14 +312,43 @@ export default async function Home() {
       {/* Personalized / Trending section */}
       <ForYouSection />
 
-      {/* Collections */}
-      {collections.length > 0 && (
+      {/* Curated local collections */}
+      {curatedCollections.length > 0 && (
         <section className="py-6 px-4">
           <div className="max-w-5xl mx-auto">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-bold text-gray-900 flex items-center gap-2">
                 <span className="text-lg">&#x1F4DA;</span>
                 Подборки
+              </h2>
+              <Link href="/offers" className="text-sm text-brand-600 font-medium hover:underline">
+                Все &rarr;
+              </Link>
+            </div>
+            <div className="flex gap-4 overflow-x-auto hide-scrollbar pb-2">
+              {curatedCollections.map((col: CuratedCollection) => (
+                <CollectionCard
+                  key={col.slug}
+                  slug={col.slug}
+                  title={col.title}
+                  description={col.description}
+                  emoji={col.emoji}
+                  itemCount={col.itemCount}
+                />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Editorial collections from DB */}
+      {collections.length > 0 && (
+        <section className="py-6 px-4 bg-gray-50">
+          <div className="max-w-5xl mx-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-bold text-gray-900 flex items-center gap-2">
+                <span className="text-lg">✨</span>
+                Редакционные подборки
               </h2>
             </div>
             <div className="flex gap-4 overflow-x-auto hide-scrollbar pb-2">

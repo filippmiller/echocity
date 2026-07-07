@@ -306,6 +306,7 @@ model UserProfile {
   emailNotifications   Boolean  @default(true)
   pushNotifications    Boolean  @default(false)
   favoriteCity         String?
+  districtSlug         String?
   avatarUrl            String? // ссылка на аватар в Supabase Storage
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
@@ -398,6 +399,8 @@ model Place {
   updatedAt         DateTime         @updatedAt
 
   nearestMetro String?
+  districtId   String?
+  district     District? @relation(fields: [districtId], references: [id], onDelete: SetNull)
 
   // Legacy fields (for backward compatibility)
   publicName       String?
@@ -433,6 +436,7 @@ model Place {
   @@index([businessAccountId])
   @@index([businessId])
   @@index([cityId])
+  @@index([districtId])
   @@index([placeType])
   @@index([isActive])
   @@index([cityId, placeType, isActive])
@@ -469,6 +473,7 @@ model City {
   franchiseId     String?
   franchise       Franchise?      @relation(fields: [franchiseId], references: [id], onDelete: SetNull)
   places          Place[]         @relation("CityPlaces")
+  districts       District[]
   demandRequests  DemandRequest[]
   bundles         Bundle[]
 
@@ -1742,4 +1747,59 @@ model OfferSave {
 
   @@unique([offerId, userId, source])
   @@index([offerId, createdAt])
+}
+
+// ==============================
+// FEATURE FLAGS
+// ==============================
+
+model FeatureFlag {
+  id           String   @id @default(cuid())
+  key          String   @unique
+  enabled      Boolean  @default(false)
+  description  String?
+  allowedRoles String[] @default([])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([key])
+  @@index([enabled])
+}
+
+// ==============================
+// REMINDER LOGS
+// ==============================
+
+model ReminderLog {
+  id        String   @id @default(cuid())
+  userId    String
+  offerId   String
+  channel   String // push | email
+  type      String // EXPIRING_OFFER
+  sentAt    DateTime @default(now())
+
+  @@unique([userId, offerId, channel, type])
+  @@index([userId, sentAt])
+  @@index([offerId])
+  @@index([sentAt])
+}
+
+// ==============================
+// DISTRICTS / NEIGHBORHOODS
+// ==============================
+
+model District {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String
+  cityId    String
+  city      City     @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  lat       Float?
+  lng       Float?
+  places    Place[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([cityId, slug])
+  @@index([cityId])
 }
