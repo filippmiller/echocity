@@ -5,7 +5,7 @@ import { Clock, Users, Flame, Globe, Train, Star, BadgeCheck, Navigation } from 
 import { FavoriteButton } from '@/components/FavoriteButton'
 import { VerifiedBadge } from '@/components/VerifiedBadge'
 import { hapticTap } from '@/lib/haptics'
-import { getEstimatedSavings, buildYandexMapsRouteUrl } from '@/lib/offer-utils'
+import { getBenefitBadge, getEstimatedSavings, buildYandexMapsRouteUrl } from '@/lib/offer-utils'
 
 interface ScheduleSlot {
   weekday: number   // 0=Monday..6=Sunday
@@ -71,17 +71,6 @@ function getScheduleStatus(schedules: ScheduleSlot[]): ScheduleStatus {
   const hasTomorrow = schedules.some((s) => s.weekday === tomorrow)
   if (hasTomorrow) return { kind: 'tomorrow' }
   return { kind: 'no_schedule' }
-}
-
-function getBenefitBadge(benefitType: string, benefitValue: number) {
-  switch (benefitType) {
-    case 'PERCENT': return `-${benefitValue}%`
-    case 'FIXED_AMOUNT': return `-${Math.round(benefitValue)}\u20BD`
-    case 'FIXED_PRICE': return `${Math.round(benefitValue)}\u20BD`
-    case 'FREE_ITEM': return 'Бесплатно'
-    case 'BUNDLE': return 'Комплект'
-    default: return `${benefitValue}`
-  }
 }
 
 function getTimeLeft(expiresAt: string): { text: string; urgent: boolean } | null {

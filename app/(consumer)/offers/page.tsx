@@ -1,7 +1,7 @@
 'use client'
 
-import { Suspense, useCallback, useEffect, useState } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
+import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { OfferFeed } from '@/components/OfferFeed'
 import { WhatsHot } from '@/components/WhatsHot'
 import { TrendingDemands } from '@/components/TrendingDemands'
@@ -83,19 +83,76 @@ function CityLabel() {
   )
 }
 
+interface FilterState {
+  section: string
+  category: string
+  activeNow: boolean
+  benefitType: string
+  metro: string
+  showNearby: boolean
+}
+
+function buildSearchParams(filters: FilterState): URLSearchParams {
+  const params = new URLSearchParams()
+  if (filters.section !== 'all') params.set('visibility', filters.section)
+  if (filters.category !== 'all') params.set('category', filters.category)
+  if (filters.activeNow) params.set('activeNow', 'true')
+  if (filters.benefitType) params.set('benefitType', filters.benefitType)
+  if (filters.metro) params.set('metro', filters.metro)
+  return params
+}
+
 function OffersContent() {
   const searchParams = useSearchParams()
+  const router = useRouter()
+  const pathname = usePathname()
   const compare = useCompare()
   const { city } = useCity()
-  const [section, setSection] = useState(searchParams.get('visibility') || 'all')
-  const [category, setCategory] = useState(searchParams.get('category') || 'all')
-  const [activeNow, setActiveNow] = useState(searchParams.get('activeNow') === 'true')
-  const [benefitType, setBenefitType] = useState(searchParams.get('benefitType') || '')
-  const [metro, setMetro] = useState(searchParams.get('metro') || '')
   const [showMetroDropdown, setShowMetroDropdown] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
   const [categoryCounts, setCategoryCounts] = useState<Record<string, number>>({})
-  const [showNearby, setShowNearby] = useState(false)
+
+  const initialFilters = useMemo<FilterState>(() => ({
+    section: searchParams.get('visibility') || 'all',
+    category: searchParams.get('category') || 'all',
+    activeNow: searchParams.get('activeNow') === 'true',
+    benefitType: searchParams.get('benefitType') || '',
+    metro: searchParams.get('metro') || '',
+    showNearby: false,
+  }), [])
+
+  const [filters, setFilters] = useState<FilterState>(initialFilters)
+
+  // Sync filter state with URL search params when the user navigates back/forward
+  useEffect(() => {
+    const next: FilterState = {
+      section: searchParams.get('visibility') || 'all',
+      category: searchParams.get('category') || 'all',
+      activeNow: searchParams.get('activeNow') === 'true',
+      benefitType: searchParams.get('benefitType') || '',
+      metro: searchParams.get('metro') || '',
+      showNearby: filters.showNearby,
+    }
+    if (
+      next.section !== filters.section ||
+      next.category !== filters.category ||
+      next.activeNow !== filters.activeNow ||
+      next.benefitType !== filters.benefitType ||
+      next.metro !== filters.metro
+    ) {
+      setFilters(next)
+    }
+  }, [searchParams])
+
+  const updateFilters = useCallback((update: Partial<FilterState>) => {
+    setFilters((prev) => {
+      const next = { ...prev, ...update }
+      const params = buildSearchParams(next)
+      const query = params.toString()
+      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false })
+      return next
+    })
+  }, [pathname, router])
 
   const handleRefresh = useCallback(async () => {
     // Bump the key so OfferFeed re-mounts and re-fetches
@@ -104,19 +161,6 @@ function OffersContent() {
     await new Promise((resolve) => setTimeout(resolve, 600))
   }, [])
 
-  useEffect(() => {
-    const nextSection = searchParams.get('visibility') || 'all'
-    const nextCategory = searchParams.get('category') || 'all'
-    const nextActiveNow = searchParams.get('activeNow') === 'true'
-    const nextBenefitType = searchParams.get('benefitType') || ''
-    const nextMetro = searchParams.get('metro') || ''
-    setSection(nextSection)
-    setCategory(nextCategory)
-    setActiveNow(nextActiveNow)
-    setBenefitType(nextBenefitType)
-    setMetro(nextMetro)
-  }, [searchParams])
-
   // Fetch category counts when city changes
   useEffect(() => {
     fetch(`/api/offers/counts?city=${encodeURIComponent(city)}`)
@@ -124,6 +168,8 @@ function OffersContent() {
       .then((data) => setCategoryCounts(data.counts || {}))
       .catch(() => {})
   }, [city])
+
+  const { section, category, activeNow, benefitType, metro, showNearby } = filters
 
 
 
@@ -164,14 +210,16 @@ function OffersContent() {
                     key={chip.key}
                     onClick={() => {
                       if (isNearbyChip) {
-                        setShowNearby((prev) => !prev)
+                        updateFilters({ showNearby: !showNearby })
                       } else if (isActiveNowChip) {
-                        setActiveNow((prev) => !prev)
+                        updateFilters({ activeNow: !activeNow })
                       } else {
-                        setSection(chip.key)
-                        setActiveNow(false)
-                        setShowNearby(false)
-                        setBenefitType('')
+                        updateFilters({
+                          section: chip.key,
+                          activeNow: false,
+                          showNearby: false,
+                          benefitType: '',
+                        })
                       }
                     }}
                     className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors chip ${
@@ -198,7 +246,7 @@ function OffersContent() {
               return (
                 <button
                   key={cat.slug}
-                  onClick={() => setCategory(cat.slug)}
+                  onClick={() => updateFilters({ category: cat.slug })}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors chip ${
                     category === cat.slug
                       ? 'bg-gray-900 text-white'
@@ -224,7 +272,7 @@ function OffersContent() {
             {BENEFIT_TYPES.map((bt) => (
               <button
                 key={bt.key}
-                onClick={() => setBenefitType(benefitType === bt.key ? '' : bt.key)}
+                onClick={() => updateFilters({ benefitType: benefitType === bt.key ? '' : bt.key })}
                 className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors chip ${
                   benefitType === bt.key
                     ? 'bg-emerald-600 text-white'
@@ -253,7 +301,7 @@ function OffersContent() {
 
               {metro && (
                 <button
-                  onClick={() => setMetro('')}
+                  onClick={() => updateFilters({ metro: '' })}
                   className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap bg-gray-100 text-gray-500 active:bg-gray-200 chip shrink-0"
                 >
                   Сбросить метро
@@ -268,7 +316,7 @@ function OffersContent() {
                     <button
                       key={station}
                       onClick={() => {
-                        setMetro(station === metro ? '' : station)
+                        updateFilters({ metro: station === metro ? '' : station })
                         setShowMetroDropdown(false)
                       }}
                       className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors chip ${

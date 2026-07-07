@@ -59,7 +59,7 @@ export function OfferFeed({ city, visibility, category, activeNow, metro, benefi
         setLoading(false)
       })
       .catch(() => setLoading(false))
-  }, [city, visibility, category, activeNow, metro])
+  }, [city, visibility, category, activeNow, metro, benefitType])
 
   if (loading) {
     return (
@@ -110,7 +110,7 @@ export function OfferFeed({ city, visibility, category, activeNow, metro, benefi
           branchLat={offer.branchLat ?? offer.branch?.lat ?? null}
           branchLng={offer.branchLng ?? offer.branch?.lng ?? null}
           branchAddress={offer.branchAddress ?? offer.branch?.address ?? null}
-          metadata={(offer as any).metadata}
+          metadata={offer.metadata}
         />
       ))}
     </div>

@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getActiveOffersByCity } from '@/modules/offers/service'
 import { getTrendingOfferIds } from '@/modules/offers/trending'
+import { BenefitType, OfferVisibility } from '@prisma/client'
+
+const VALID_BENEFIT_TYPES = Object.values(BenefitType)
+const VALID_VISIBILITIES = Object.values(OfferVisibility)
 
 // Returns Moscow weekday (0=Monday..6=Sunday) and HH:MM time string
 function getMoscowTimeInfo(): { weekday: number; timeStr: string } {
@@ -24,10 +28,16 @@ function isOfferActiveNow(schedules: Array<{ weekday: number; startTime: string;
 
 export async function GET(req: NextRequest) {
   const city = req.nextUrl.searchParams.get('city') || 'Санкт-Петербург'
-  const visibility = req.nextUrl.searchParams.get('visibility') || undefined
+  const rawVisibility = req.nextUrl.searchParams.get('visibility')
+  const visibility = rawVisibility && VALID_VISIBILITIES.includes(rawVisibility as OfferVisibility)
+    ? rawVisibility
+    : undefined
   const category = req.nextUrl.searchParams.get('category') || undefined
   const metro = req.nextUrl.searchParams.get('metro') || undefined
-  const benefitType = req.nextUrl.searchParams.get('benefitType') || undefined
+  const rawBenefitType = req.nextUrl.searchParams.get('benefitType')
+  const benefitType = rawBenefitType && VALID_BENEFIT_TYPES.includes(rawBenefitType as BenefitType)
+    ? rawBenefitType
+    : undefined
   const activeNow = req.nextUrl.searchParams.get('activeNow') === 'true'
   const limit = Math.min(Math.max(parseInt(req.nextUrl.searchParams.get('limit') || '50') || 50, 1), 100)
   const offset = Math.max(parseInt(req.nextUrl.searchParams.get('offset') || '0') || 0, 0)
