@@ -1,10 +1,12 @@
 import type { Metadata } from 'next'
+import { getLegalConfig } from '@/lib/legal'
 
 export const metadata: Metadata = {
   title: 'Политика конфиденциальности — ГдеСейчас',
 }
 
 export default function PrivacyPage() {
+  const legal = getLegalConfig()
   return (
     <main className="min-h-screen bg-white">
       <div className="max-w-3xl mx-auto px-4 py-10">
@@ -16,7 +18,13 @@ export default function PrivacyPage() {
             <h2 className="text-lg font-semibold text-gray-900">1. Общие положения</h2>
             <p>
               Настоящая Политика конфиденциальности определяет порядок обработки и защиты персональных данных
-              пользователей сервиса ГдеСейчас (далее — Сервис), доступного по адресу echocity.vsedomatut.com.
+              пользователей сервиса ГдеСейчас (далее — Сервис), доступного по адресу echocity.filippmiller.com.
+            </p>
+            <p>
+              Оператор персональных данных: {legal.legalName || '—'}
+              {legal.inn && <span className="block">ИНН: {legal.inn}</span>}
+              {legal.ogrn && <span className="block">ОГРН: {legal.ogrn}</span>}
+              {legal.address && <span className="block">Адрес: {legal.address}</span>}
             </p>
             <p>
               Обработка персональных данных осуществляется в соответствии с Федеральным законом от 27.07.2006
@@ -68,7 +76,10 @@ export default function PrivacyPage() {
             <h2 className="text-lg font-semibold text-gray-900">6. Права пользователя</h2>
             <p>
               Вы имеете право на доступ, исправление и удаление своих персональных данных.
-              Для реализации этих прав обратитесь по адресу: info@gdesejchas.ru.
+              Для реализации этих прав обратитесь по адресу:{' '}
+              <a href={`mailto:${legal.supportEmail}`} className="text-brand-600 hover:underline">
+                {legal.supportEmail}
+              </a>.
             </p>
           </section>
 
@@ -83,7 +94,15 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-lg font-semibold text-gray-900">8. Контакты</h2>
             <p>
-              По вопросам, связанным с обработкой персональных данных, обращайтесь: info@gdesejchas.ru
+              По вопросам, связанным с обработкой персональных данных, обращайтесь:{" "}
+              <a href={`mailto:${legal.supportEmail}`} className="text-brand-600 hover:underline">
+                {legal.supportEmail}
+              </a>
+              {legal.supportPhone && (
+                <>, тел.: <a href={`tel:${legal.supportPhone.replace(/\s/g, '')}`} className="text-brand-600 hover:underline">
+                  {legal.supportPhone}
+                </a></>
+              )}
             </p>
           </section>
         </div>

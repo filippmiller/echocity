@@ -3,7 +3,14 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/lib/auth-client'
 import { toast } from 'sonner'
-import { ClipboardCheck, Loader2, CheckCircle2, XCircle, AlertCircle } from 'lucide-react'
+import {
+  ClipboardCheck,
+  Loader2,
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
+  Mail,
+} from 'lucide-react'
 
 interface EnvCheck {
   key: string
@@ -14,6 +21,16 @@ interface ReadinessData {
   buildSha: string
   lastDeploy: string
   env: {
+    checklist: EnvCheck[]
+    complete: boolean
+    missing: string[]
+  }
+  integrations: {
+    checklist: EnvCheck[]
+    complete: boolean
+    missing: string[]
+  }
+  legal: {
     checklist: EnvCheck[]
     complete: boolean
     missing: string[]
@@ -32,6 +49,7 @@ export default function AdminReadinessPage() {
   const { user } = useAuth()
   const [data, setData] = useState<ReadinessData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [smokeLoading, setSmokeLoading] = useState(false)
 
   useEffect(() => {
     if (user?.role !== 'ADMIN') return
@@ -44,6 +62,25 @@ export default function AdminReadinessPage() {
       .catch(() => toast.error('Не удалось загрузить готовность'))
       .finally(() => setLoading(false))
   }, [user])
+
+  async function runEmailSmokeTest() {
+    setSmokeLoading(true)
+    try {
+      const res = await fetch('/api/admin/email/smoke', { method: 'POST' })
+      const body = await res.json()
+      if (res.ok && body.sent) {
+        toast.success(body.message || 'Тестовое письмо отправлено')
+      } else if (res.ok) {
+        toast.warning(body.message || 'Email не настроен')
+      } else {
+        toast.error(body.message || 'Ошибка при проверке email')
+      }
+    } catch {
+      toast.error('Не удалось выполнить проверку email')
+    } finally {
+      setSmokeLoading(false)
+    }
+  }
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-4xl">
@@ -124,6 +161,68 @@ export default function AdminReadinessPage() {
                 <XCircle className="w-5 h-5 text-red-600" />
               )}
               <p className="text-sm text-gray-700">{data.migrations.message}</p>
+            </div>
+          </div>
+
+          {/* Integrations */}
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="px-4 py-3 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-gray-900">Интеграции</h2>
+              <button
+                onClick={runEmailSmokeTest}
+                disabled={smokeLoading}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-violet-50 text-violet-700 hover:bg-violet-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {smokeLoading ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Mail className="w-3.5 h-3.5" />
+                )}
+                Проверить email
+              </button>
+            </div>
+            <div className="divide-y divide-gray-100">
+              {data.integrations?.checklist.map((item) => (
+                <div key={item.key} className="px-4 py-3 flex items-center justify-between">
+                  <code className="text-sm text-gray-700">{item.key}</code>
+                  {item.present ? (
+                    <span className="flex items-center gap-1 text-xs font-medium text-green-700">
+                      <CheckCircle2 className="w-4 h-4" />
+                      Настроен
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1 text-xs font-medium text-red-600">
+                      <XCircle className="w-4 h-4" />
+                      Отсутствует
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Legal / operator identity */}
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
+              <h2 className="text-sm font-semibold text-gray-900">Юрлицо / контакты</h2>
+            </div>
+            <div className="divide-y divide-gray-100">
+              {data.legal?.checklist.map((item) => (
+                <div key={item.key} className="px-4 py-3 flex items-center justify-between">
+                  <code className="text-sm text-gray-700">{item.key}</code>
+                  {item.present ? (
+                    <span className="flex items-center gap-1 text-xs font-medium text-green-700">
+                      <CheckCircle2 className="w-4 h-4" />
+                      Настроен
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1 text-xs font-medium text-amber-600">
+                      <AlertCircle className="w-4 h-4" />
+                      Отсутствует
+                    </span>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
 

@@ -6,8 +6,12 @@ function readPublic(file: string) {
   return fs.readFileSync(path.join(process.cwd(), 'public', file), 'utf-8')
 }
 
+function publicPath(file: string) {
+  return path.join(process.cwd(), 'public', file)
+}
+
 describe('PWA static assets', () => {
-  it('GET /manifest.json returns valid JSON with icons', () => {
+  it('GET /manifest.json returns valid JSON with PNG icons', () => {
     const raw = readPublic('manifest.json')
     const manifest = JSON.parse(raw)
     expect(manifest.name).toBeDefined()
@@ -15,19 +19,46 @@ describe('PWA static assets', () => {
     expect(manifest.start_url).toBe('/offers')
     expect(Array.isArray(manifest.icons)).toBe(true)
     expect(manifest.icons.length).toBeGreaterThan(0)
+
+    const pngIcons = manifest.icons.filter((icon: { src?: string; type?: string }) =>
+      icon.type === 'image/png'
+    )
+    expect(pngIcons.length).toBeGreaterThanOrEqual(2)
+
     for (const icon of manifest.icons) {
-      expect(icon.src).toMatch(/^\/favicon\.svg$/)
-      expect(icon.type).toBe('image/svg+xml')
+      expect(icon.src).toMatch(/^\//)
+      expect(icon.sizes).toBeDefined()
+      expect(icon.type).toMatch(/^image\//)
+      expect(['any', 'maskable'].includes(icon.purpose)).toBe(true)
     }
   })
 
-  it('GET /sw.js returns JavaScript with offline fallback', () => {
+  it('PNG icon files exist and are non-empty', () => {
+    const icons = ['icon-192.png', 'icon-512.png', 'icon-192-maskable.png', 'icon-512-maskable.png']
+    for (const icon of icons) {
+      const filePath = publicPath(icon)
+      expect(fs.existsSync(filePath), `expected ${icon} to exist`).toBe(true)
+      const stats = fs.statSync(filePath)
+      expect(stats.size).toBeGreaterThan(0)
+    }
+  })
+
+  it('apple-touch-icon and badge files exist', () => {
+    expect(fs.existsSync(publicPath('apple-touch-icon.png'))).toBe(true)
+    expect(fs.existsSync(publicPath('badge-72.png'))).toBe(true)
+  })
+
+  it('GET /sw.js caches PWA icon assets and uses PNG notification icon', () => {
     const sw = readPublic('sw.js')
     expect(sw).toContain('const CACHE_NAME')
     expect(sw).toContain("'/offline'")
     expect(sw).toContain('caches.match(\'/offline\')')
     expect(sw).toContain('self.addEventListener(\'push\',')
     expect(sw).toContain('self.addEventListener(\'notificationclick\',')
+    expect(sw).toContain("'/icon-192.png'")
+    expect(sw).toContain("'/icon-512.png'")
+    expect(sw).toContain("'/badge-72.png'")
+    expect(sw).toContain("icon: data.icon || '/icon-192.png'")
   })
 
   it('GET /offline returns HTML/200 via existing page', () => {

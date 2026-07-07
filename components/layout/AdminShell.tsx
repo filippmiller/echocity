@@ -11,6 +11,7 @@ import {
   MessageSquareWarning,
   Store,
   Users,
+  UserPlus,
   ArrowLeft,
   BarChart3,
   Rocket,
@@ -20,6 +21,7 @@ import {
   HeartPulse,
   ClipboardCheck,
   ToggleLeft,
+  MessageSquare,
 } from 'lucide-react'
 
 const NAV_ITEMS = [
@@ -30,9 +32,12 @@ const NAV_ITEMS = [
   { href: '/admin/offers', icon: Tag, label: 'Офферы' },
   { href: '/admin/businesses', icon: Store, label: 'Бизнесы' },
   { href: '/admin/complaints', icon: MessageSquareWarning, label: 'Жалобы' },
+  { href: '/admin/reviews/suspicious', icon: MessageSquare, label: 'Отзывы' },
+  { href: '/admin/content-quality', icon: ClipboardCheck, label: 'Качество' },
   { href: '/admin/cities', icon: MapPin, label: 'Города' },
   { href: '/admin/franchises', icon: Building2, label: 'Франшизы' },
   { href: '/admin/users', icon: Users, label: 'Пользователи' },
+  { href: '/admin/referrals', icon: UserPlus, label: 'Рефералы' },
   { href: '/admin/fraud', icon: ShieldAlert, label: 'Фрод' },
   { href: '/admin/analytics', icon: BarChart3, label: 'Аналитика' },
   { href: '/admin/audit-log', icon: ScrollText, label: 'Аудит' },

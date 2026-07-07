@@ -35,6 +35,24 @@ const BENEFIT_TYPES = [
   { key: 'MYSTERY_BAG', label: 'Сюрприз' },
 ]
 
+const SORT_OPTIONS = [
+  { key: 'recommended', label: 'Рекомендуемые' },
+  { key: 'newest', label: 'Сначала новые' },
+  { key: 'endingSoon', label: 'Скоро закончатся' },
+  { key: 'nearest', label: 'Сначала близкие' },
+  { key: 'rating', label: 'По рейтингу' },
+]
+
+/** Russian numeral agreement: 1 предложение, 2 предложения, 5 предложений */
+function plural(n: number, one: string, few: string, many: string): string {
+  const abs = Math.abs(n) % 100
+  const lastDigit = abs % 10
+  if (abs > 10 && abs < 20) return many
+  if (lastDigit === 1) return one
+  if (lastDigit >= 2 && lastDigit <= 4) return few
+  return many
+}
+
 const METRO_STATIONS = [
   'Невский проспект',
   'Гостиный двор',
@@ -92,7 +110,10 @@ interface FilterState {
   metro: string
   district: string
   showNearby: boolean
+  sort: SortKey
 }
+
+type SortKey = typeof SORT_OPTIONS[number]['key']
 
 function buildSearchParams(filters: FilterState): URLSearchParams {
   const params = new URLSearchParams()
@@ -102,6 +123,7 @@ function buildSearchParams(filters: FilterState): URLSearchParams {
   if (filters.benefitType) params.set('benefitType', filters.benefitType)
   if (filters.metro) params.set('metro', filters.metro)
   if (filters.district) params.set('district', filters.district)
+  if (filters.sort !== 'recommended') params.set('sort', filters.sort)
   return params
 }
 
@@ -120,7 +142,8 @@ function isDefaultFilters(filters: FilterState): boolean {
     !filters.activeNow &&
     !filters.benefitType &&
     !filters.metro &&
-    !filters.district
+    !filters.district &&
+    filters.sort === 'recommended'
   )
 }
 
@@ -183,6 +206,7 @@ function OffersContent() {
     metro: searchParams.get('metro') || '',
     district: searchParams.get('district') || '',
     showNearby: false,
+    sort: (searchParams.get('sort') as SortKey) || 'recommended',
   }), [])
 
   const [filters, setFilters] = useState<FilterState>(initialFilters)
@@ -197,6 +221,7 @@ function OffersContent() {
       metro: searchParams.get('metro') || '',
       district: searchParams.get('district') || '',
       showNearby: filters.showNearby,
+      sort: (searchParams.get('sort') as SortKey) || 'recommended',
     }
     if (
       next.section !== filters.section ||
@@ -204,7 +229,8 @@ function OffersContent() {
       next.activeNow !== filters.activeNow ||
       next.benefitType !== filters.benefitType ||
       next.metro !== filters.metro ||
-      next.district !== filters.district
+      next.district !== filters.district ||
+      next.sort !== filters.sort
     ) {
       setFilters(next)
     }
@@ -261,7 +287,7 @@ function OffersContent() {
       .catch(() => {})
   }, [city])
 
-  const { section, category, activeNow, benefitType, metro, district, showNearby } = filters
+  const { section, category, activeNow, benefitType, metro, district, showNearby, sort } = filters
 
 
 
@@ -272,8 +298,12 @@ function OffersContent() {
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold mb-1">Скидки</h1>
-              <p className="text-blue-100 text-sm">Все актуальные предложения в вашем городе</p>
+              <h1 className="text-2xl font-bold mb-1">Скидки в {city}</h1>
+              <p className="text-blue-100 text-sm">
+                {categoryCounts.all > 0
+                  ? `${categoryCounts.all} ${plural(categoryCounts.all, 'активное предложение', 'активных предложения', 'активных предложений')}`
+                  : 'Актуальные предложения поблизости'}
+              </p>
             </div>
           </div>
           <div className="mt-3">
@@ -288,7 +318,7 @@ function OffersContent() {
           <div className="flex items-center gap-3">
             <CityLabel />
 
-            <div className="flex gap-2 overflow-x-auto hide-scrollbar">
+            <div className="flex-1 min-w-0 flex gap-2 overflow-x-auto hide-scrollbar">
               {FILTER_CHIPS.map((chip) => {
                 const isActiveNowChip = chip.key === 'activeNow'
                 const isNearbyChip = chip.key === 'nearby'
@@ -329,6 +359,18 @@ function OffersContent() {
                 )
               })}
             </div>
+
+            <label className="sr-only" htmlFor="offers-sort">Сортировка</label>
+            <select
+              id="offers-sort"
+              value={sort}
+              onChange={(e) => updateFilters({ sort: e.target.value as SortKey })}
+              className="text-sm border border-gray-200 rounded-lg px-2.5 py-2 bg-white text-gray-700 shrink-0 focus:outline-none focus:ring-2 focus:ring-brand-500"
+            >
+              {SORT_OPTIONS.map((option) => (
+                <option key={option.key} value={option.key}>{option.label}</option>
+              ))}
+            </select>
           </div>
 
           {/* Repeat last search affordance */}
@@ -341,6 +383,84 @@ function OffersContent() {
                 <span>↻</span>
                 Повторить последний поиск
               </button>
+            </div>
+          )}
+
+          {/* Active filter pills */}
+          {(section !== 'all' || category !== 'all' || activeNow || benefitType || metro || district || sort !== 'recommended') && (
+            <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar">
+              <span className="text-xs text-gray-400 shrink-0">Активные:</span>
+              {section !== 'all' && section !== 'activeNow' && (
+                <button
+                  onClick={() => updateFilters({ section: 'all' })}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap bg-brand-100 text-brand-700 border border-brand-200 active:bg-brand-200 chip shrink-0"
+                >
+                  {section === 'FREE_FOR_ALL' ? 'Бесплатные' : section === 'MEMBERS_ONLY' ? 'Plus' : 'Рядом'}
+                  <span className="text-brand-900">×</span>
+                </button>
+              )}
+              {activeNow && (
+                <button
+                  onClick={() => updateFilters({ activeNow: false })}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap bg-green-100 text-green-700 border border-green-200 active:bg-green-200 chip shrink-0"
+                >
+                  Сейчас
+                  <span className="text-green-900">×</span>
+                </button>
+              )}
+              {category !== 'all' && (
+                <button
+                  onClick={() => updateFilters({ category: 'all' })}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap bg-gray-900 text-white active:bg-gray-800 chip shrink-0"
+                >
+                  {CATEGORIES.find((c) => c.slug === category)?.label || category}
+                  <span>×</span>
+                </button>
+              )}
+              {benefitType && (
+                <button
+                  onClick={() => updateFilters({ benefitType: '' })}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap bg-emerald-100 text-emerald-700 border border-emerald-200 active:bg-emerald-200 chip shrink-0"
+                >
+                  {BENEFIT_TYPES.find((bt) => bt.key === benefitType)?.label || benefitType}
+                  <span className="text-emerald-900">×</span>
+                </button>
+              )}
+              {metro && (
+                <button
+                  onClick={() => updateFilters({ metro: '' })}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap bg-blue-100 text-blue-700 border border-blue-200 active:bg-blue-200 chip shrink-0"
+                >
+                  м. {metro}
+                  <span className="text-blue-900">×</span>
+                </button>
+              )}
+              {district && (
+                <button
+                  onClick={() => updateFilters({ district: '' })}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap bg-emerald-100 text-emerald-700 border border-emerald-200 active:bg-emerald-200 chip shrink-0"
+                >
+                  {selectedDistrict?.name || district}
+                  <span className="text-emerald-900">×</span>
+                </button>
+              )}
+              {sort !== 'recommended' && (
+                <button
+                  onClick={() => updateFilters({ sort: 'recommended' })}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap bg-purple-100 text-purple-700 border border-purple-200 active:bg-purple-200 chip shrink-0"
+                >
+                  {SORT_OPTIONS.find((s) => s.key === sort)?.label || sort}
+                  <span className="text-purple-900">×</span>
+                </button>
+              )}
+              {!isDefaultFilters(filters) && (
+                <button
+                  onClick={() => updateFilters({ section: 'all', category: 'all', activeNow: false, benefitType: '', metro: '', district: '', sort: 'recommended' })}
+                  className="text-xs font-medium text-gray-500 hover:text-gray-700 whitespace-nowrap shrink-0 px-1"
+                >
+                  Сбросить всё
+                </button>
+              )}
             </div>
           )}
 
@@ -522,6 +642,8 @@ function OffersContent() {
               metro={metro || undefined}
               district={district || undefined}
               benefitType={benefitType || undefined}
+              sort={sort}
+              onClearFilters={() => updateFilters({ section: 'all', category: 'all', activeNow: false, benefitType: '', metro: '', district: '', sort: 'recommended' })}
             />
           </div>
         </div>

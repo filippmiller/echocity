@@ -1,6 +1,8 @@
 import Link from 'next/link'
+import { getLegalConfig } from '@/lib/legal'
 
 export function Footer() {
+  const legal = getLegalConfig()
   return (
     <footer className="bg-gray-900 text-gray-400 py-10 px-4 pb-24 md:pb-10">
       <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
@@ -9,6 +11,13 @@ export function Footer() {
           <p className="text-sm leading-relaxed">
             Лучшие скидки в кафе, ресторанах и салонах вашего города
           </p>
+          {legal.legalName && (
+            <p className="text-xs text-gray-500 mt-3 leading-relaxed">
+              {legal.legalName}
+              {legal.inn && <span className="block">ИНН {legal.inn}</span>}
+              {legal.ogrn && <span className="block">ОГРН {legal.ogrn}</span>}
+            </p>
+          )}
         </div>
         <div>
           <h4 className="text-white font-semibold text-sm mb-3">Пользователям</h4>
@@ -28,8 +37,17 @@ export function Footer() {
         <div>
           <h4 className="text-white font-semibold text-sm mb-3">Контакты</h4>
           <div className="flex flex-col gap-2 text-sm">
-            <span>Санкт-Петербург</span>
-            <a href="mailto:info@gdesejchas.ru" className="hover:text-white transition-colors">info@gdesejchas.ru</a>
+            {legal.address && <span>{legal.address}</span>}
+            {legal.supportEmail && (
+              <a href={`mailto:${legal.supportEmail}`} className="hover:text-white transition-colors">
+                {legal.supportEmail}
+              </a>
+            )}
+            {legal.supportPhone && (
+              <a href={`tel:${legal.supportPhone.replace(/\s/g, '')}`} className="hover:text-white transition-colors">
+                {legal.supportPhone}
+              </a>
+            )}
           </div>
         </div>
       </div>

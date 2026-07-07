@@ -7,7 +7,7 @@
  */
 
 const CACHE_NAME = 'echocity-v1'
-const STATIC_ASSETS = ['/', '/offers', '/offline', '/manifest.json']
+const STATIC_ASSETS = ['/', '/offers', '/offline', '/manifest.json', '/icon-192.png', '/icon-512.png', '/icon-192-maskable.png', '/icon-512-maskable.png', '/apple-touch-icon.png', '/badge-72.png']
 
 // Install: cache static assets
 self.addEventListener('install', (event) => {
@@ -65,7 +65,7 @@ self.addEventListener('push', function (event) {
   const title = data.title || 'ГдеСейчас'
   const options = {
     body: data.body || '',
-    icon: data.icon || '/favicon.svg',
+    icon: data.icon || '/icon-192.png',
     badge: data.badge || '/badge-72.png',
     data: { url: data.url || '/' },
     vibrate: [100, 50, 100],

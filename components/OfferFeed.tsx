@@ -39,9 +39,10 @@ interface OfferData {
   metadata?: unknown
 }
 
-export function OfferFeed({ city, visibility, category, activeNow, metro, district, benefitType }: { city?: string; visibility?: string; category?: string; activeNow?: boolean; metro?: string; district?: string; benefitType?: string }) {
+export function OfferFeed({ city, visibility, category, activeNow, metro, district, benefitType, sort, onClearFilters }: { city?: string; visibility?: string; category?: string; activeNow?: boolean; metro?: string; district?: string; benefitType?: string; sort?: string; onClearFilters?: () => void }) {
   const [offers, setOffers] = useState<OfferData[]>([])
   const [loading, setLoading] = useState(true)
+  const hasActiveFilters = Boolean(visibility || (category && category !== 'all') || activeNow || metro || district || benefitType || (sort && sort !== 'recommended'))
 
   useEffect(() => {
     const params = new URLSearchParams()
@@ -52,6 +53,7 @@ export function OfferFeed({ city, visibility, category, activeNow, metro, distri
     if (metro) params.set('metro', metro)
     if (district) params.set('district', district)
     if (benefitType) params.set('benefitType', benefitType)
+    if (sort && sort !== 'recommended') params.set('sort', sort)
 
     const buildAndFetch = (lat?: number, lng?: number) => {
       if (lat != null && lng != null) {
@@ -76,7 +78,7 @@ export function OfferFeed({ city, visibility, category, activeNow, metro, distri
     } else {
       buildAndFetch()
     }
-  }, [city, visibility, category, activeNow, metro, district, benefitType])
+  }, [city, visibility, category, activeNow, metro, district, benefitType, sort])
 
   if (loading) {
     return (
@@ -90,12 +92,24 @@ export function OfferFeed({ city, visibility, category, activeNow, metro, distri
 
   if (offers.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-center">
+      <div className="flex flex-col items-center justify-center py-16 text-center px-4">
         <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
           <span className="text-2xl text-gray-400">%</span>
         </div>
-        <p className="text-gray-500 font-medium">Нет активных предложений</p>
-        <p className="text-sm text-gray-400 mt-1">Попробуйте изменить фильтры</p>
+        <p className="text-gray-900 font-semibold text-lg">Нет подходящих предложений</p>
+        <p className="text-sm text-gray-500 mt-1 max-w-xs">
+          {hasActiveFilters
+            ? 'Попробуйте изменить фильтры или сбросить их, чтобы увидеть все скидки.'
+            : 'Первые партнёры подключаются. Загляните позже или посмотрите другие разделы.'}
+        </p>
+        {hasActiveFilters && onClearFilters && (
+          <button
+            onClick={onClearFilters}
+            className="mt-4 px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-full hover:bg-brand-700 active:bg-brand-800 transition-colors"
+          >
+            Сбросить фильтры
+          </button>
+        )}
       </div>
     )
   }

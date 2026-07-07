@@ -71,8 +71,6 @@ export function ReferralCard() {
   if (!data) return null
 
   const { code, stats } = data
-  const progress = Math.min(stats.completed / stats.target, 1)
-  const rewardUnlocked = stats.completed >= stats.target
 
   return (
     <div className="bg-gradient-to-br from-brand-600 via-brand-700 to-blue-800 rounded-2xl p-6 text-white relative overflow-hidden">
@@ -106,22 +104,14 @@ export function ReferralCard() {
           </button>
         </div>
 
-        {/* Progress */}
+        {/* Friend count (neutral, no reward implication) */}
         <div className="mb-4">
-          <div className="flex justify-between text-sm mb-1.5">
-            <span className="text-blue-100">
-              Пригласили {stats.completed} из {stats.target} друзей
-            </span>
-            {rewardUnlocked && (
-              <span className="text-green-300 font-medium">Награда получена!</span>
-            )}
-          </div>
-          <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-green-400 to-emerald-300 rounded-full transition-all duration-700 ease-out"
-              style={{ width: `${progress * 100}%` }}
-            />
-          </div>
+          <p className="text-sm text-blue-100">
+            Приглашено друзей: <span className="font-semibold text-white">{stats.totalInvited}</span>
+          </p>
+          <p className="text-xs text-blue-200 mt-1">
+            Поделитесь кодом — друзья получат доступ к скидкам рядом.
+          </p>
         </div>
 
         {/* Share button */}

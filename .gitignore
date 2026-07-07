@@ -53,6 +53,9 @@ sessions/
 logs/
 *.log
 .claude/worktrees/
+.claude/scheduled_tasks.lock
+.serena/
+.beads/.~issues.jsonl.*
 
 # audit artifacts
 /docs/audit/

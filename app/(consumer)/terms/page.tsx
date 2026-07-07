@@ -1,10 +1,12 @@
 import type { Metadata } from 'next'
+import { getLegalConfig } from '@/lib/legal'
 
 export const metadata: Metadata = {
   title: 'Условия использования — ГдеСейчас',
 }
 
 export default function TermsPage() {
+  const legal = getLegalConfig()
   return (
     <main className="min-h-screen bg-white">
       <div className="max-w-3xl mx-auto px-4 py-10">
@@ -16,7 +18,13 @@ export default function TermsPage() {
             <h2 className="text-lg font-semibold text-gray-900">1. Общие положения</h2>
             <p>
               Настоящие Условия использования (далее — Условия) регулируют отношения между пользователем
-              и сервисом ГдеСейчас (далее — Сервис), доступным по адресу echocity.vsedomatut.com.
+              и сервисом ГдеСейчас (далее — Сервис), доступным по адресу echocity.filippmiller.com.
+            </p>
+            <p>
+              Сервис предоставляется {legal.legalName || 'Оператором Сервиса'}
+              {legal.inn && ` (ИНН ${legal.inn})`}
+              {legal.ogrn && `, ОГРН ${legal.ogrn}`}
+              {legal.address && `, адрес: ${legal.address}`}.
             </p>
             <p>
               Регистрация в Сервисе означает полное и безоговорочное принятие настоящих Условий.
@@ -92,7 +100,15 @@ export default function TermsPage() {
           <section>
             <h2 className="text-lg font-semibold text-gray-900">9. Контакты</h2>
             <p>
-              По вопросам, связанным с использованием Сервиса: info@gdesejchas.ru
+              По вопросам, связанным с использованием Сервиса:{" "}
+              <a href={`mailto:${legal.supportEmail}`} className="text-brand-600 hover:underline">
+                {legal.supportEmail}
+              </a>
+              {legal.supportPhone && (
+                <> или по телефону <a href={`tel:${legal.supportPhone.replace(/\s/g, '')}`} className="text-brand-600 hover:underline">
+                  {legal.supportPhone}
+                </a></>
+              )}
             </p>
           </section>
         </div>

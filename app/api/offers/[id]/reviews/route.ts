@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { checkAndProgressMissions, checkBadgeEligibility } from '@/modules/gamification/service'
 import { awardReviewCoins } from '@/modules/reviews/rewards'
 import { getAllowedStoragePrefixes, hasRecentReview, isOwnStorageUrl } from '@/lib/reviews'
+import { createAuditEntry } from '@/lib/audit'
 
 const reviewSchema = z.object({
   redemptionId: z.string().cuid(),
@@ -14,6 +15,29 @@ const reviewSchema = z.object({
 })
 
 const DAY_MS = 24 * 60 * 60 * 1000
+
+async function logReviewRejection(
+  actorId: string,
+  actorRole: string,
+  offerId: string,
+  reason: string,
+  metadata: Record<string, unknown>,
+  req: NextRequest
+) {
+  try {
+    await createAuditEntry({
+      actorId,
+      actorRole,
+      action: 'REJECT',
+      entityType: 'OFFER_REVIEW',
+      entityId: offerId,
+      metadata: { reason, ...metadata },
+      req,
+    })
+  } catch {
+    // Audit failure must not block the response
+  }
+}
 
 /**
  * GET /api/offers/[id]/reviews — list published reviews for an offer (public, paginated)
@@ -117,6 +141,14 @@ export async function POST(
   }
 
   if (redemption.status !== 'SUCCESS') {
+    await logReviewRejection(
+      session.userId,
+      session.role,
+      offerId,
+      'MISSING_REDEMPTION_EVIDENCE',
+      { redemptionId, redemptionStatus: redemption.status },
+      request
+    )
     return NextResponse.json(
       { error: 'Можно оставить отзыв только на успешное использование' },
       { status: 400 }
@@ -143,6 +175,14 @@ export async function POST(
   })
 
   if (hasRecentReview(latestReview, new Date(), DAY_MS)) {
+    await logReviewRejection(
+      session.userId,
+      session.role,
+      offerId,
+      'RATE_LIMIT_ABUSE',
+      { lastReviewAt: latestReview?.createdAt },
+      request
+    )
     return NextResponse.json(
       { error: 'Вы уже оставляли отзыв на это предложение в последние 24 часа' },
       { status: 429 }
@@ -154,6 +194,14 @@ export async function POST(
     const allowedPrefixes = getAllowedStoragePrefixes()
     const invalidUrl = photoUrls.find((url) => !isOwnStorageUrl(url, allowedPrefixes))
     if (invalidUrl) {
+      await logReviewRejection(
+        session.userId,
+        session.role,
+        offerId,
+        'REJECTED_PHOTO_URL',
+        { invalidUrl },
+        request
+      )
       return NextResponse.json(
         { error: 'Фото должны быть загружены в хранилище приложения' },
         { status: 400 }

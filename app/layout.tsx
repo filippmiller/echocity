@@ -18,6 +18,7 @@ export const metadata: Metadata = {
   description: "Находите лучшие скидки в кафе, ресторанах и салонах вашего города. Активируйте через QR.",
   icons: {
     icon: '/favicon.svg',
+    apple: '/apple-touch-icon.png',
   },
   openGraph: {
     title: 'ГдеСейчас — скидки рядом с вами',

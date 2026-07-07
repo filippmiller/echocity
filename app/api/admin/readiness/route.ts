@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getSession } from '@/modules/auth/session'
+import { getLegalReadiness } from '@/lib/legal'
 import { promises as fs } from 'fs'
 import path from 'path'
 
@@ -18,6 +19,25 @@ const REQUIRED_ENV_KEYS = [
   'NEXT_PUBLIC_VAPID_PUBLIC_KEY',
   'VAPID_PRIVATE_KEY',
   'VAPID_SUBJECT',
+]
+
+const INTEGRATION_ENV_KEYS = [
+  'RESEND_API_KEY',
+  'EMAIL_FROM',
+  'SENTRY_DSN',
+  'NEXT_PUBLIC_SENTRY_DSN',
+  'YOKASSA_SHOP_ID',
+  'YOKASSA_SECRET_KEY',
+  'YOKASSA_WEBHOOK_SECRET',
+]
+
+const LEGAL_ENV_KEYS = [
+  'LEGAL_NAME',
+  'LEGAL_INN',
+  'LEGAL_OGRN',
+  'LEGAL_ADDRESS',
+  'SUPPORT_EMAIL',
+  'SUPPORT_PHONE',
 ]
 
 const BUILD_SHA = process.env.NEXT_PUBLIC_BUILD_SHA || process.env.BUILD_SHA || 'unknown'
@@ -59,7 +79,20 @@ export async function GET() {
     present: Boolean(process.env[key]),
   }))
 
+  const integrationChecklist = INTEGRATION_ENV_KEYS.map((key) => ({
+    key,
+    present: Boolean(process.env[key]),
+  }))
+
+  const legalChecklist = getLegalReadiness()
+
   const missing = envChecklist.filter((e) => !e.present).map((e) => e.key)
+  const integrationMissing = integrationChecklist
+    .filter((e) => !e.present)
+    .map((e) => e.key)
+  const legalMissing = legalChecklist
+    .filter((e) => !e.present)
+    .map((e) => e.key)
   const migrationStatus = await getMigrationStatus()
 
   const sentryConfigured = Boolean(
@@ -73,6 +106,16 @@ export async function GET() {
       checklist: envChecklist,
       complete: missing.length === 0,
       missing,
+    },
+    integrations: {
+      checklist: integrationChecklist,
+      complete: integrationMissing.length === 0,
+      missing: integrationMissing,
+    },
+    legal: {
+      checklist: legalChecklist,
+      complete: legalMissing.length === 0,
+      missing: legalMissing,
     },
     migrations: migrationStatus,
     observability: {

@@ -7,6 +7,8 @@ import { BenefitType, OfferVisibility } from '@prisma/client'
 
 const VALID_BENEFIT_TYPES = Object.values(BenefitType)
 const VALID_VISIBILITIES = Object.values(OfferVisibility)
+const VALID_SORTS = ['recommended', 'newest', 'endingSoon', 'nearest', 'rating'] as const
+type SortOption = (typeof VALID_SORTS)[number]
 
 function toRad(deg: number): number {
   return (deg * Math.PI) / 180
@@ -39,6 +41,8 @@ export async function GET(req: NextRequest) {
   const activeNow = req.nextUrl.searchParams.get('activeNow') === 'true'
   const userLat = req.nextUrl.searchParams.get('lat')
   const userLng = req.nextUrl.searchParams.get('lng')
+  const rawSort = req.nextUrl.searchParams.get('sort')
+  const sort: SortOption = VALID_SORTS.includes(rawSort as SortOption) ? (rawSort as SortOption) : 'recommended'
   const limit = Math.min(Math.max(parseInt(req.nextUrl.searchParams.get('limit') || '50') || 50, 1), 100)
   const offset = Math.max(parseInt(req.nextUrl.searchParams.get('offset') || '0') || 0, 0)
 
@@ -138,7 +142,47 @@ export async function GET(req: NextRequest) {
         engagementScore: Math.round(engagementScore),
       }
     })
-    .sort((a: any, b: any) => b.engagementScore - a.engagementScore)
+    .sort((a: EnrichedOffer, b: EnrichedOffer) => sortOffers(a, b, sort))
 
-  return NextResponse.json({ offers })
+  return NextResponse.json({ offers, sort })
+}
+
+interface EnrichedOffer {
+  createdAt: Date
+  endAt: Date | null
+  expiresAt: string | null
+  engagementScore: number
+  avgRating: number | null
+  reviewCount: number
+  distance: number | null
+}
+
+function sortOffers(a: EnrichedOffer, b: EnrichedOffer, sort: SortOption): number {
+  switch (sort) {
+    case 'newest':
+      return b.createdAt.getTime() - a.createdAt.getTime()
+    case 'endingSoon': {
+      const aExpires = a.expiresAt ? new Date(a.expiresAt).getTime() : null
+      const bExpires = b.expiresAt ? new Date(b.expiresAt).getTime() : null
+      if (aExpires == null && bExpires == null) return b.engagementScore - a.engagementScore
+      if (aExpires == null) return 1
+      if (bExpires == null) return -1
+      return aExpires - bExpires
+    }
+    case 'nearest': {
+      if (a.distance != null && b.distance != null) return a.distance - b.distance
+      if (a.distance != null) return -1
+      if (b.distance != null) return 1
+      return b.engagementScore - a.engagementScore
+    }
+    case 'rating': {
+      const ratingA = a.avgRating ?? 0
+      const ratingB = b.avgRating ?? 0
+      if (ratingB !== ratingA) return ratingB - ratingA
+      return (b.reviewCount ?? 0) - (a.reviewCount ?? 0)
+    }
+    case 'recommended':
+    default:
+      return b.engagementScore - a.engagementScore
+  }
 }
