@@ -30,7 +30,4 @@ ENV HOSTNAME="0.0.0.0"
 USER app
 
 # Apply committed Prisma migrations and start Next.js.
-# If production has legacy migration drift, reconcile it once using the
-# documented operator procedure before deploying this image. Do not run
-# `prisma db push --accept-data-loss` from application startup.
-CMD ["sh", "-c", "npx prisma migrate deploy && npm start"]
+CMD ["sh", "scripts/prod-start.sh"]
