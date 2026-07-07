@@ -2,6 +2,8 @@ export const dynamic = 'force-dynamic'
 import { redirect } from 'next/navigation'
 import { getSession } from '@/modules/auth/session'
 import { prisma } from '@/lib/prisma'
+import { getBusinessAccessSummary } from '@/lib/business-access'
+import { canManageOffers, canManageStaff, canScanRedemptions } from '@/lib/permissions'
 import Link from 'next/link'
 import { DemandSuggestionBanner } from '@/components/DemandSuggestionBanner'
 import { CompetitionInsight } from '@/components/CompetitionInsight'
@@ -17,17 +19,17 @@ export default async function BusinessDashboardPage() {
   const session = await getSession()
 
   if (!session) redirect('/auth/login')
-  if (session.role !== 'BUSINESS_OWNER') redirect('/')
+
+  const { merchantIds, access } = await getBusinessAccessSummary(session)
+  if (!canScanRedemptions(access)) redirect('/')
 
   const businesses = await prisma.business.findMany({
-    where: { ownerId: session.userId },
+    where: { id: { in: merchantIds } },
     include: {
       places: { where: { isActive: true }, take: 5, orderBy: { createdAt: 'desc' } },
       _count: { select: { places: true, offers: true, redemptions: true } },
     },
   })
-
-  const merchantIds = businesses.map((b) => b.id)
   const totalPlaces = businesses.reduce((sum, biz) => sum + biz._count.places, 0)
   const totalOffers = businesses.reduce((sum, biz) => sum + biz._count.offers, 0)
 
@@ -39,7 +41,7 @@ export default async function BusinessDashboardPage() {
 
   const monthStart = new Date(todayStart.getFullYear(), todayStart.getMonth(), 1)
 
-  // Run all analytics queries in parallel
+  // Run base analytics queries in parallel
   const [
     todayRedemptions,
     weeklyUniqueUsers,
@@ -84,6 +86,27 @@ export default async function BusinessDashboardPage() {
       select: { redeemedAt: true },
     }),
   ])
+
+  const offerIds =
+    merchantIds.length > 0
+      ? (await prisma.offer.findMany({
+          where: { merchantId: { in: merchantIds } },
+          select: { id: true },
+        })).map((offer) => offer.id)
+      : []
+
+  // Offer impressions and saves depend on the merchant's offer IDs
+  const [overallViews, overallSaves] =
+    offerIds.length > 0
+      ? await Promise.all([
+          prisma.offerView.count({
+            where: { offerId: { in: offerIds } },
+          }),
+          prisma.offerSave.count({
+            where: { offerId: { in: offerIds } },
+          }),
+        ])
+      : [0, 0]
 
   // Average check calculation
   const avgCheck = avgOrderResult._avg.orderAmount
@@ -139,6 +162,16 @@ export default async function BusinessDashboardPage() {
           <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">За неделю</p>
           <p className="text-2xl font-bold text-brand-600 mt-1">{weeklyUniqueUsers.length}</p>
           <p className="text-xs text-gray-400 mt-0.5">уник. клиентов</p>
+        </div>
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Просмотры</p>
+          <p className="text-2xl font-bold text-gray-900 mt-1">{overallViews}</p>
+          <p className="text-xs text-gray-400 mt-0.5">всего по офферам</p>
+        </div>
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Сохранения</p>
+          <p className="text-2xl font-bold text-brand-600 mt-1">{overallSaves}</p>
+          <p className="text-xs text-gray-400 mt-0.5">в избранное</p>
         </div>
       </div>
 
@@ -205,7 +238,7 @@ export default async function BusinessDashboardPage() {
       </div>
 
       {/* Quick actions */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+      <div className={`grid grid-cols-1 gap-3 mb-6 ${canManageOffers(access) || canManageStaff(access) ? 'sm:grid-cols-2' : ''} ${canManageOffers(access) && canManageStaff(access) ? 'lg:grid-cols-3' : ''}`}>
         <Link
           href="/business/scanner"
           className="flex items-center gap-3 bg-deal-savings text-white rounded-xl p-4 hover:opacity-90 transition-opacity active:scale-[0.98]"
@@ -221,35 +254,39 @@ export default async function BusinessDashboardPage() {
           </div>
         </Link>
 
-        <Link
-          href="/business/offers/create"
-          className="flex items-center gap-3 bg-brand-600 text-white rounded-xl p-4 hover:opacity-90 transition-opacity active:scale-[0.98]"
-        >
-          <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center shrink-0">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-            </svg>
-          </div>
-          <div>
-            <p className="font-semibold">Новое предложение</p>
-            <p className="text-sm opacity-80">Создать акцию</p>
-          </div>
-        </Link>
+        {canManageOffers(access) && (
+          <Link
+            href="/business/offers/create"
+            className="flex items-center gap-3 bg-brand-600 text-white rounded-xl p-4 hover:opacity-90 transition-opacity active:scale-[0.98]"
+          >
+            <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center shrink-0">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
+            </div>
+            <div>
+              <p className="font-semibold">Новое предложение</p>
+              <p className="text-sm opacity-80">Создать акцию</p>
+            </div>
+          </Link>
+        )}
 
-        <Link
-          href="/business/staff"
-          className="flex items-center gap-3 bg-deal-premium text-white rounded-xl p-4 hover:opacity-90 transition-opacity active:scale-[0.98]"
-        >
-          <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center shrink-0">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-          </div>
-          <div>
-            <p className="font-semibold">Сотрудники</p>
-            <p className="text-sm opacity-80">Управление персоналом</p>
-          </div>
-        </Link>
+        {canManageStaff(access) && (
+          <Link
+            href="/business/staff"
+            className="flex items-center gap-3 bg-deal-premium text-white rounded-xl p-4 hover:opacity-90 transition-opacity active:scale-[0.98]"
+          >
+            <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center shrink-0">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+            </div>
+            <div>
+              <p className="font-semibold">Сотрудники</p>
+              <p className="text-sm opacity-80">Управление персоналом</p>
+            </div>
+          </Link>
+        )}
       </div>
 
       {/* Businesses list */}

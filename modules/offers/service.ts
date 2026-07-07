@@ -96,6 +96,31 @@ export async function rejectOffer(offerId: string, reason: string) {
   })
 }
 
+export async function requestOfferChanges(
+  offerId: string,
+  input: { reason: string; requestedById: string },
+) {
+  const offer = await prisma.offer.findUnique({ where: { id: offerId } })
+  if (!offer) throw new Error('Offer not found')
+
+  const existingMetadata = (offer.metadata as Record<string, unknown> | null | undefined) ?? {}
+
+  return prisma.offer.update({
+    where: { id: offerId },
+    data: {
+      approvalStatus: 'CHANGES_REQUESTED',
+      metadata: {
+        ...existingMetadata,
+        changesRequest: {
+          reason: input.reason,
+          requestedById: input.requestedById,
+          requestedAt: new Date().toISOString(),
+        },
+      },
+    },
+  })
+}
+
 export async function pauseOffer(offerId: string, userId: string) {
   const offer = await prisma.offer.findUnique({ where: { id: offerId }, include: { merchant: true } })
   if (!offer) throw new Error('Offer not found')

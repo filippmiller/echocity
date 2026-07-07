@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getSession } from '@/modules/auth/session'
 import { prisma } from '@/lib/prisma'
+import { createAuditEntry, AuditAction } from '@/lib/audit'
 import type { ComplaintStatus } from '@prisma/client'
 
 const VALID_STATUSES: ComplaintStatus[] = ['OPEN', 'IN_REVIEW', 'RESOLVED', 'DISMISSED']
@@ -55,6 +56,27 @@ export async function PATCH(
   const complaint = await prisma.complaint.update({
     where: { id },
     data: updateData,
+  })
+
+  await createAuditEntry({
+    actorId: session.userId,
+    actorRole: session.role,
+    action: AuditAction.UPDATE,
+    entityType: 'Complaint',
+    entityId: id,
+    oldValue: {
+      status: existing.status,
+      adminNote: existing.adminNote,
+      resolvedAt: existing.resolvedAt?.toISOString() ?? null,
+      resolvedById: existing.resolvedById,
+    },
+    newValue: {
+      status: complaint.status,
+      adminNote: complaint.adminNote,
+      resolvedAt: complaint.resolvedAt?.toISOString() ?? null,
+      resolvedById: complaint.resolvedById,
+    },
+    req,
   })
 
   return NextResponse.json({ complaint })

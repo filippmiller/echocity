@@ -2,6 +2,8 @@ export const dynamic = 'force-dynamic'
 import { redirect } from 'next/navigation'
 import { getSession } from '@/modules/auth/session'
 import { prisma } from '@/lib/prisma'
+import { getBusinessAccessSummary } from '@/lib/business-access'
+import { canViewAnalytics } from '@/lib/permissions'
 import Link from 'next/link'
 import RedemptionHeatmap from '@/components/RedemptionHeatmap'
 
@@ -14,14 +16,9 @@ export default async function BusinessAnalyticsPage() {
   const session = await getSession()
 
   if (!session) redirect('/auth/login')
-  if (session.role !== 'BUSINESS_OWNER') redirect('/')
 
-  const businesses = await prisma.business.findMany({
-    where: { ownerId: session.userId },
-    select: { id: true },
-  })
-
-  const merchantIds = businesses.map((b) => b.id)
+  const { merchantIds, access } = await getBusinessAccessSummary(session)
+  if (!canViewAnalytics(access)) redirect('/')
 
   if (merchantIds.length === 0) {
     return (
@@ -45,7 +42,7 @@ export default async function BusinessAnalyticsPage() {
   const fourWeeksAgo = new Date(now)
   fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28)
 
-  // Run all queries in parallel
+  // Run base queries in parallel
   const [
     redemptionsRecent,
     allOffers,
@@ -123,6 +120,31 @@ export default async function BusinessAnalyticsPage() {
     }),
   ])
 
+  const offerIds = allOffers.map((offer) => offer.id)
+
+  // Offer impressions and saves depend on the merchant's offer IDs
+  const [offerViewCounts, offerSaveCounts, overallViews, overallSaves] =
+    offerIds.length > 0
+      ? await Promise.all([
+          prisma.offerView.groupBy({
+            by: ['offerId'],
+            _count: true,
+            where: { offerId: { in: offerIds } },
+          }),
+          prisma.offerSave.groupBy({
+            by: ['offerId'],
+            _count: true,
+            where: { offerId: { in: offerIds } },
+          }),
+          prisma.offerView.count({
+            where: { offerId: { in: offerIds } },
+          }),
+          prisma.offerSave.count({
+            where: { offerId: { in: offerIds } },
+          }),
+        ])
+      : [[], [], 0, 0]
+
   // === Summary stats ===
   const totalUniqueCustomers = uniqueCustomers.length
   const avgRating = overallAvgRating._avg.rating
@@ -169,11 +191,22 @@ export default async function BusinessAnalyticsPage() {
   const ratingMap = new Map(
     offerRatings.map((r) => [r.offerId, { avg: r._avg.rating, count: r._count.id }])
   )
+  const viewCountMap = new Map(
+    offerViewCounts.map((r) => [r.offerId, r._count])
+  )
+  const saveCountMap = new Map(
+    offerSaveCounts.map((r) => [r.offerId, r._count])
+  )
   const offerPerformance = allOffers
     .map((offer) => ({
       id: offer.id,
       title: offer.title,
       redemptions: redemptionCountMap.get(offer.id) || 0,
+      views: viewCountMap.get(offer.id) || 0,
+      saves: saveCountMap.get(offer.id) || 0,
+      conversionRate: (viewCountMap.get(offer.id) || 0) > 0
+        ? Math.round(((redemptionCountMap.get(offer.id) || 0) / (viewCountMap.get(offer.id) || 1)) * 1000) / 10
+        : 0,
       avgRating: ratingMap.get(offer.id)?.avg
         ? Math.round((ratingMap.get(offer.id)?.avg || 0) * 10) / 10
         : null,
@@ -183,6 +216,21 @@ export default async function BusinessAnalyticsPage() {
     }))
     .sort((a, b) => b.redemptions - a.redemptions)
     .slice(0, 10)
+
+  const topOffersByViews = allOffers
+    .map((offer) => ({
+      id: offer.id,
+      title: offer.title,
+      views: viewCountMap.get(offer.id) || 0,
+      saves: saveCountMap.get(offer.id) || 0,
+      redemptions: redemptionCountMap.get(offer.id) || 0,
+    }))
+    .sort((a, b) => b.views - a.views)
+    .slice(0, 5)
+
+  const conversionRate = overallViews > 0
+    ? Math.round((totalRedemptions / overallViews) * 1000) / 10
+    : 0
 
   // === Customer retention ===
   const totalCust = allTimeRedemptionsByUser.length
@@ -250,6 +298,31 @@ export default async function BusinessAnalyticsPage() {
           <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Экономия клиентам</p>
           <p className="text-2xl font-bold text-deal-savings mt-1">
             {totalSavingsKopecks > 0 ? formatRubles(totalSavingsKopecks) : '\u2014'}
+          </p>
+        </div>
+      </div>
+
+      {/* (a2) Engagement stats row */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Просмотры</p>
+          <p className="text-2xl font-bold text-gray-900 mt-1">{overallViews}</p>
+          <p className="text-xs text-gray-400 mt-0.5">всего по офферам</p>
+        </div>
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Сохранения</p>
+          <p className="text-2xl font-bold text-brand-600 mt-1">{overallSaves}</p>
+          <p className="text-xs text-gray-400 mt-0.5">в избранное</p>
+        </div>
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Конверсия</p>
+          <p className="text-2xl font-bold text-deal-savings mt-1">{conversionRate}%</p>
+          <p className="text-xs text-gray-400 mt-0.5">использований / просмотры</p>
+        </div>
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">CTR сохранений</p>
+          <p className="text-2xl font-bold text-yellow-500 mt-1">
+            {overallViews > 0 ? Math.round((overallSaves / overallViews) * 1000) / 10 : 0}%
           </p>
         </div>
       </div>
@@ -357,7 +430,35 @@ export default async function BusinessAnalyticsPage() {
         </div>
       </div>
 
-      {/* (d) Offer performance table */}
+      {/* (d1) Top offers by views */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-6">
+        <div className="px-5 py-4 border-b border-gray-100">
+          <h2 className="text-sm font-semibold text-gray-900">Топ предложений по просмотрам</h2>
+        </div>
+        {topOffersByViews.length === 0 ? (
+          <div className="px-5 py-6 text-center text-sm text-gray-400">
+            Нет данных по просмотрам
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-100">
+            {topOffersByViews.map((offer, idx) => (
+              <div key={offer.id} className="px-5 py-3 flex items-center justify-between">
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="text-xs font-bold text-gray-400 w-4">{idx + 1}</span>
+                  <span className="text-sm font-medium text-gray-900 truncate">{offer.title}</span>
+                </div>
+                <div className="flex items-center gap-4 text-xs text-gray-500 shrink-0">
+                  <span>{offer.views} просмотров</span>
+                  <span>{offer.saves} сохранений</span>
+                  <span>{offer.redemptions} использований</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* (d2) Offer performance table */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-6">
         <div className="px-5 py-4 border-b border-gray-100">
           <h2 className="text-sm font-semibold text-gray-900">Эффективность предложений</h2>
@@ -372,9 +473,11 @@ export default async function BusinessAnalyticsPage() {
               <thead>
                 <tr className="text-left text-xs text-gray-500 uppercase tracking-wide">
                   <th className="px-5 py-3 font-medium">Предложение</th>
+                  <th className="px-3 py-3 font-medium text-center">Просмотры</th>
+                  <th className="px-3 py-3 font-medium text-center">Сохранения</th>
                   <th className="px-3 py-3 font-medium text-center">Использований</th>
+                  <th className="px-3 py-3 font-medium text-center">Конверсия</th>
                   <th className="px-3 py-3 font-medium text-center">Оценка</th>
-                  <th className="px-3 py-3 font-medium text-center">Отзывов</th>
                   <th className="px-5 py-3 font-medium text-right">Скидка</th>
                 </tr>
               </thead>
@@ -384,7 +487,10 @@ export default async function BusinessAnalyticsPage() {
                     <td className="px-5 py-3 font-medium text-gray-900 max-w-[200px] truncate">
                       {offer.title}
                     </td>
+                    <td className="px-3 py-3 text-center text-gray-700">{offer.views}</td>
+                    <td className="px-3 py-3 text-center text-gray-700">{offer.saves}</td>
                     <td className="px-3 py-3 text-center text-gray-700">{offer.redemptions}</td>
+                    <td className="px-3 py-3 text-center text-gray-700">{offer.conversionRate}%</td>
                     <td className="px-3 py-3 text-center">
                       {offer.avgRating !== null ? (
                         <span className="inline-flex items-center gap-0.5 text-yellow-600 font-medium">
@@ -397,7 +503,6 @@ export default async function BusinessAnalyticsPage() {
                         <span className="text-gray-300">&mdash;</span>
                       )}
                     </td>
-                    <td className="px-3 py-3 text-center text-gray-500">{offer.reviewCount}</td>
                     <td className="px-5 py-3 text-right text-gray-500">
                       {offer.benefitType === 'PERCENT'
                         ? `${offer.benefitValue}%`

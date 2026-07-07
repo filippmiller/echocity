@@ -1,28 +1,18 @@
 import { NextResponse } from 'next/server'
 import { getSession } from '@/modules/auth/session'
 import { prisma } from '@/lib/prisma'
+import { getBusinessAccessSummary } from '@/lib/business-access'
+import { canViewAnalytics } from '@/lib/permissions'
 
 export async function GET() {
   const session = await getSession()
-  if (!session || (session.role !== 'BUSINESS_OWNER' && session.role !== 'MERCHANT_STAFF')) {
+  if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  let merchantIds: string[] = []
-
-  if (session.role === 'BUSINESS_OWNER') {
-    const businesses = await prisma.business.findMany({
-      where: { ownerId: session.userId },
-      select: { id: true },
-    })
-    merchantIds = businesses.map((b) => b.id)
-  } else {
-    // MERCHANT_STAFF — get businesses they're staff of
-    const staffRecords = await prisma.merchantStaff.findMany({
-      where: { userId: session.userId, isActive: true },
-      select: { merchantId: true },
-    })
-    merchantIds = staffRecords.map((s) => s.merchantId)
+  const { merchantIds, access } = await getBusinessAccessSummary(session)
+  if (!canViewAnalytics(access)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   if (merchantIds.length === 0) {
@@ -33,6 +23,12 @@ export async function GET() {
       weeklyTrend: [],
       savingsGenerated: 0,
       demandStats: { totalDemands: 0, respondedCount: 0, conversionRate: 0 },
+      viewsPerOffer: [],
+      savesPerOffer: [],
+      conversionRate: 0,
+      topOffersByViews: [],
+      overallViews: 0,
+      overallSaves: 0,
     })
   }
 
@@ -41,7 +37,7 @@ export async function GET() {
   const fourWeeksAgo = new Date(now)
   fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28)
 
-  // Run all queries in parallel
+  // Run all base queries in parallel
   const [
     redemptionsThisMonth,
     allOffers,
@@ -117,6 +113,31 @@ export async function GET() {
     }),
   ])
 
+  const offerIds = allOffers.map((offer) => offer.id)
+
+  // Offer impression/save counts depend on the merchant's offer IDs
+  const [offerViewCounts, offerSaveCounts, overallViews, overallSaves] =
+    offerIds.length > 0
+      ? await Promise.all([
+          prisma.offerView.groupBy({
+            by: ['offerId'],
+            _count: true,
+            where: { offerId: { in: offerIds } },
+          }),
+          prisma.offerSave.groupBy({
+            by: ['offerId'],
+            _count: true,
+            where: { offerId: { in: offerIds } },
+          }),
+          prisma.offerView.count({
+            where: { offerId: { in: offerIds } },
+          }),
+          prisma.offerSave.count({
+            where: { offerId: { in: offerIds } },
+          }),
+        ])
+      : [[], [], 0, 0]
+
   // === Hourly heatmap (last 30 days) ===
   const hourlyMap: Record<number, number> = {}
   for (let h = 0; h < 24; h++) hourlyMap[h] = 0
@@ -141,15 +162,26 @@ export async function GET() {
   const ratingMap = new Map(
     offerRatings.map((r) => [r.offerId, { avg: r._avg.rating, count: r._count.id }])
   )
+  const viewCountMap = new Map(
+    offerViewCounts.map((r) => [r.offerId, r._count])
+  )
+  const saveCountMap = new Map(
+    offerSaveCounts.map((r) => [r.offerId, r._count])
+  )
 
   const offerPerformance = allOffers
     .map((offer) => {
       const redemptions = redemptionCountMap.get(offer.id) || 0
+      const views = viewCountMap.get(offer.id) || 0
+      const saves = saveCountMap.get(offer.id) || 0
       const ratingData = ratingMap.get(offer.id)
       return {
         offerId: offer.id,
         title: offer.title,
         redemptions,
+        views,
+        saves,
+        conversionRate: views > 0 ? Math.round((redemptions / views) * 1000) / 10 : 0,
         avgRating: ratingData?.avg ? Math.round(ratingData.avg * 10) / 10 : null,
         reviewCount: ratingData?.count || 0,
         benefitType: offer.benefitType,
@@ -158,6 +190,29 @@ export async function GET() {
     })
     .sort((a, b) => b.redemptions - a.redemptions)
     .slice(0, 10)
+
+  const viewsPerOffer = allOffers
+    .map((offer) => ({
+      offerId: offer.id,
+      title: offer.title,
+      views: viewCountMap.get(offer.id) || 0,
+    }))
+    .sort((a, b) => b.views - a.views)
+    .slice(0, 10)
+
+  const savesPerOffer = allOffers
+    .map((offer) => ({
+      offerId: offer.id,
+      title: offer.title,
+      saves: saveCountMap.get(offer.id) || 0,
+    }))
+    .sort((a, b) => b.saves - a.saves)
+    .slice(0, 10)
+
+  const topOffersByViews = viewsPerOffer.slice(0, 5)
+  const conversionRate = overallViews > 0
+    ? Math.round((offerRedemptionCounts.reduce((sum, r) => sum + r._count.id, 0) / overallViews) * 1000) / 10
+    : 0
 
   // === Customer retention ===
   const totalCustomers = allTimeRedemptionsByUser.length
@@ -216,5 +271,11 @@ export async function GET() {
       respondedCount: respondedDemands,
       conversionRate: demandConversionRate,
     },
+    viewsPerOffer,
+    savesPerOffer,
+    conversionRate,
+    topOffersByViews,
+    overallViews,
+    overallSaves,
   })
 }

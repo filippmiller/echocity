@@ -3,18 +3,25 @@ import { getSession } from '@/modules/auth/session'
 import { prisma } from '@/lib/prisma'
 import { createOffer } from '@/modules/offers/service'
 import { createOfferSchema } from '@/modules/offers/validation'
+import { getBusinessAccess } from '@/lib/business-access'
+import { canManageOffers } from '@/lib/permissions'
 
 export async function GET() {
   const session = await getSession()
-  if (!session || session.role !== 'BUSINESS_OWNER') {
+  if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const businesses = await prisma.business.findMany({
-    where: { ownerId: session.userId },
+  const accessible = await prisma.business.findMany({
+    where: {
+      OR: [
+        { ownerId: session.userId },
+        { staff: { some: { userId: session.userId, isActive: true } } },
+      ],
+    },
     select: { id: true },
   })
-  const merchantIds = businesses.map((b) => b.id)
+  const merchantIds = accessible.map((b) => b.id)
 
   const offers = await prisma.offer.findMany({
     where: { merchantId: { in: merchantIds } },
@@ -31,7 +38,7 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   const session = await getSession()
-  if (!session || session.role !== 'BUSINESS_OWNER') {
+  if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -46,12 +53,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Validation failed', details: parsed.error.flatten() }, { status: 400 })
   }
 
-  // Verify the merchant belongs to this user
-  const business = await prisma.business.findFirst({
-    where: { id: parsed.data.merchantId, ownerId: session.userId },
-  })
-  if (!business) {
-    return NextResponse.json({ error: 'Business not found or not owned by you' }, { status: 403 })
+  // Verify the user can manage offers for this merchant
+  const { access } = await getBusinessAccess(session, parsed.data.merchantId, parsed.data.branchId)
+  if (!canManageOffers(access)) {
+    return NextResponse.json({ error: 'Business not found or access denied' }, { status: 403 })
   }
 
   const branch = await prisma.place.findFirst({

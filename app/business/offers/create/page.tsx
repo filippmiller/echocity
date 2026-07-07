@@ -10,8 +10,10 @@ export default function CreateOfferPage() {
   const [merchantData, setMerchantData] = useState<{ merchantId: string; branches: Array<{ id: string; title: string; address: string; businessType?: string }> } | null>(null)
   const [loading, setLoading] = useState(true)
 
+  const canCreate = Boolean(user && (user.role === 'BUSINESS_OWNER' || user.staffRole === 'MANAGER'))
+
   useEffect(() => {
-    if (!user || user.role !== 'BUSINESS_OWNER') return
+    if (!canCreate) return
 
     fetch('/api/business/places')
       .then((r) => r.json())
@@ -44,7 +46,7 @@ export default function CreateOfferPage() {
     )
   }
 
-  if (!user || user.role !== 'BUSINESS_OWNER') {
+  if (!canCreate) {
     return (
       <div className="px-4 py-8 sm:px-6 max-w-lg mx-auto">
         <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 text-sm">

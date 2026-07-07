@@ -2,6 +2,8 @@ export const dynamic = 'force-dynamic'
 import { redirect } from 'next/navigation'
 import { getSession } from '@/modules/auth/session'
 import { prisma } from '@/lib/prisma'
+import { getBusinessAccessSummary } from '@/lib/business-access'
+import { canManagePlaces } from '@/lib/permissions'
 import Link from 'next/link'
 import YandexBusinessVerification from '@/components/YandexBusinessVerification'
 
@@ -12,13 +14,14 @@ export default async function BusinessPlacesPage() {
     redirect('/auth/login')
   }
 
-  if (session.role !== 'BUSINESS_OWNER') {
+  const { merchantIds, access } = await getBusinessAccessSummary(session)
+  if (!canManagePlaces(access)) {
     redirect('/')
   }
 
   const businesses = await prisma.business.findMany({
     where: {
-      ownerId: session.userId,
+      id: { in: merchantIds },
     },
     select: {
       id: true,

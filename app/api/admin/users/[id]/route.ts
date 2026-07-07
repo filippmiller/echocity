@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getSession } from '@/modules/auth/session'
 import { prisma } from '@/lib/prisma'
+import { createAuditEntry, AuditAction } from '@/lib/audit'
 import type { Role } from '@prisma/client'
 
 const VALID_ROLES: Role[] = ['ADMIN', 'CITIZEN', 'BUSINESS_OWNER', 'MERCHANT_STAFF']
@@ -183,6 +184,23 @@ export async function PATCH(
       role: true,
       isActive: true,
     },
+  })
+
+  await createAuditEntry({
+    actorId: session.userId,
+    actorRole: session.role,
+    action: AuditAction.UPDATE,
+    entityType: 'User',
+    entityId: id,
+    oldValue: {
+      role: existing.role,
+      isActive: existing.isActive,
+    },
+    newValue: {
+      role: updated.role,
+      isActive: updated.isActive,
+    },
+    req,
   })
 
   return NextResponse.json({ user: updated })

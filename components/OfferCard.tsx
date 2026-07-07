@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useEffect, useRef } from 'react'
 import { Clock, Users, Flame, Globe, Train, Star, BadgeCheck, Navigation } from 'lucide-react'
 import { FavoriteButton } from '@/components/FavoriteButton'
 import { VerifiedBadge } from '@/components/VerifiedBadge'
@@ -47,6 +48,9 @@ type ScheduleStatus =
   | { kind: 'tomorrow' }
   | { kind: 'no_schedule' }
 
+// Simple session-level dedup for offer impression tracking from cards.
+const trackedOfferIds = new Set<string>()
+
 function getMoscowInfo(): { weekday: number; timeStr: string } {
   const now = new Date()
   const moscow = new Date(now.getTime() + 3 * 60 * 60_000)
@@ -92,6 +96,7 @@ export function OfferCard({
   redemptionChannel, schedules, nearestMetro, isVerified, isTrending, reviewCount,
   avgRating, branchLat, branchLng, metadata,
 }: OfferCardProps) {
+  const hasScheduledTrack = useRef(false)
   const badge = getBenefitBadge(benefitType, benefitValue)
   const estimatedSavings = getEstimatedSavings(benefitType, benefitValue, metadata)
   const mapUrl = branchLat != null && branchLng != null
@@ -104,6 +109,22 @@ export function OfferCard({
     : 0
   const isAlmostGone = utilizationPercent >= 80
   const scheduleStatus = schedules && schedules.length > 0 ? getScheduleStatus(schedules) : null
+
+  useEffect(() => {
+    if (hasScheduledTrack.current || trackedOfferIds.has(id)) return
+    hasScheduledTrack.current = true
+    trackedOfferIds.add(id)
+
+    const timer = setTimeout(() => {
+      fetch('/api/analytics/offer-view', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ offerId: id, source: 'list' }),
+      }).catch(() => {})
+    }, 500)
+
+    return () => clearTimeout(timer)
+  }, [id])
 
   return (
     <Link href={`/offers/${id}`} className="block group" onClick={hapticTap}>

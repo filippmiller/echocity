@@ -44,8 +44,10 @@ export default function BusinessOffersPage() {
   const [offers, setOffers] = useState<OfferRow[]>([])
   const [loading, setLoading] = useState(true)
 
+  const canManage = Boolean(user && (user.role === 'BUSINESS_OWNER' || user.staffRole === 'MANAGER'))
+
   useEffect(() => {
-    if (!user || user.role !== 'BUSINESS_OWNER') return
+    if (!user || (user.role !== 'BUSINESS_OWNER' && user.role !== 'MERCHANT_STAFF')) return
     fetch('/api/business/offers')
       .then((r) => r.json())
       .then((data) => { setOffers(data.offers || []); setLoading(false) })
@@ -91,12 +93,14 @@ export default function BusinessOffersPage() {
     <div className="px-4 py-6 sm:px-6">
       <div className="flex items-center justify-between mb-5">
         <h1 className="text-2xl font-bold text-gray-900">Мои предложения</h1>
-        <Link
-          href="/business/offers/create"
-          className="bg-brand-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-brand-700 transition-colors active:scale-[0.98]"
-        >
-          Создать
-        </Link>
+        {canManage && (
+          <Link
+            href="/business/offers/create"
+            className="bg-brand-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-brand-700 transition-colors active:scale-[0.98]"
+          >
+            Создать
+          </Link>
+        )}
       </div>
 
       {offers.length === 0 ? (
@@ -108,12 +112,14 @@ export default function BusinessOffersPage() {
             </svg>
           </div>
           <p className="text-gray-600 mb-4">У вас пока нет предложений</p>
-          <Link
-            href="/business/offers/create"
-            className="inline-block bg-brand-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-brand-700 transition-colors"
-          >
-            Создать первое предложение
-          </Link>
+          {canManage && (
+            <Link
+              href="/business/offers/create"
+              className="inline-block bg-brand-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-brand-700 transition-colors"
+            >
+              Создать первое предложение
+            </Link>
+          )}
         </div>
       ) : (
         <>
@@ -136,26 +142,28 @@ export default function BusinessOffersPage() {
                   <span className={`px-2 py-0.5 rounded text-xs font-medium ${STATUS_COLORS[offer.lifecycleStatus] || ''}`}>
                     {STATUS_LABELS[offer.lifecycleStatus] || offer.lifecycleStatus}
                   </span>
-                  <div className="flex gap-2">
-                    {offer.approvalStatus === 'DRAFT' && (
-                      <button onClick={() => handleAction(offer.id, 'submit')} className="text-sm text-brand-600 font-medium hover:underline">
-                        Отправить
+                  {canManage && (
+                    <div className="flex gap-2">
+                      {offer.approvalStatus === 'DRAFT' && (
+                        <button onClick={() => handleAction(offer.id, 'submit')} className="text-sm text-brand-600 font-medium hover:underline">
+                          Отправить
+                        </button>
+                      )}
+                      {offer.lifecycleStatus === 'ACTIVE' && (
+                        <button onClick={() => handleAction(offer.id, 'pause')} className="text-sm text-deal-urgent font-medium hover:underline">
+                          Пауза
+                        </button>
+                      )}
+                      {offer.lifecycleStatus === 'PAUSED' && (
+                        <button onClick={() => handleAction(offer.id, 'resume')} className="text-sm text-deal-savings font-medium hover:underline">
+                          Возобновить
+                        </button>
+                      )}
+                      <button onClick={() => handleAction(offer.id, 'duplicate')} className="text-sm text-gray-600 font-medium hover:underline">
+                        Повторить
                       </button>
-                    )}
-                    {offer.lifecycleStatus === 'ACTIVE' && (
-                      <button onClick={() => handleAction(offer.id, 'pause')} className="text-sm text-deal-urgent font-medium hover:underline">
-                        Пауза
-                      </button>
-                    )}
-                    {offer.lifecycleStatus === 'PAUSED' && (
-                      <button onClick={() => handleAction(offer.id, 'resume')} className="text-sm text-deal-savings font-medium hover:underline">
-                        Возобновить
-                      </button>
-                    )}
-                    <button onClick={() => handleAction(offer.id, 'duplicate')} className="text-sm text-gray-600 font-medium hover:underline">
-                      Повторить
-                    </button>
-                  </div>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -193,24 +201,28 @@ export default function BusinessOffersPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right space-x-2">
-                      {offer.approvalStatus === 'DRAFT' && (
-                        <button onClick={() => handleAction(offer.id, 'submit')} className="text-xs text-brand-600 font-medium hover:underline">
-                          Отправить
-                        </button>
+                      {canManage && (
+                        <>
+                          {offer.approvalStatus === 'DRAFT' && (
+                            <button onClick={() => handleAction(offer.id, 'submit')} className="text-xs text-brand-600 font-medium hover:underline">
+                              Отправить
+                            </button>
+                          )}
+                          {offer.lifecycleStatus === 'ACTIVE' && (
+                            <button onClick={() => handleAction(offer.id, 'pause')} className="text-xs text-deal-urgent font-medium hover:underline">
+                              Пауза
+                            </button>
+                          )}
+                          {offer.lifecycleStatus === 'PAUSED' && (
+                            <button onClick={() => handleAction(offer.id, 'resume')} className="text-xs text-deal-savings font-medium hover:underline">
+                              Возобновить
+                            </button>
+                          )}
+                          <button onClick={() => handleAction(offer.id, 'duplicate')} className="text-xs text-gray-600 font-medium hover:underline">
+                            Повторить
+                          </button>
+                        </>
                       )}
-                      {offer.lifecycleStatus === 'ACTIVE' && (
-                        <button onClick={() => handleAction(offer.id, 'pause')} className="text-xs text-deal-urgent font-medium hover:underline">
-                          Пауза
-                        </button>
-                      )}
-                      {offer.lifecycleStatus === 'PAUSED' && (
-                        <button onClick={() => handleAction(offer.id, 'resume')} className="text-xs text-deal-savings font-medium hover:underline">
-                          Возобновить
-                        </button>
-                      )}
-                      <button onClick={() => handleAction(offer.id, 'duplicate')} className="text-xs text-gray-600 font-medium hover:underline">
-                        Повторить
-                      </button>
                     </td>
                   </tr>
                 ))}

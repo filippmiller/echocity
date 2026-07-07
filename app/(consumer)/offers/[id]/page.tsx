@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import { Suspense } from 'react'
 import { getOfferById } from '@/modules/offers/service'
+import { getSession } from '@/modules/auth/session'
+import { trackOfferView } from '@/modules/analytics/impressions'
 import { OfferDetailClient, type OfferDetail } from '@/components/OfferDetailClient'
 
 export const dynamic = 'force-dynamic'
@@ -51,8 +53,15 @@ type OfferPageProps = {
 
 export default async function OfferDetailPage({ params }: OfferPageProps) {
   const { id } = await params
-  const offer = await getOfferById(id)
+  const [offer, session] = await Promise.all([
+    getOfferById(id),
+    getSession(),
+  ])
   const serializedOffer = offer ? JSON.parse(JSON.stringify(offer)) as OfferDetail : null
+
+  if (offer) {
+    trackOfferView(offer.id, { userId: session?.userId, source: 'detail' }).catch(() => {})
+  }
 
   return (
     <Suspense fallback={null}>

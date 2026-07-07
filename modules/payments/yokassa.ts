@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { logger } from '@/lib/logger'
+import { logWebhook } from './webhook-log'
 import crypto from 'crypto'
 
 export class YookassaWebhookError extends Error {
@@ -95,11 +96,33 @@ export async function createRecurringPayment(savedPaymentMethodId: string, amoun
 }
 
 export async function handleWebhookEvent(body: any, rawBody?: string) {
+  const event = body.event
+  const payment = body.object
+
+  // Always log the webhook as received first
+  logWebhook({
+    provider: 'YOKASSA',
+    eventType: event || 'unknown',
+    externalId: payment?.id,
+    payload: body,
+    status: 'received',
+  }).catch(() => {
+    // logging failures must never break webhook handling
+  })
+
   // Signature verification — mandatory in production
   const webhookSecret = process.env.YOKASSA_WEBHOOK_SECRET
   if (webhookSecret) {
     if (!rawBody) {
       logger.warn('ЮKassa webhook: rawBody required for signature verification')
+      await logWebhook({
+        provider: 'YOKASSA',
+        eventType: event || 'unknown',
+        externalId: payment?.id,
+        payload: body,
+        status: 'failed',
+        error: 'Webhook signature verification failed: no rawBody',
+      }).catch(() => {})
       throw new YookassaWebhookError('Webhook signature verification failed: no rawBody', 400)
     }
     const expectedSignature = crypto
@@ -111,19 +134,40 @@ export async function handleWebhookEvent(body: any, rawBody?: string) {
         Buffer.byteLength(receivedSignature) !== Buffer.byteLength(expectedSignature) ||
         !crypto.timingSafeEqual(Buffer.from(receivedSignature), Buffer.from(expectedSignature))) {
       logger.warn('ЮKassa webhook: invalid or missing signature')
+      await logWebhook({
+        provider: 'YOKASSA',
+        eventType: event || 'unknown',
+        externalId: payment?.id,
+        payload: body,
+        status: 'invalid_signature',
+        error: 'Webhook signature verification failed',
+      }).catch(() => {})
       throw new YookassaWebhookError('Webhook signature verification failed', 401)
     }
   } else if (process.env.NODE_ENV === 'production') {
     logger.error('ЮKassa webhook: YOKASSA_WEBHOOK_SECRET not set in production')
+    await logWebhook({
+      provider: 'YOKASSA',
+      eventType: event || 'unknown',
+      externalId: payment?.id,
+      payload: body,
+      status: 'failed',
+      error: 'Webhook secret not configured',
+    }).catch(() => {})
     throw new YookassaWebhookError('Webhook secret not configured', 500)
   }
-
-  const event = body.event
-  const payment = body.object
 
   // Validate required fields
   if (!event || !payment?.id || !payment?.metadata?.userId) {
     logger.warn('ЮKassa webhook: missing required fields (event, object.id, object.metadata.userId)')
+    await logWebhook({
+      provider: 'YOKASSA',
+      eventType: event || 'unknown',
+      externalId: payment?.id,
+      payload: body,
+      status: 'failed',
+      error: 'Missing required fields: event, object.id, object.metadata.userId',
+    }).catch(() => {})
     throw new YookassaWebhookError(
       'Missing required fields: event, object.id, object.metadata.userId',
       400
@@ -139,6 +183,13 @@ export async function handleWebhookEvent(body: any, rawBody?: string) {
     })
     if (existingPayment) {
       logger.info('ЮKassa webhook: duplicate payment, skipping', { paymentId: payment.id })
+      await logWebhook({
+        provider: 'YOKASSA',
+        eventType: event,
+        externalId: payment.id,
+        payload: body,
+        status: 'duplicate',
+      }).catch(() => {})
       return
     }
 
@@ -192,6 +243,14 @@ export async function handleWebhookEvent(body: any, rawBody?: string) {
     }
 
     logger.info('ЮKassa payment succeeded', { paymentId: payment.id, userId })
+    await logWebhook({
+      provider: 'YOKASSA',
+      eventType: event,
+      externalId: payment.id,
+      payload: body,
+      status: 'processed',
+      processedAt: new Date(),
+    }).catch(() => {})
   }
 
   if (event === 'payment.canceled') {
@@ -201,6 +260,13 @@ export async function handleWebhookEvent(body: any, rawBody?: string) {
     })
     if (existingPayment) {
       logger.info('ЮKassa webhook: duplicate canceled payment, skipping', { paymentId: payment.id })
+      await logWebhook({
+        provider: 'YOKASSA',
+        eventType: event,
+        externalId: payment.id,
+        payload: body,
+        status: 'duplicate',
+      }).catch(() => {})
       return
     }
 
@@ -220,5 +286,13 @@ export async function handleWebhookEvent(body: any, rawBody?: string) {
     })
 
     logger.info('ЮKassa payment canceled', { paymentId: payment.id, userId })
+    await logWebhook({
+      provider: 'YOKASSA',
+      eventType: event,
+      externalId: payment.id,
+      payload: body,
+      status: 'processed',
+      processedAt: new Date(),
+    }).catch(() => {})
   }
 }

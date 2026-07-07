@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getSession } from '@/modules/auth/session'
 import { prisma } from '@/lib/prisma'
+import { createAuditEntry, AuditAction } from '@/lib/audit'
 import type { BusinessStatus } from '@prisma/client'
 
 const updateBusinessSchema = z.object({
@@ -48,6 +49,24 @@ export async function PATCH(
         ? { description: `[REJECTED] ${body.reason}\n\n${existing.description || ''}` }
         : {}),
     },
+  })
+
+  await createAuditEntry({
+    actorId: session.userId,
+    actorRole: session.role,
+    action: AuditAction.UPDATE,
+    entityType: 'Business',
+    entityId: id,
+    oldValue: {
+      status: existing.status,
+      description: existing.description,
+    },
+    newValue: {
+      status: business.status,
+      description: business.description,
+      reason: body.reason ?? null,
+    },
+    req,
   })
 
   return NextResponse.json({ business })

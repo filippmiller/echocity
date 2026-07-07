@@ -63,6 +63,8 @@ export default function BusinessOfferDetailPage() {
   const [saving, setSaving] = useState(false)
   const [editForm, setEditForm] = useState<Partial<OfferDetail>>({})
 
+  const canManage = Boolean(user && (user.role === 'BUSINESS_OWNER' || user.staffRole === 'MANAGER'))
+
   const loadOffer = async () => {
     try {
       const res = await fetch(`/api/offers/${id}`)
@@ -199,26 +201,28 @@ export default function BusinessOfferDetailPage() {
           </div>
         )}
 
-        <div className="flex gap-3 pt-2">
-          <button
-            onClick={handleDuplicate}
-            className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
-          >
-            Повторить
-          </button>
-          {canResubmit && (
+        {canManage && (
+          <div className="flex gap-3 pt-2">
             <button
-              onClick={handleSaveAndResubmit}
-              disabled={saving}
-              className="bg-brand-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors"
+              onClick={handleDuplicate}
+              className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
             >
-              {saving ? 'Отправка...' : isRejected ? 'Исправить и отправить' : 'Отправить на модерацию'}
+              Повторить
             </button>
-          )}
-        </div>
+            {canResubmit && (
+              <button
+                onClick={handleSaveAndResubmit}
+                disabled={saving}
+                className="bg-brand-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors"
+              >
+                {saving ? 'Отправка...' : isRejected ? 'Исправить и отправить' : 'Отправить на модерацию'}
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
-      {isRejected && (
+      {isRejected && canManage && (
         <div className="mt-6 bg-white rounded-xl shadow-sm border border-gray-100 p-5 space-y-4">
           <h2 className="text-lg font-semibold text-gray-900">Что исправить?</h2>
           <p className="text-sm text-gray-500">Внесите правки по замечанию модератора и отправьте предложение повторно.</p>

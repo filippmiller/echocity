@@ -11,12 +11,25 @@ interface StaffMember {
   branch: { title: string } | null
 }
 
+interface Business {
+  id: string
+  name: string
+}
+
 export default function StaffPage() {
   const { user } = useAuth()
   const [staff, setStaff] = useState<StaffMember[]>([])
+  const [businesses, setBusinesses] = useState<Business[]>([])
   const [loading, setLoading] = useState(true)
   const [email, setEmail] = useState('')
+  const [merchantId, setMerchantId] = useState('')
+  const [staffRole, setStaffRole] = useState<'CASHIER' | 'MANAGER'>('CASHIER')
   const [inviting, setInviting] = useState(false)
+
+  const canAccess = Boolean(
+    user && (user.role === 'BUSINESS_OWNER' || user.staffRole === 'MANAGER')
+  )
+  const isOwner = user?.role === 'BUSINESS_OWNER'
 
   const loadStaff = () => {
     fetch('/api/business/staff')
@@ -25,20 +38,42 @@ export default function StaffPage() {
       .catch(() => setLoading(false))
   }
 
+  const loadBusinesses = () => {
+    fetch('/api/business/places')
+      .then((r) => r.json())
+      .then((data) => {
+        const list = (data.businesses || []).map((b: Business) => ({ id: b.id, name: b.name }))
+        setBusinesses(list)
+        if (list.length > 0 && !merchantId) {
+          setMerchantId(list[0].id)
+        }
+      })
+  }
+
   useEffect(() => {
-    if (user?.role === 'BUSINESS_OWNER') loadStaff()
-  }, [user])
+    if (!canAccess) {
+      setLoading(false)
+      return
+    }
+    loadStaff()
+    loadBusinesses()
+  }, [canAccess])
 
   const handleInvite = async () => {
+    if (!merchantId) {
+      toast.error('Выберите заведение')
+      return
+    }
     setInviting(true)
     try {
       const res = await fetch('/api/business/staff', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, merchantId: '' }),
+        body: JSON.stringify({ email, merchantId, staffRole }),
       })
       if (res.ok) {
         setEmail('')
+        setStaffRole('CASHIER')
         toast.success('Сотрудник добавлен')
         loadStaff()
       } else {
@@ -58,7 +93,8 @@ export default function StaffPage() {
         toast.success(`${name} удалён из команды`)
         loadStaff()
       } else {
-        toast.error('Ошибка при удалении')
+        const data = await res.json()
+        toast.error(data.error || 'Ошибка при удалении')
       }
     } catch {
       toast.error('Ошибка сети')
@@ -77,6 +113,16 @@ export default function StaffPage() {
     )
   }
 
+  if (!canAccess) {
+    return (
+      <div className="px-4 py-8 sm:px-6 max-w-2xl">
+        <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 text-sm text-center">
+          Доступ запрещён
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="px-4 py-6 sm:px-6 max-w-2xl">
       <h1 className="text-2xl font-bold text-gray-900 mb-5">Сотрудники</h1>
@@ -84,21 +130,43 @@ export default function StaffPage() {
       {/* Invite form */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
         <h3 className="text-sm font-medium text-gray-700 mb-3">Добавить сотрудника</h3>
-        <div className="flex gap-2">
-          <input
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Email сотрудника"
-            type="email"
-            className="flex-1 border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-shadow"
-          />
-          <button
-            onClick={handleInvite}
-            disabled={inviting || !email}
-            className="bg-brand-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors shrink-0"
-          >
-            {inviting ? 'Добавление...' : 'Добавить'}
-          </button>
+        <div className="space-y-3">
+          <div className="flex gap-2">
+            <input
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Email сотрудника"
+              type="email"
+              className="flex-1 border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-shadow"
+            />
+            <button
+              onClick={handleInvite}
+              disabled={inviting || !email || !merchantId}
+              className="bg-brand-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors shrink-0"
+            >
+              {inviting ? 'Добавление...' : 'Добавить'}
+            </button>
+          </div>
+          <div className="flex gap-2">
+            <select
+              value={merchantId}
+              onChange={(e) => setMerchantId(e.target.value)}
+              className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+            >
+              <option value="">Выберите заведение</option>
+              {businesses.map((b) => (
+                <option key={b.id} value={b.id}>{b.name}</option>
+              ))}
+            </select>
+            <select
+              value={staffRole}
+              onChange={(e) => setStaffRole(e.target.value as 'CASHIER' | 'MANAGER')}
+              className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+            >
+              <option value="CASHIER">Кассир</option>
+              {isOwner && <option value="MANAGER">Менеджер</option>}
+            </select>
+          </div>
         </div>
       </div>
 

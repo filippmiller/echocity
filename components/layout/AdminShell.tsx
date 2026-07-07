@@ -13,10 +13,18 @@ import {
   Users,
   ArrowLeft,
   BarChart3,
+  Rocket,
+  ShieldCheck,
+  ScrollText,
+  Webhook,
+  HeartPulse,
+  ClipboardCheck,
 } from 'lucide-react'
 
 const NAV_ITEMS = [
   { href: '/admin', icon: LayoutDashboard, label: 'Дашборд' },
+  { href: '/admin/launch', icon: Rocket, label: 'Launch' },
+  { href: '/admin/moderation', icon: ShieldCheck, label: 'Модерация' },
   { href: '/admin/offers', icon: Tag, label: 'Офферы' },
   { href: '/admin/businesses', icon: Store, label: 'Бизнесы' },
   { href: '/admin/complaints', icon: MessageSquareWarning, label: 'Жалобы' },
@@ -25,6 +33,10 @@ const NAV_ITEMS = [
   { href: '/admin/users', icon: Users, label: 'Пользователи' },
   { href: '/admin/fraud', icon: ShieldAlert, label: 'Фрод' },
   { href: '/admin/analytics', icon: BarChart3, label: 'Аналитика' },
+  { href: '/admin/audit-log', icon: ScrollText, label: 'Аудит' },
+  { href: '/admin/webhooks', icon: Webhook, label: 'Вебхуки' },
+  { href: '/admin/health', icon: HeartPulse, label: 'Здоровье' },
+  { href: '/admin/readiness', icon: ClipboardCheck, label: 'Готовность' },
 ]
 
 function isActive(href: string, pathname: string) {
@@ -45,8 +57,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               href="/"
               className="flex items-center gap-1.5 text-gray-500 hover:text-gray-700 transition-colors"
             >
-              <ArrowLeft className="w-4 h-4" />
-              <span className="hidden sm:inline text-sm">Сайт</span>
+              <ArrowLeft className="w-4 h-4" />              <span className="hidden sm:inline text-sm">Сайт</span>
             </Link>
             <div className="h-5 w-px bg-gray-200" />
             <Link href="/admin" className="text-lg font-bold text-gray-900">
@@ -84,16 +95,14 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           </nav>
         </aside>
 
-        {/* ── Main content ── */}
-        <main className="flex-1 min-w-0 pb-20 md:pb-8">
+        {/* ── Main content ── */}        <main className="flex-1 min-w-0 pb-20 md:pb-8">
           {children}
         </main>
       </div>
 
       {/* ── Mobile bottom nav ── */}
       <nav
-        className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 md:hidden"
-        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+        className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 md:hidden"        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         <div className="flex items-stretch gap-1 h-14 overflow-x-auto hide-scrollbar px-2">
           {NAV_ITEMS.map((item) => {

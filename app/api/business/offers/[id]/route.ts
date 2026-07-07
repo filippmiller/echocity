@@ -2,18 +2,26 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/modules/auth/session'
 import { prisma } from '@/lib/prisma'
 import { updateOfferSchema } from '@/modules/offers/validation'
+import { getBusinessAccess } from '@/lib/business-access'
+import { canManageOffers } from '@/lib/permissions'
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession()
-  if (!session || session.role !== 'BUSINESS_OWNER') {
+  if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   const { id } = await params
   const offer = await prisma.offer.findUnique({ where: { id }, include: { merchant: true } })
-  if (!offer || offer.merchant.ownerId !== session.userId) {
+  if (!offer) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
+
+  const { access } = await getBusinessAccess(session, offer.merchantId, offer.branchId)
+  if (!canManageOffers(access)) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
+
   if (offer.approvalStatus !== 'DRAFT' && offer.approvalStatus !== 'REJECTED') {
     return NextResponse.json({ error: 'Can only edit DRAFT or REJECTED offers' }, { status: 400 })
   }
@@ -131,13 +139,18 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession()
-  if (!session || session.role !== 'BUSINESS_OWNER') {
+  if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   const { id } = await params
   const offer = await prisma.offer.findUnique({ where: { id }, include: { merchant: true } })
-  if (!offer || offer.merchant.ownerId !== session.userId) {
+  if (!offer) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
+
+  const { access } = await getBusinessAccess(session, offer.merchantId, offer.branchId)
+  if (!canManageOffers(access)) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
 

@@ -1,13 +1,15 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import type { Role } from '@prisma/client'
+import type { Role, StaffRole } from '@prisma/client'
 
 export interface UserSession {
   userId: string
   email: string
   role: Role
   avatarUrl?: string | null
+  staffRole?: StaffRole | null
+  merchantIds?: string[]
 }
 
 export function useAuth() {

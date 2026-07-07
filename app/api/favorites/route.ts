@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/modules/auth/session'
 import { prisma } from '@/lib/prisma'
+import { trackOfferSave } from '@/modules/analytics/impressions'
 import type { FavoriteEntityType } from '@prisma/client'
 
 /**
@@ -142,21 +143,26 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const favorite = await prisma.favorite.upsert({
-    where: {
-      userId_entityType_entityId: {
+  const [favorite] = await Promise.all([
+    prisma.favorite.upsert({
+      where: {
+        userId_entityType_entityId: {
+          userId: session.userId,
+          entityType: entityType as FavoriteEntityType,
+          entityId,
+        },
+      },
+      update: {},
+      create: {
         userId: session.userId,
         entityType: entityType as FavoriteEntityType,
         entityId,
       },
-    },
-    update: {},
-    create: {
-      userId: session.userId,
-      entityType: entityType as FavoriteEntityType,
-      entityId,
-    },
-  })
+    }),
+    entityType === 'OFFER'
+      ? trackOfferSave(entityId, { userId: session.userId, source: 'favorite' })
+      : Promise.resolve(null),
+  ])
 
   return NextResponse.json({ favorite }, { status: 201 })
 }
