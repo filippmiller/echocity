@@ -1,0 +1,20 @@
+import { NextResponse } from 'next/server'
+import { getSession } from '@/modules/auth/session'
+import { duplicateOffer } from '@/modules/offers/service'
+
+export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const session = await getSession()
+  if (!session || session.role !== 'BUSINESS_OWNER') {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const { id } = await params
+
+  try {
+    const offer = await duplicateOffer(id, session.userId)
+    return NextResponse.json({ offer }, { status: 201 })
+  } catch (e) {
+    const message = e instanceof Error ? e.message : 'Unknown error'
+    return NextResponse.json({ error: message }, { status: 400 })
+  }
+}

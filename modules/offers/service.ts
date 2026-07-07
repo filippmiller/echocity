@@ -329,3 +329,88 @@ export async function activateScheduledOffers() {
   })
   return result.count
 }
+
+export async function duplicateOffer(offerId: string, userId: string) {
+  const original = await prisma.offer.findUnique({
+    where: { id: offerId },
+    include: { merchant: true, schedules: true, rules: true, limits: true, blackoutDates: true },
+  })
+  if (!original) throw new Error('Offer not found')
+  if (original.merchant.ownerId !== userId) throw new Error('Not authorized')
+
+  const now = new Date()
+  const originalDurationMs = original.endAt
+    ? original.endAt.getTime() - original.startAt.getTime()
+    : 30 * 24 * 60 * 60 * 1000
+  const newEndAt = new Date(now.getTime() + Math.max(originalDurationMs, 24 * 60 * 60 * 1000))
+
+  return prisma.offer.create({
+    data: {
+      merchantId: original.merchantId,
+      branchId: original.branchId,
+      title: `${original.title} (копия)`,
+      subtitle: original.subtitle,
+      description: original.description,
+      offerType: original.offerType,
+      benefitType: original.benefitType,
+      benefitValue: original.benefitValue,
+      visibility: original.visibility,
+      redemptionChannel: original.redemptionChannel,
+      onlineUrl: original.onlineUrl,
+      promoCode: original.promoCode,
+      currency: original.currency,
+      minOrderAmount: original.minOrderAmount,
+      maxDiscountAmount: original.maxDiscountAmount,
+      startAt: now,
+      endAt: newEndAt,
+      termsText: original.termsText,
+      imageUrl: original.imageUrl,
+      approvalStatus: 'DRAFT',
+      lifecycleStatus: 'INACTIVE',
+      createdByUserId: userId,
+      schedules:
+        original.schedules.length > 0
+          ? {
+              create: original.schedules.map((s) => ({
+                weekday: s.weekday,
+                startTime: s.startTime,
+                endTime: s.endTime,
+              })),
+            }
+          : undefined,
+      rules:
+        original.rules.length > 0
+          ? {
+              create: original.rules.map((r) => ({
+                ruleType: r.ruleType,
+                operator: r.operator,
+                value: r.value as any,
+              })),
+            }
+          : undefined,
+      limits: original.limits
+        ? {
+            create: {
+              dailyLimit: original.limits.dailyLimit,
+              weeklyLimit: original.limits.weeklyLimit,
+              monthlyLimit: original.limits.monthlyLimit,
+              totalLimit: original.limits.totalLimit,
+              perUserDailyLimit: original.limits.perUserDailyLimit,
+              perUserWeeklyLimit: original.limits.perUserWeeklyLimit,
+              perUserLifetimeLimit: original.limits.perUserLifetimeLimit,
+            },
+          }
+        : undefined,
+      blackoutDates:
+        original.blackoutDates.length > 0
+          ? {
+              create: original.blackoutDates.map((b) => ({
+                date: b.date,
+                reason: b.reason,
+              })),
+            }
+          : undefined,
+    },
+    include: { schedules: true, rules: true, limits: true, blackoutDates: true, branch: true, merchant: true },
+  })
+}

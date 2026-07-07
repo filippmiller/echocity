@@ -7,7 +7,7 @@ import Link from 'next/link'
 
 export default function CreateOfferPage() {
   const { user, loading: authLoading } = useAuth()
-  const [merchantData, setMerchantData] = useState<{ merchantId: string; branches: any[] } | null>(null)
+  const [merchantData, setMerchantData] = useState<{ merchantId: string; branches: Array<{ id: string; title: string; address: string; businessType?: string }> } | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -20,7 +20,12 @@ export default function CreateOfferPage() {
           const biz = data.businesses[0]
           setMerchantData({
             merchantId: biz.id,
-            branches: biz.places || [],
+            branches: (biz.places || []).map((p: any) => ({
+              id: p.id,
+              title: p.title,
+              address: p.address,
+              businessType: p.placeType || biz.type,
+            })),
           })
         }
         setLoading(false)

@@ -60,7 +60,13 @@ export default function BusinessOffersPage() {
         toast.error(data.error || 'Ошибка при выполнении действия')
         return
       }
-      toast.success(action === 'submit' ? 'Отправлено на модерацию' : action === 'pause' ? 'Поставлено на паузу' : 'Возобновлено')
+      const messages: Record<string, string> = {
+        submit: 'Отправлено на модерацию',
+        pause: 'Поставлено на паузу',
+        resume: 'Возобновлено',
+        duplicate: 'Предложение скопировано',
+      }
+      toast.success(messages[action] || 'Готово')
       const listRes = await fetch('/api/business/offers')
       const data = await listRes.json()
       setOffers(data.offers || [])
@@ -146,6 +152,9 @@ export default function BusinessOffersPage() {
                         Возобновить
                       </button>
                     )}
+                    <button onClick={() => handleAction(offer.id, 'duplicate')} className="text-sm text-gray-600 font-medium hover:underline">
+                      Повторить
+                    </button>
                   </div>
                 </div>
               </div>
@@ -199,6 +208,9 @@ export default function BusinessOffersPage() {
                           Возобновить
                         </button>
                       )}
+                      <button onClick={() => handleAction(offer.id, 'duplicate')} className="text-xs text-gray-600 font-medium hover:underline">
+                        Повторить
+                      </button>
                     </td>
                   </tr>
                 ))}

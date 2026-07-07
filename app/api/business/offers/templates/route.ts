@@ -1,79 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/modules/auth/session'
 import { prisma } from '@/lib/prisma'
+import { OFFER_TEMPLATES, type BusinessType } from '@/lib/offer-templates'
 
-// Pre-built offer templates that merchants can one-click create
-const TEMPLATES = [
-  {
-    id: 'percent-discount',
-    name: '%-скидка на всё',
-    icon: '🏷',
-    defaults: {
-      title: '-{value}% на всё меню',
-      offerType: 'PERCENT_DISCOUNT',
-      benefitType: 'PERCENT',
-      benefitValue: 20,
-      visibility: 'FREE_FOR_ALL',
-      redemptionChannel: 'IN_STORE',
-    },
-  },
-  {
-    id: 'business-lunch',
-    name: 'Бизнес-ланч',
-    icon: '🍽',
-    defaults: {
-      title: 'Бизнес-ланч за {value}₽',
-      offerType: 'FIXED_PRICE',
-      benefitType: 'FIXED_PRICE',
-      benefitValue: 399,
-      visibility: 'FREE_FOR_ALL',
-      redemptionChannel: 'IN_STORE',
-    },
-  },
-  {
-    id: 'first-visit',
-    name: 'Первый визит',
-    icon: '👋',
-    defaults: {
-      title: '-{value}% на первый визит',
-      offerType: 'FIRST_VISIT',
-      benefitType: 'PERCENT',
-      benefitValue: 25,
-      visibility: 'FREE_FOR_ALL',
-      redemptionChannel: 'IN_STORE',
-    },
-  },
-  {
-    id: 'happy-hours',
-    name: 'Счастливые часы',
-    icon: '⏰',
-    defaults: {
-      title: '-{value}% в непиковые часы',
-      offerType: 'OFF_PEAK',
-      benefitType: 'PERCENT',
-      benefitValue: 30,
-      visibility: 'MEMBERS_ONLY',
-      redemptionChannel: 'IN_STORE',
-    },
-  },
-  {
-    id: 'two-for-one',
-    name: '2 по цене 1',
-    icon: '🎁',
-    defaults: {
-      title: '2 по цене 1',
-      offerType: 'BUNDLE',
-      benefitType: 'BUNDLE',
-      benefitValue: 50,
-      visibility: 'MEMBERS_ONLY',
-      redemptionChannel: 'IN_STORE',
-    },
-  },
-]
+// GET: return available templates, optionally filtered by niche
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url)
+  const niche = searchParams.get('niche')?.toUpperCase() as BusinessType | undefined
 
-// GET: return available templates
-export async function GET() {
-  return NextResponse.json({ templates: TEMPLATES })
+  const available = niche
+    ? OFFER_TEMPLATES.filter((t) => t.niche === 'ALL' || t.niche === niche)
+    : OFFER_TEMPLATES
+
+  return NextResponse.json({ templates: available })
 }
 
 // POST: create an offer from a template
@@ -88,12 +27,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'templateId and branchId are required' }, { status: 400 })
   }
 
-  const template = TEMPLATES.find((t) => t.id === body.templateId)
+  const template = OFFER_TEMPLATES.find((t) => t.id === body.templateId)
   if (!template) {
     return NextResponse.json({ error: 'Template not found' }, { status: 404 })
   }
 
-  // Verify the branch belongs to the merchant
   const branch = await prisma.place.findUnique({
     where: { id: body.branchId },
     include: { business: true },
@@ -108,7 +46,7 @@ export async function POST(req: NextRequest) {
 
   const now = new Date()
   const endAt = new Date(now)
-  endAt.setDate(endAt.getDate() + 30) // Default 30-day offer
+  endAt.setDate(endAt.getDate() + 30)
 
   const offer = await prisma.offer.create({
     data: {
@@ -123,10 +61,11 @@ export async function POST(req: NextRequest) {
       visibility: (body.visibility ?? template.defaults.visibility) as any,
       redemptionChannel: (template.defaults.redemptionChannel ?? 'IN_STORE') as any,
       currency: 'RUB',
-      approvalStatus: 'PENDING',
+      approvalStatus: 'DRAFT',
       lifecycleStatus: 'INACTIVE',
       startAt: now,
       endAt,
+      termsText: body.termsText ?? template.defaults.termsText ?? null,
       createdByUserId: session.userId,
     },
     include: {

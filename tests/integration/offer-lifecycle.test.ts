@@ -32,6 +32,7 @@ const {
   approveOffer,
   validateOfferForRedemption,
   expireOffers,
+  duplicateOffer,
 } = await import('@/modules/offers/service')
 
 beforeEach(() => {
@@ -258,5 +259,66 @@ describe('Offer Lifecycle', () => {
         data: { lifecycleStatus: 'EXPIRED' },
       }),
     )
+  })
+
+  it('duplicates an offer as DRAFT with new dates', async () => {
+    const originalStart = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+    const originalEnd = new Date(Date.now() + 23 * 24 * 60 * 60 * 1000)
+    mockPrisma.offer.findUnique.mockResolvedValue({
+      id: offerId,
+      title: 'Original Offer',
+      startAt: originalStart,
+      endAt: originalEnd,
+      merchantId,
+      branchId,
+      merchant: { ownerId: userId },
+      offerType: 'PERCENT_DISCOUNT',
+      benefitType: 'PERCENT',
+      benefitValue: 20,
+      visibility: 'PUBLIC',
+      redemptionChannel: 'IN_STORE',
+      currency: 'RUB',
+      schedules: [],
+      rules: [],
+      limits: null,
+      blackoutDates: [],
+      onlineUrl: null,
+      promoCode: null,
+      minOrderAmount: null,
+      maxDiscountAmount: null,
+      termsText: null,
+      imageUrl: null,
+      subtitle: null,
+      description: null,
+    })
+    mockPrisma.offer.create.mockResolvedValue({
+      id: 'offer-copy-1',
+      title: 'Original Offer (копия)',
+      approvalStatus: 'DRAFT',
+      lifecycleStatus: 'INACTIVE',
+    })
+
+    const result = await duplicateOffer(offerId, userId)
+
+    expect(result.approvalStatus).toBe('DRAFT')
+    expect(result.lifecycleStatus).toBe('INACTIVE')
+    expect(mockPrisma.offer.create).toHaveBeenCalledTimes(1)
+    const createCall = mockPrisma.offer.create.mock.calls[0][0]
+    expect(createCall.data.title).toContain('(копия)')
+    expect(createCall.data.approvalStatus).toBe('DRAFT')
+    expect(createCall.data.lifecycleStatus).toBe('INACTIVE')
+  })
+
+  it('rejects duplicate if user does not own the offer', async () => {
+    mockPrisma.offer.findUnique.mockResolvedValue({
+      id: offerId,
+      merchant: { ownerId: 'someone-else' },
+      schedules: [],
+      rules: [],
+      limits: null,
+      blackoutDates: [],
+    })
+
+    await expect(duplicateOffer(offerId, userId)).rejects.toThrow('Not authorized')
   })
 })
