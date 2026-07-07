@@ -4,6 +4,7 @@ import { getSession } from '@/modules/auth/session'
 import { prisma } from '@/lib/prisma'
 import { checkAndProgressMissions, checkBadgeEligibility } from '@/modules/gamification/service'
 import { awardReviewCoins } from '@/modules/reviews/rewards'
+import { getAllowedStoragePrefixes, hasRecentReview, isOwnStorageUrl } from '@/lib/reviews'
 
 const reviewSchema = z.object({
   redemptionId: z.string().cuid(),
@@ -11,6 +12,8 @@ const reviewSchema = z.object({
   comment: z.string().max(5000).optional(),
   photoUrls: z.array(z.string().url()).max(3).optional(),
 })
+
+const DAY_MS = 24 * 60 * 60 * 1000
 
 /**
  * GET /api/offers/[id]/reviews — list published reviews for an offer (public, paginated)
@@ -33,6 +36,7 @@ export async function GET(
       take: limit,
       include: {
         user: { select: { firstName: true, lastName: true } },
+        redemption: { select: { status: true } },
       },
     }),
     prisma.offerReview.count({ where: { offerId, isPublished: true } }),
@@ -51,7 +55,8 @@ export async function GET(
       photoUrls: r.photoUrls,
       createdAt: r.createdAt,
       authorName: [r.user.firstName, r.user.lastName].filter(Boolean).join(' ') || 'Пользователь',
-      isVerifiedVisit: true, // All reviews require a successful redemption — every review is verified
+      // Verified marker is computed server-side from the linked redemption status.
+      isVerifiedVisit: r.redemption.status === 'SUCCESS',
     })),
     total,
     page,
@@ -94,10 +99,7 @@ export async function POST(
   })
 
   if (!redemption) {
-    return NextResponse.json(
-      { error: 'Использование не найдено' },
-      { status: 404 }
-    )
+    return NextResponse.json({ error: 'Использование не найдено' }, { status: 404 })
   }
 
   if (redemption.userId !== session.userId) {
@@ -133,6 +135,32 @@ export async function POST(
     )
   }
 
+  // Anti-fraud: one review per offer per 24 hours
+  const latestReview = await prisma.offerReview.findFirst({
+    where: { offerId, userId: session.userId },
+    orderBy: { createdAt: 'desc' },
+    select: { createdAt: true },
+  })
+
+  if (hasRecentReview(latestReview, new Date(), DAY_MS)) {
+    return NextResponse.json(
+      { error: 'Вы уже оставляли отзыв на это предложение в последние 24 часа' },
+      { status: 429 }
+    )
+  }
+
+  // Anti-fraud: photo URLs must belong to the app's own storage
+  if (photoUrls && photoUrls.length > 0) {
+    const allowedPrefixes = getAllowedStoragePrefixes()
+    const invalidUrl = photoUrls.find((url) => !isOwnStorageUrl(url, allowedPrefixes))
+    if (invalidUrl) {
+      return NextResponse.json(
+        { error: 'Фото должны быть загружены в хранилище приложения' },
+        { status: 400 }
+      )
+    }
+  }
+
   // Create the review
   const review = await prisma.offerReview.create({
     data: {
@@ -145,6 +173,7 @@ export async function POST(
     },
     include: {
       user: { select: { firstName: true, lastName: true } },
+      redemption: { select: { status: true } },
     },
   })
 
@@ -165,6 +194,7 @@ export async function POST(
         photoUrls: review.photoUrls,
         createdAt: review.createdAt,
         authorName: [review.user.firstName, review.user.lastName].filter(Boolean).join(' ') || 'Пользователь',
+        isVerifiedVisit: review.redemption.status === 'SUCCESS',
       },
       coinReward: coinReward?.coins ?? 0,
     },

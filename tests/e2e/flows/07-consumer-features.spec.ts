@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { CREDS, IDS, TIMEOUTS } from '../../helpers/constants'
+import { BASE_URL, CREDS, IDS, TIMEOUTS } from '../../helpers/constants'
 import { newAuthedPage, api, dismissOnboarding } from '../../helpers/auth-helpers'
 
 test.describe('Flow 07: Consumer Features', () => {
@@ -219,6 +219,75 @@ test.describe('Flow 07: Consumer Features', () => {
     test('referrals API requires auth', async ({ request }) => {
       const response = await request.get('/api/referrals')
       expect(response.status()).toBe(401)
+    })
+
+    test('referrals API returns code for authenticated user', async ({ browser }) => {
+      const { context, page } = await newAuthedPage(browser, CREDS.user.email, CREDS.user.password)
+      try {
+        const response = await page.request.get('/api/referrals')
+        expect(response.ok()).toBe(true)
+        const body = await response.json()
+        expect(body.code).toBeTruthy()
+        expect(typeof body.code).toBe('string')
+      } finally {
+        await context.close()
+      }
+    })
+
+    test('registration accepts referral code without failing', async ({ browser }) => {
+      // Get a valid referral code from an existing user
+      const referrerContext = await browser.newContext({
+        storageState: {
+          cookies: [],
+          origins: [{
+            origin: BASE_URL,
+            localStorage: [{ name: 'echocity_onboarded', value: '1' }],
+          }],
+        },
+      })
+      const referrerPage = await referrerContext.newPage()
+      try {
+        await referrerPage.goto('/auth/login', { waitUntil: 'domcontentloaded' })
+        const loginResponse = await referrerPage.request.post('/api/auth/login', {
+          data: { email: CREDS.user.email, password: CREDS.user.password },
+        })
+        if (!loginResponse.ok()) {
+          test.skip(true, 'Could not login referrer user')
+          return
+        }
+        const referralResponse = await referrerPage.request.get('/api/referrals')
+        if (!referralResponse.ok()) {
+          test.skip(true, 'No referral code available')
+          return
+        }
+        const { code } = await referralResponse.json()
+        if (!code) {
+          test.skip(true, 'No referral code available')
+          return
+        }
+
+        const email = `e2e-ref-${Date.now()}@test.echocity.ru`
+        const password = 'E2eTest1234!'
+        const page = await browser.newPage()
+        try {
+          await page.goto('/auth/register', { waitUntil: 'domcontentloaded' })
+          const response = await page.request.post('/api/auth/register', {
+            data: {
+              accountType: 'CITIZEN',
+              email,
+              password,
+              firstName: 'Referral',
+              termsAccepted: true,
+              referralCode: code,
+            },
+          })
+          expect([200, 201]).toContain(response.status())
+        } finally {
+          await page.close()
+        }
+      } finally {
+        await referrerContext.close()
+      }
     })
   })
 

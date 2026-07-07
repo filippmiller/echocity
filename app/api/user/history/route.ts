@@ -54,8 +54,24 @@ export async function GET(request: NextRequest) {
       }),
     ])
 
+    // Enrich with UserSavings savedAmount when available (kopecks → rubles).
+    const savingsMap = new Map<string, number>()
+    if (redemptions.length > 0) {
+      const savings = await prisma.userSavings.findMany({
+        where: { redemptionId: { in: redemptions.map((r) => r.id) } },
+        select: { redemptionId: true, savedAmount: true },
+      })
+      savings.forEach((s) => {
+        savingsMap.set(s.redemptionId, Math.floor(s.savedAmount / 100))
+      })
+    }
+
     return NextResponse.json({
-      redemptions,
+      redemptions: redemptions.map((r) => ({
+        ...r,
+        savedAmount:
+          savingsMap.get(r.id) ?? (r.discountAmount ? Number(r.discountAmount) : null),
+      })),
       total,
       hasMore: offset + limit < total,
     })

@@ -6,6 +6,7 @@
  */
 
 import { prisma } from '@/lib/prisma'
+import { getMoscowTimeInfo, isOfferActiveNow, isBlackoutDate } from '@/lib/schedule-utils'
 
 export interface CuratedCollection {
   slug: string
@@ -169,4 +170,126 @@ export async function upsertCuratedCollections(): Promise<void> {
       },
     })
   }
+}
+
+const timeOfDayInclude = {
+  schedules: true,
+  blackoutDates: { select: { date: true } },
+  branch: {
+    select: {
+      id: true,
+      title: true,
+      address: true,
+      city: true,
+      lat: true,
+      lng: true,
+      nearestMetro: true,
+      placeType: true,
+    },
+  },
+  merchant: { select: { id: true, name: true, isVerified: true } },
+  limits: true,
+  _count: { select: { redemptions: true, offerReviews: true } },
+}
+
+interface TimeOfDayConfig {
+  start: string
+  end: string
+  placeTypes: string[]
+  categories?: string[]
+}
+
+async function fetchTimeOfDayOffers(
+  config: TimeOfDayConfig,
+  cityName?: string,
+  districtSlug?: string
+) {
+  const { weekday, timeStr } = getMoscowTimeInfo()
+  if (weekday > 4 || timeStr < config.start || timeStr >= config.end) {
+    return []
+  }
+
+  const now = new Date()
+  const branchWhere: any = {
+    isActive: true,
+    ...(cityName ? { city: cityName } : {}),
+    ...(districtSlug ? { district: { slug: districtSlug } } : {}),
+  }
+
+  const typeFilters: any[] = [{ placeType: { in: config.placeTypes } }]
+  if (config.categories && config.categories.length > 0) {
+    typeFilters.push({ category: { in: config.categories } })
+  }
+
+  const offers = await prisma.offer.findMany({
+    where: {
+      lifecycleStatus: 'ACTIVE',
+      approvalStatus: 'APPROVED',
+      startAt: { lte: now },
+      OR: [{ endAt: null }, { endAt: { gt: now } }],
+      branch: {
+        ...branchWhere,
+        OR: typeFilters,
+      },
+    },
+    include: timeOfDayInclude,
+    orderBy: { createdAt: 'desc' },
+    take: 10,
+  })
+
+  return offers.filter((offer: any) => {
+    if (isBlackoutDate(offer.blackoutDates, now)) return false
+    return isOfferActiveNow(offer.schedules, now)
+  })
+}
+
+/**
+ * Weekday lunch offers (Mon–Fri, 12:00–15:00) active right now.
+ * Includes cafes, restaurants and food/coffee places.
+ */
+export async function getLunchOffers(cityName?: string, districtSlug?: string) {
+  return fetchTimeOfDayOffers(
+    {
+      start: '12:00',
+      end: '15:00',
+      placeTypes: ['CAFE', 'RESTAURANT'],
+      categories: ['CAFE', 'RESTAURANT'],
+    },
+    cityName,
+    districtSlug
+  )
+}
+
+/**
+ * Tonight plans (Mon–Fri, 17:00–23:00) active right now.
+ * Includes bars and restaurants.
+ */
+export async function getTonightOffers(cityName?: string, districtSlug?: string) {
+  return fetchTimeOfDayOffers(
+    {
+      start: '17:00',
+      end: '23:00',
+      placeTypes: ['BAR', 'RESTAURANT'],
+      categories: ['BAR', 'RESTAURANT'],
+    },
+    cityName,
+    districtSlug
+  )
+}
+
+/**
+ * After-work offers (Mon–Fri, 17:00–20:00) active right now.
+ * Includes bars, restaurants and cafes.
+ */
+export async function getAfterWorkOffers(cityName?: string, districtSlug?: string) {
+  return fetchTimeOfDayOffers(
+    {
+      start: '17:00',
+      end: '20:00',
+      placeTypes: ['BAR', 'RESTAURANT', 'CAFE'],
+      categories: ['BAR', 'RESTAURANT', 'CAFE'],
+    },
+    cityName,
+    districtSlug
+  )
 }

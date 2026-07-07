@@ -6,13 +6,9 @@ import { Clock, Users, Flame, Globe, Train, Star, BadgeCheck, Navigation } from 
 import { FavoriteButton } from '@/components/FavoriteButton'
 import { VerifiedBadge } from '@/components/VerifiedBadge'
 import { hapticTap } from '@/lib/haptics'
-import { getBenefitBadge, getEstimatedSavings, buildYandexMapsRouteUrl } from '@/lib/offer-utils'
-
-interface ScheduleSlot {
-  weekday: number   // 0=Monday..6=Sunday
-  startTime: string // "HH:MM"
-  endTime: string   // "HH:MM"
-}
+import { getBenefitBadge, getEstimatedSavings, getPricePair, formatPrice, buildYandexMapsRouteUrl } from '@/lib/offer-utils'
+import { getScheduleStatus } from '@/lib/schedule-utils'
+import type { ScheduleSlot } from '@/lib/schedule-utils'
 
 interface OfferCardProps {
   id: string
@@ -42,40 +38,8 @@ interface OfferCardProps {
   metadata?: unknown
 }
 
-type ScheduleStatus =
-  | { kind: 'open_now' }
-  | { kind: 'opens_today'; startTime: string }
-  | { kind: 'tomorrow' }
-  | { kind: 'no_schedule' }
-
 // Simple session-level dedup for offer impression tracking from cards.
 const trackedOfferIds = new Set<string>()
-
-function getMoscowInfo(): { weekday: number; timeStr: string } {
-  const now = new Date()
-  const moscow = new Date(now.getTime() + 3 * 60 * 60_000)
-  const weekday = (moscow.getUTCDay() + 6) % 7 // 0=Monday
-  const timeStr = `${String(moscow.getUTCHours()).padStart(2, '0')}:${String(moscow.getUTCMinutes()).padStart(2, '0')}`
-  return { weekday, timeStr }
-}
-
-function getScheduleStatus(schedules: ScheduleSlot[]): ScheduleStatus {
-  if (!schedules || schedules.length === 0) return { kind: 'no_schedule' }
-  const { weekday, timeStr } = getMoscowInfo()
-  // Check if open right now
-  const openNow = schedules.some((s) => s.weekday === weekday && s.startTime <= timeStr && s.endTime > timeStr)
-  if (openNow) return { kind: 'open_now' }
-  // Check if opens later today
-  const laterToday = schedules
-    .filter((s) => s.weekday === weekday && s.startTime > timeStr)
-    .sort((a, b) => a.startTime.localeCompare(b.startTime))[0]
-  if (laterToday) return { kind: 'opens_today', startTime: laterToday.startTime }
-  // Check if tomorrow
-  const tomorrow = (weekday + 1) % 7
-  const hasTomorrow = schedules.some((s) => s.weekday === tomorrow)
-  if (hasTomorrow) return { kind: 'tomorrow' }
-  return { kind: 'no_schedule' }
-}
 
 function getTimeLeft(expiresAt: string): { text: string; urgent: boolean } | null {
   const diff = new Date(expiresAt).getTime() - Date.now()
@@ -99,6 +63,7 @@ export function OfferCard({
   const hasScheduledTrack = useRef(false)
   const badge = getBenefitBadge(benefitType, benefitValue)
   const estimatedSavings = getEstimatedSavings(benefitType, benefitValue, metadata)
+  const pricePair = getPricePair(benefitType, benefitValue, metadata)
   const mapUrl = branchLat != null && branchLng != null
     ? buildYandexMapsRouteUrl(branchLat, branchLng, branchAddress)
     : null
@@ -151,12 +116,6 @@ export function OfferCard({
             {badge}
           </div>
 
-          {/* Estimated savings badge */}
-          {estimatedSavings != null && estimatedSavings > 0 && (
-            <div className="absolute top-[34px] left-2 px-2 py-0.5 rounded-lg text-xs font-semibold text-white bg-emerald-500 badge">
-              выгода до {estimatedSavings.toLocaleString('ru-RU')}₽
-            </div>
-          )}
 
           {/* Plus badge */}
           {isMembersOnly && (
@@ -211,6 +170,22 @@ export function OfferCard({
           {subtitle && (
             <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{subtitle}</p>
           )}
+          {/* Price / savings */}
+          {pricePair ? (
+            <div className="mt-1.5 flex items-center gap-2 flex-wrap">
+              <span className="text-xs text-gray-400 line-through">{formatPrice(pricePair.original)}</span>
+              <span className="text-sm font-bold text-gray-900">{formatPrice(pricePair.current)}</span>
+              {estimatedSavings != null && estimatedSavings > 0 && (
+                <span className="text-xs font-semibold text-emerald-600">
+                  выгода {formatPrice(estimatedSavings)}
+                </span>
+              )}
+            </div>
+          ) : estimatedSavings != null && estimatedSavings > 0 ? (
+            <div className="mt-1.5 text-xs font-semibold text-emerald-600">
+              Выгода до {formatPrice(estimatedSavings)}
+            </div>
+          ) : null}
           {/* Schedule availability indicator */}
           {scheduleStatus && (
             <div className="mt-1">

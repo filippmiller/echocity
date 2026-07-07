@@ -53,13 +53,29 @@ export function OfferFeed({ city, visibility, category, activeNow, metro, distri
     if (district) params.set('district', district)
     if (benefitType) params.set('benefitType', benefitType)
 
-    fetch(`/api/offers?${params}`)
-      .then((r) => r.json())
-      .then((data) => {
-        setOffers(data.offers || [])
-        setLoading(false)
-      })
-      .catch(() => setLoading(false))
+    const buildAndFetch = (lat?: number, lng?: number) => {
+      if (lat != null && lng != null) {
+        params.set('lat', lat.toString())
+        params.set('lng', lng.toString())
+      }
+      fetch(`/api/offers?${params}`)
+        .then((r) => r.json())
+        .then((data) => {
+          setOffers(data.offers || [])
+          setLoading(false)
+        })
+        .catch(() => setLoading(false))
+    }
+
+    if (typeof navigator !== 'undefined' && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => buildAndFetch(pos.coords.latitude, pos.coords.longitude),
+        () => buildAndFetch(),
+        { enableHighAccuracy: false, timeout: 5000, maximumAge: 300_000 }
+      )
+    } else {
+      buildAndFetch()
+    }
   }, [city, visibility, category, activeNow, metro, district, benefitType])
 
   if (loading) {

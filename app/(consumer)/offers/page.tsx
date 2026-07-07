@@ -13,6 +13,7 @@ import { PullToRefresh } from '@/components/PullToRefresh'
 import { RecentlyViewed } from '@/components/RecentlyViewed'
 import { NearbyOffers } from '@/components/NearbyOffers'
 import { CollapsibleSection } from '@/components/CollapsibleSection'
+import { TimeOfDayCollections } from '@/components/TimeOfDayCollections'
 import { StreakWidget } from '@/components/StreakWidget'
 import { useCompare, CompareBar } from '@/components/OfferCompare'
 import { useCity } from '@/components/CitySelector'
@@ -104,6 +105,64 @@ function buildSearchParams(filters: FilterState): URLSearchParams {
   return params
 }
 
+const RECENT_FILTERS_KEY = 'echocity_recent_offers_filters'
+
+interface RecentFilters {
+  params: string
+  city: string
+  appliedAt: string
+}
+
+function isDefaultFilters(filters: FilterState): boolean {
+  return (
+    filters.section === 'all' &&
+    filters.category === 'all' &&
+    !filters.activeNow &&
+    !filters.benefitType &&
+    !filters.metro &&
+    !filters.district
+  )
+}
+
+function hasUrlFilterParams(params: URLSearchParams): boolean {
+  return (
+    params.has('visibility') ||
+    params.has('category') ||
+    params.has('activeNow') ||
+    params.has('benefitType') ||
+    params.has('metro') ||
+    params.has('district')
+  )
+}
+
+function saveRecentFilters(filters: FilterState, city: string): void {
+  try {
+    if (isDefaultFilters(filters)) return
+    const params = buildSearchParams(filters).toString()
+    if (!params) return
+    const recent: RecentFilters = {
+      params,
+      city,
+      appliedAt: new Date().toISOString(),
+    }
+    localStorage.setItem(RECENT_FILTERS_KEY, JSON.stringify(recent))
+  } catch {
+    // localStorage is unavailable or full — ignore
+  }
+}
+
+function loadRecentFilters(): RecentFilters | null {
+  try {
+    const raw = localStorage.getItem(RECENT_FILTERS_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    if (!parsed || typeof parsed.params !== 'string' || typeof parsed.city !== 'string') return null
+    return parsed as RecentFilters
+  } catch {
+    return null
+  }
+}
+
 function OffersContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -114,6 +173,7 @@ function OffersContent() {
   const [showDistrictDropdown, setShowDistrictDropdown] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
   const [categoryCounts, setCategoryCounts] = useState<Record<string, number>>({})
+  const [recentFilters, setRecentFilters] = useState<RecentFilters | null>(null)
 
   const initialFilters = useMemo<FilterState>(() => ({
     section: searchParams.get('visibility') || 'all',
@@ -150,15 +210,41 @@ function OffersContent() {
     }
   }, [searchParams])
 
+  // Load recent filters from localStorage; URL params always take precedence
+  useEffect(() => {
+    if (hasUrlFilterParams(searchParams)) {
+      setRecentFilters(null)
+      return
+    }
+    const recent = loadRecentFilters()
+    if (!recent) {
+      setRecentFilters(null)
+      return
+    }
+    if (recent.city !== city) {
+      const params = new URLSearchParams(recent.params)
+      params.delete('district')
+      params.delete('metro')
+      if (params.toString()) {
+        setRecentFilters({ ...recent, params: params.toString() })
+      } else {
+        setRecentFilters(null)
+      }
+    } else {
+      setRecentFilters(recent)
+    }
+  }, [searchParams, city])
+
   const updateFilters = useCallback((update: Partial<FilterState>) => {
     setFilters((prev) => {
       const next = { ...prev, ...update }
       const params = buildSearchParams(next)
       const query = params.toString()
       router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false })
+      saveRecentFilters(next, city)
       return next
     })
-  }, [pathname, router])
+  }, [pathname, router, city])
 
   const handleRefresh = useCallback(async () => {
     // Bump the key so OfferFeed re-mounts and re-fetches
@@ -244,6 +330,19 @@ function OffersContent() {
               })}
             </div>
           </div>
+
+          {/* Repeat last search affordance */}
+          {recentFilters && (
+            <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar">
+              <button
+                onClick={() => router.replace(`${pathname}?${recentFilters.params}`, { scroll: false })}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap bg-brand-100 text-brand-700 border border-brand-200 active:bg-brand-200 chip shrink-0"
+              >
+                <span>↻</span>
+                Повторить последний поиск
+              </button>
+            </div>
+          )}
 
           {/* Category pills with live counts */}
           <div className="flex gap-2 overflow-x-auto hide-scrollbar">
@@ -410,6 +509,9 @@ function OffersContent() {
             </CollapsibleSection>
             <CollapsibleSection id="demands">
               <TrendingDemands city={city} />
+            </CollapsibleSection>
+            <CollapsibleSection id="time-of-day">
+              <TimeOfDayCollections />
             </CollapsibleSection>
             <OfferFeed
               key={refreshKey}

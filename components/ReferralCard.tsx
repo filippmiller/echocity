@@ -124,11 +124,6 @@ export function ReferralCard() {
           </div>
         </div>
 
-        {/* Reward info */}
-        <p className="text-sm text-blue-100 mb-4">
-          Пригласите {stats.target} друзей — получите месяц Plus бесплатно
-        </p>
-
         {/* Share button */}
         <button
           onClick={handleShare}

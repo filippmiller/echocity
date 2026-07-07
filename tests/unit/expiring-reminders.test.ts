@@ -18,6 +18,7 @@ vi.mock('@/modules/email/resend', () => ({
 const {
   mockReminderLogFindMany,
   mockReminderLogCreate,
+  mockReminderLogAggregate,
   mockOfferFindMany,
   mockOfferFindUnique,
   mockFavoriteFindMany,
@@ -26,6 +27,7 @@ const {
 } = vi.hoisted(() => ({
   mockReminderLogFindMany: vi.fn(),
   mockReminderLogCreate: vi.fn(),
+  mockReminderLogAggregate: vi.fn(),
   mockOfferFindMany: vi.fn(),
   mockOfferFindUnique: vi.fn(),
   mockFavoriteFindMany: vi.fn(),
@@ -38,6 +40,7 @@ vi.mock('@/lib/prisma', () => ({
     reminderLog: {
       findMany: mockReminderLogFindMany,
       create: mockReminderLogCreate,
+      aggregate: mockReminderLogAggregate,
     },
     offer: {
       findMany: mockOfferFindMany,
@@ -60,6 +63,7 @@ import {
   resolveChannels,
   sendReminder,
   processExpiringOfferReminders,
+  getReminderOpsStatus,
 } from '@/modules/notifications/expiring-offer-reminders'
 
 describe('modules/notifications/expiring-offer-reminders', () => {
@@ -227,6 +231,77 @@ describe('modules/notifications/expiring-offer-reminders', () => {
 
       expect(count).toBe(2)
       expect(mockPushNotification).toHaveBeenCalledTimes(2)
+    })
+
+    it('continues batch when a single reminder fails unexpectedly', async () => {
+      const now = new Date()
+      const offer = {
+        id: 'offer-1',
+        title: 'Скидка',
+        endAt: new Date(now.getTime() + 2 * 60 * 60 * 1000),
+        branch: { title: 'Кафе', city: 'Санкт-Петербург' },
+        merchant: { name: 'Кафе' },
+      }
+      mockOfferFindMany.mockResolvedValue([offer])
+      mockFavoriteFindMany.mockResolvedValue([
+        { userId: 'user-1', entityId: 'offer-1' },
+        { userId: 'user-2', entityId: 'offer-1' },
+      ])
+      mockReminderLogFindMany.mockResolvedValue([])
+      mockOfferFindUnique
+        .mockRejectedValueOnce(new Error('DB boom'))
+        .mockResolvedValue(offer)
+      mockUserProfileFindUnique.mockResolvedValue({
+        notificationsEnabled: true,
+        pushNotifications: true,
+        emailNotifications: false,
+      })
+      mockUserFindUnique.mockResolvedValue({ email: 'user@example.com' })
+      mockReminderLogCreate.mockResolvedValue({})
+
+      const count = await processExpiringOfferReminders(24)
+
+      expect(count).toBe(1)
+      expect(mockPushNotification).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('getReminderOpsStatus', () => {
+    it('returns the expected status shape', async () => {
+      const now = new Date()
+      const offer = {
+        id: 'offer-1',
+        title: 'Скидка',
+        endAt: new Date(now.getTime() + 2 * 60 * 60 * 1000),
+        branch: { title: 'Кафе', city: 'Санкт-Петербург' },
+        merchant: { name: 'Кафе' },
+      }
+      mockOfferFindMany.mockResolvedValue([offer])
+      mockFavoriteFindMany.mockResolvedValue([{ userId: 'user-1', entityId: 'offer-1' }])
+      mockReminderLogFindMany.mockResolvedValue([])
+      mockReminderLogAggregate.mockResolvedValue({ _max: { sentAt: now } })
+      mockEmailConfigured.mockReturnValue(true)
+
+      const status = await getReminderOpsStatus()
+
+      expect(status).toEqual({
+        pendingOffers: 1,
+        lastRunAt: now,
+        channelsConfigured: { push: false, email: true },
+        isHealthy: true,
+      })
+    })
+
+    it('is healthy when there are no pending offers even without channels', async () => {
+      mockOfferFindMany.mockResolvedValue([])
+      mockReminderLogAggregate.mockResolvedValue({ _max: { sentAt: null } })
+      mockEmailConfigured.mockReturnValue(false)
+
+      const status = await getReminderOpsStatus()
+
+      expect(status.pendingOffers).toBe(0)
+      expect(status.channelsConfigured).toEqual({ push: false, email: false })
+      expect(status.isHealthy).toBe(true)
     })
   })
 })

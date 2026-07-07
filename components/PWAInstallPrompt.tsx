@@ -12,9 +12,20 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
 }
 
+function detectIOS(): boolean {
+  if (typeof window === 'undefined') return false
+  const ua = window.navigator.userAgent.toLowerCase()
+  const platform = window.navigator.platform?.toLowerCase() || ''
+  return (
+    /iphone|ipad|ipod/.test(ua) ||
+    (platform.includes('mac') && 'ontouchend' in document)
+  )
+}
+
 export function PWAInstallPrompt() {
   const [visible, setVisible] = useState(false)
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
+  const [showIOSHint, setShowIOSHint] = useState(false)
 
   useEffect(() => {
     // Track visit count
@@ -27,6 +38,15 @@ export function PWAInstallPrompt() {
 
     // Don't show if already installed (running in standalone mode)
     if (window.matchMedia('(display-mode: standalone)').matches) return
+
+    // Show manual iOS install hint on Safari (no beforeinstallprompt event)
+    const isIOS = detectIOS()
+    const isStandalone = (window.navigator as Navigator & { standalone?: boolean }).standalone === true
+    if (isIOS && !isStandalone && count >= VISIT_THRESHOLD) {
+      setShowIOSHint(true)
+      setVisible(true)
+      return
+    }
 
     // Capture the beforeinstallprompt event
     const handleBeforeInstallPrompt = (e: Event) => {
@@ -76,12 +96,18 @@ export function PWAInstallPrompt() {
         <p className="flex-1 text-sm font-medium leading-tight">
           Установите ГдеСейчас для быстрого доступа
         </p>
-        <button
-          onClick={handleInstall}
-          className="flex-shrink-0 bg-white text-brand-600 text-sm font-semibold px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors"
-        >
-          Установить
-        </button>
+        {showIOSHint ? (
+          <span className="flex-shrink-0 text-xs text-white/90 text-right leading-tight max-w-[140px]">
+            Нажмите «Поделиться», затем «На экран Домой»
+          </span>
+        ) : (
+          <button
+            onClick={handleInstall}
+            className="flex-shrink-0 bg-white text-brand-600 text-sm font-semibold px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors"
+          >
+            Установить
+          </button>
+        )}
         <button
           onClick={handleDismiss}
           aria-label="Закрыть"

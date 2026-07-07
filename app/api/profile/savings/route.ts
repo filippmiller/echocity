@@ -66,11 +66,15 @@ export async function GET() {
       GROUP BY p."placeType"
       ORDER BY total DESC
       LIMIT 10
-    `.then((rows) => rows.map((r) => ({
-      name: r.category,
-      rubles: Math.floor(Number(r.total) / 100),
-      count: Number(r.count),
-    }))).catch(() => []),
+    `.then((rows) => rows.map((r) => {
+      const placeType = r.category || 'OTHER'
+      return {
+        placeType,
+        name: placeType,
+        rubles: Math.floor(Number(r.total) / 100),
+        count: Number(r.count),
+      }
+    })).catch(() => []),
     monthlySeries: monthlySeries.map((m) => ({
       month: m.month,
       rubles: Math.floor(Number(m.total) / 100),

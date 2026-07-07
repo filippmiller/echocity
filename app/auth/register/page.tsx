@@ -46,6 +46,7 @@ function RegisterContent() {
   const [activeTab, setActiveTab] = useState<RegisterTab>('phone')
   const [accountType, setAccountType] = useState<AccountType>('CITIZEN')
   const [loading, setLoading] = useState(false)
+  const [referralCode, setReferralCode] = useState<string>('')
 
   // Email tab fields
   const [email, setEmail] = useState('')
@@ -90,6 +91,26 @@ function RegisterContent() {
       })
       .catch(() => {})
   }, [])
+
+  // Capture referral code from URL and localStorage
+  useEffect(() => {
+    const urlCode = searchParams.get('ref')
+    if (urlCode) {
+      setReferralCode(urlCode)
+      try {
+        localStorage.setItem('echocity_ref_code', urlCode)
+      } catch {
+        // ignore storage errors
+      }
+    } else {
+      try {
+        const storedCode = localStorage.getItem('echocity_ref_code')
+        if (storedCode) setReferralCode(storedCode)
+      } catch {
+        // ignore storage errors
+      }
+    }
+  }, [searchParams])
 
   const redirectAfterLogin = (role: string) => {
     if (redirectTo) {
@@ -141,6 +162,10 @@ function RegisterContent() {
         payload.phone = phone || undefined
         payload.city = city || undefined
         payload.language = language || 'ru'
+      }
+
+      if (referralCode) {
+        payload.referralCode = referralCode
       }
 
       const response = await fetch('/api/auth/register', {

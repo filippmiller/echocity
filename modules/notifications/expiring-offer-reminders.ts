@@ -106,114 +106,164 @@ export function resolveChannels(
 /**
  * Send an expiring-offer reminder to a user for a specific offer.
  * Respects user preferences and writes a ReminderLog row per channel to dedupe.
+ *
+ * The whole function is wrapped in a try/catch so one bad reminder never
+ * aborts the surrounding batch.
  */
 export async function sendReminder(
   userId: string,
   offerId: string,
   channels: ReminderChannel[] = ['push', 'email']
 ): Promise<{ sent: ReminderChannel[]; skipped: ReminderChannel[] }> {
-  const [offer, profile, user] = await Promise.all([
-    prisma.offer.findUnique({
-      where: { id: offerId },
-      select: {
-        id: true,
-        title: true,
-        endAt: true,
-        branch: { select: { title: true, city: true } },
-        merchant: { select: { name: true } },
-      },
-    }),
-    prisma.userProfile.findUnique({
-      where: { userId },
-      select: {
-        notificationsEnabled: true,
-        pushNotifications: true,
-        emailNotifications: true,
-      },
-    }),
-    prisma.user.findUnique({ where: { id: userId }, select: { email: true } }),
-  ])
+  try {
+    const [offer, profile, user] = await Promise.all([
+      prisma.offer.findUnique({
+        where: { id: offerId },
+        select: {
+          id: true,
+          title: true,
+          endAt: true,
+          branch: { select: { title: true, city: true } },
+          merchant: { select: { name: true } },
+        },
+      }),
+      prisma.userProfile.findUnique({
+        where: { userId },
+        select: {
+          notificationsEnabled: true,
+          pushNotifications: true,
+          emailNotifications: true,
+        },
+      }),
+      prisma.user.findUnique({ where: { id: userId }, select: { email: true } }),
+    ])
 
-  if (!offer) {
-    logger.warn('expiringReminder.offerNotFound', { userId, offerId })
+    if (!offer) {
+      logger.warn('expiringReminder.offerNotFound', { userId, offerId })
+      return { sent: [], skipped: channels }
+    }
+
+    const enabledChannels = resolveChannels(profile, channels)
+    const skipped = channels.filter((c) => !enabledChannels.includes(c))
+    const sent: ReminderChannel[] = []
+
+    const placeName = offer.branch?.title || offer.merchant?.name || 'заведении'
+    const hoursLeft = offer.endAt
+      ? Math.max(1, Math.round((offer.endAt.getTime() - Date.now()) / 3_600_000))
+      : undefined
+
+    const body = hoursLeft
+      ? `Скидка "${offer.title}" в ${placeName} заканчивается через ${hoursLeft} ч`
+      : `Скидка "${offer.title}" в ${placeName} скоро закончится`
+
+    for (const channel of enabledChannels) {
+      try {
+        if (channel === 'push') {
+          await sendPushNotification(userId, {
+            title: 'Скидка заканчивается',
+            body,
+            url: `/offers/${offerId}`,
+            type: NotificationType.EXPIRY_REMINDER,
+          })
+        }
+
+        if (channel === 'email') {
+          if (!isEmailDeliveryConfigured() || !user?.email) {
+            skipped.push('email')
+            continue
+          }
+          await sendEmail({
+            to: user.email,
+            subject: 'Скидка заканчивается',
+            html: `<p>${body}</p><p><a href="/offers/${offerId}">Открыть скидку</a></p>`,
+            text: `${body}\n/offers/${offerId}`,
+          })
+        }
+
+        await prisma.reminderLog.create({
+          data: { userId, offerId, channel, type: REMINDER_TYPE },
+        })
+        sent.push(channel)
+      } catch (err) {
+        logger.error('expiringReminder.sendFailed', { userId, offerId, channel, error: String(err) })
+      }
+    }
+
+    return { sent, skipped }
+  } catch (err) {
+    logger.error('expiringReminder.unexpectedFailure', { userId, offerId, error: String(err) })
     return { sent: [], skipped: channels }
   }
+}
 
-  const enabledChannels = resolveChannels(profile, channels)
-  const skipped = channels.filter((c) => !enabledChannels.includes(c))
-  const sent: ReminderChannel[] = []
+function isPushConfigured(): boolean {
+  return Boolean(
+    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY &&
+      process.env.VAPID_PRIVATE_KEY &&
+      process.env.VAPID_SUBJECT,
+  )
+}
 
-  const placeName = offer.branch?.title || offer.merchant?.name || 'заведении'
-  const hoursLeft = offer.endAt
-    ? Math.max(1, Math.round((offer.endAt.getTime() - Date.now()) / 3_600_000))
-    : undefined
+export interface ReminderOpsStatus {
+  pendingOffers: number
+  lastRunAt: Date | null
+  channelsConfigured: { push: boolean; email: boolean }
+  isHealthy: boolean
+}
 
-  const body = hoursLeft
-    ? `Скидка "${offer.title}" в ${placeName} заканчивается через ${hoursLeft} ч`
-    : `Скидка "${offer.title}" в ${placeName} скоро закончится`
+/**
+ * Operational status for the expiring-offer reminder flow.
+ * Safe to call from admin health endpoints: it does not send anything.
+ */
+export async function getReminderOpsStatus(): Promise<ReminderOpsStatus> {
+  const [pendingOffers, lastRunAgg, channelsConfigured] = await Promise.all([
+    findExpiringSavedOffers(24).then((offers) => offers.length),
+    prisma.reminderLog.aggregate({
+      where: { type: REMINDER_TYPE },
+      _max: { sentAt: true },
+    }),
+    Promise.resolve({ push: isPushConfigured(), email: isEmailDeliveryConfigured() }),
+  ])
 
-  for (const channel of enabledChannels) {
-    try {
-      if (channel === 'push') {
-        await sendPushNotification(userId, {
-          title: 'Скидка заканчивается',
-          body,
-          url: `/offers/${offerId}`,
-          type: NotificationType.EXPIRY_REMINDER,
-        })
-      }
+  const lastRunAt = lastRunAgg._max.sentAt ?? null
+  const isHealthy = pendingOffers === 0 || channelsConfigured.push || channelsConfigured.email
 
-      if (channel === 'email') {
-        if (!isEmailDeliveryConfigured() || !user?.email) {
-          skipped.push('email')
-          continue
-        }
-        await sendEmail({
-          to: user.email,
-          subject: 'Скидка заканчивается',
-          html: `<p>${body}</p><p><a href="/offers/${offerId}">Открыть скидку</a></p>`,
-          text: `${body}\n/offers/${offerId}`,
-        })
-      }
-
-      await prisma.reminderLog.create({
-        data: { userId, offerId, channel, type: REMINDER_TYPE },
-      })
-      sent.push(channel)
-    } catch (err) {
-      logger.error('expiringReminder.sendFailed', { userId, offerId, channel, error: String(err) })
-    }
-  }
-
-  return { sent, skipped }
+  return { pendingOffers, lastRunAt, channelsConfigured, isHealthy }
 }
 
 /**
  * Cron-ready batch processor: finds all expiring saved offers and sends
  * reminders respecting user preferences and deduplicating via ReminderLog.
+ *
+ * Any unexpected error is caught and logged so the cron loop keeps running.
  */
 export async function processExpiringOfferReminders(windowHours = 24): Promise<number> {
-  const offers = await findExpiringSavedOffers(windowHours)
-  if (offers.length === 0) return 0
+  try {
+    const offers = await findExpiringSavedOffers(windowHours)
+    if (offers.length === 0) return 0
 
-  const results = await Promise.allSettled(
-    offers.map(({ userId, offerId }) =>
-      sendReminder(userId, offerId, ['push', 'email']).catch((err) => {
-        logger.error('expiringReminder.batchItemFailed', { userId, offerId, error: String(err) })
-        return { sent: [] as ReminderChannel[], skipped: ['push', 'email'] as ReminderChannel[] }
-      })
+    const results = await Promise.allSettled(
+      offers.map(({ userId, offerId }) =>
+        sendReminder(userId, offerId, ['push', 'email']).catch((err) => {
+          logger.error('expiringReminder.batchItemFailed', { userId, offerId, error: String(err) })
+          return { sent: [] as ReminderChannel[], skipped: ['push', 'email'] as ReminderChannel[] }
+        })
+      )
     )
-  )
 
-  const sentCount = results.reduce((sum, r) => {
-    if (r.status !== 'fulfilled') return sum
-    return sum + r.value.sent.length
-  }, 0)
+    const sentCount = results.reduce((sum, r) => {
+      if (r.status !== 'fulfilled') return sum
+      return sum + r.value.sent.length
+    }, 0)
 
-  logger.info('processExpiringOfferReminders.done', {
-    offerCount: offers.length,
-    sentCount,
-  })
+    logger.info('processExpiringOfferReminders.done', {
+      offerCount: offers.length,
+      sentCount,
+    })
 
-  return sentCount
+    return sentCount
+  } catch (err) {
+    logger.error('processExpiringOfferReminders.failed', { error: String(err) })
+    return 0
+  }
 }

@@ -12,6 +12,7 @@ export interface RegisterUserData {
   phone?: string
   city?: string
   language?: 'ru' | 'en'
+  referralCode?: string
 }
 
 export interface RegisterBusinessData {
@@ -128,6 +129,17 @@ export async function registerUser(data: RegisterUserData): Promise<AuthResult> 
 
     logger.info('auth.register.citizen', { userId: user.id, email: user.email })
 
+    // Apply referral code asynchronously / non-blocking
+    if (data.referralCode) {
+      applyReferralCode(user.id, data.referralCode).catch((err) => {
+        logger.warn('auth.register.referral.applyFailed', {
+          userId: user.id,
+          referralCode: data.referralCode,
+          error: String(err),
+        })
+      })
+    }
+
     return {
       success: true,
       user,
@@ -140,6 +152,45 @@ export async function registerUser(data: RegisterUserData): Promise<AuthResult> 
       errorCode: 'REGISTRATION_ERROR',
     }
   }
+}
+
+async function applyReferralCode(invitedUserId: string, code: string) {
+  const normalizedCode = code.trim().toUpperCase()
+  if (!normalizedCode) return
+
+  const referralCode = await prisma.referralCode.findUnique({
+    where: { code: normalizedCode },
+  })
+
+  if (!referralCode) {
+    logger.info('auth.register.referral.notFound', {
+      invitedUserId,
+      referralCode: normalizedCode,
+    })
+    return
+  }
+
+  if (referralCode.userId === invitedUserId) {
+    logger.info('auth.register.referral.selfReferralIgnored', {
+      invitedUserId,
+      referralCodeId: referralCode.id,
+    })
+    return
+  }
+
+  await prisma.referral.create({
+    data: {
+      referralCodeId: referralCode.id,
+      invitedUserId,
+      status: 'PENDING',
+    },
+  })
+
+  logger.info('auth.register.referral.created', {
+    invitedUserId,
+    referralCodeId: referralCode.id,
+    referrerId: referralCode.userId,
+  })
 }
 
 /**

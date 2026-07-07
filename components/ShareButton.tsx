@@ -2,6 +2,7 @@
 
 import { Share2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { useEffect, useState } from 'react'
 import { useAuth } from '@/lib/auth-client'
 
 interface ShareButtonProps {
@@ -20,13 +21,33 @@ export function ShareButton({
   variant = 'icon',
 }: ShareButtonProps) {
   const { user } = useAuth()
+  const [referralCode, setReferralCode] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!user?.userId) return
+
+    let cancelled = false
+    fetch('/api/referrals')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!cancelled && data?.code) {
+          setReferralCode(data.code)
+        }
+      })
+      .catch(() => {})
+
+    return () => {
+      cancelled = true
+    }
+  }, [user?.userId])
 
   // Append referral param if user is logged in
   const shareUrl = (() => {
     if (!user?.userId) return url
     try {
       const u = new URL(url, typeof window !== 'undefined' ? window.location.origin : undefined)
-      u.searchParams.set('ref', user.userId.slice(0, 8)) // Short ref ID for cleaner URLs
+      const ref = referralCode ?? user.userId.slice(0, 8)
+      u.searchParams.set('ref', ref)
       return u.toString()
     } catch {
       return url

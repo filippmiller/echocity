@@ -175,7 +175,10 @@ export default function OfferReviews({ offerId }: OfferReviewsProps) {
                     {review.authorName}
                   </span>
                   {review.isVerifiedVisit && (
-                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-green-50 text-green-600 text-[10px] font-semibold">
+                    <span
+                      title="Отзыв оставлен после успешного использования предложения"
+                      className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-green-50 text-green-600 text-[10px] font-semibold"
+                    >
                       <BadgeCheck className="w-3 h-3" />
                       Визит подтверждён
                     </span>

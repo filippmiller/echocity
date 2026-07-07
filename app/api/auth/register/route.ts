@@ -13,6 +13,7 @@ const registerUserSchema = z.object({
   phone: z.string().max(30).optional(),
   city: z.string().max(200).optional(),
   language: z.enum(['ru', 'en']).optional(),
+  referralCode: z.string().max(50).optional(),
   termsAccepted: z.literal(true, {
     errorMap: () => ({ message: 'Необходимо принять условия использования' }),
   }),
@@ -37,6 +38,7 @@ export async function POST(request: NextRequest) {
         phone: validated.phone,
         city: validated.city,
         language: validated.language,
+        referralCode: validated.referralCode,
       })
     } else if (validated.accountType === 'BUSINESS_OWNER') {
       // Business registration should go through /business/register wizard

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { getBenefitBadge, getEstimatedSavings, buildYandexMapsRouteUrl } from '@/lib/offer-utils'
+import { getBenefitBadge, getEstimatedSavings, formatPrice, getPricePair, buildYandexMapsRouteUrl } from '@/lib/offer-utils'
 
 describe('lib/offer-utils', () => {
   describe('getBenefitBadge', () => {
@@ -57,8 +57,52 @@ describe('lib/offer-utils', () => {
       expect(getEstimatedSavings('PERCENT', 20)).toBeNull()
     })
 
-    it('returns null for free items', () => {
+    it('returns null for free items without item value', () => {
       expect(getEstimatedSavings('FREE_ITEM', 0)).toBeNull()
+    })
+
+    it('computes free item savings from item value metadata', () => {
+      expect(getEstimatedSavings('FREE_ITEM', 0, { itemValue: 350 })).toBe(350)
+    })
+
+    it('computes percent savings from original value', () => {
+      expect(getEstimatedSavings('PERCENT', 20, { originalValue: 1000 })).toBe(200)
+    })
+
+    it('ignores invalid percent values', () => {
+      expect(getEstimatedSavings('PERCENT', 120, { originalValue: 1000 })).toBeNull()
+    })
+
+    it('computes fixed price savings from original value', () => {
+      expect(getEstimatedSavings('FIXED_PRICE', 399, { originalValue: 799 })).toBe(400)
+    })
+
+    it('returns null when fixed price is not less than original', () => {
+      expect(getEstimatedSavings('FIXED_PRICE', 799, { originalValue: 399 })).toBeNull()
+    })
+  })
+
+  describe('formatPrice', () => {
+    it('formats whole ruble amounts', () => {
+      expect(formatPrice(1234)).toBe('1 234 ₽')
+    })
+
+    it('rounds fractional amounts', () => {
+      expect(formatPrice(1234.6)).toBe('1 235 ₽')
+    })
+  })
+
+  describe('getPricePair', () => {
+    it('returns original and current price for fixed price', () => {
+      expect(getPricePair('FIXED_PRICE', 399, { originalValue: 799 })).toEqual({ original: 799, current: 399 })
+    })
+
+    it('returns original and computed current price for percent', () => {
+      expect(getPricePair('PERCENT', 20, { originalValue: 1000 })).toEqual({ original: 1000, current: 800 })
+    })
+
+    it('returns null when data is missing', () => {
+      expect(getPricePair('FIXED_AMOUNT', 200)).toBeNull()
     })
   })
 

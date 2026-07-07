@@ -324,6 +324,13 @@ export default function ProfilePage() {
             badge={stats.redemptionCount > 0 ? `${stats.redemptionCount}` : null}
           />
           <div className="h-px bg-gray-100 ml-12" />
+          <MenuLink
+            href="/profile/savings"
+            icon={PiggyBank}
+            label="Моя экономия"
+            badge={stats.savedTotal > 0 ? `${formatSavedAmount(stats.savedTotal)} ₽` : null}
+          />
+          <div className="h-px bg-gray-100 ml-12" />
           <MenuLink href="/favorites" icon={Heart} label="Избранное" />
           <div className="h-px bg-gray-100 ml-12" />
           <MenuLink

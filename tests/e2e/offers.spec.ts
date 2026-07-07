@@ -24,6 +24,72 @@ test.describe('Offers — Discovery', () => {
     // Filter chips: "Все", "Бесплатные", "Plus"
     await expect(page.getByText('Все', { exact: true }).first()).toBeVisible()
   })
+
+  test('repeat last search affordance restores stored filters', async ({ page }) => {
+    await page.goto('/offers')
+    await page.waitForTimeout(500)
+
+    // Dismiss onboarding overlay if present
+    const skipBtn = page.getByText('Пропустить')
+    if (await skipBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await skipBtn.click()
+      await page.waitForTimeout(500)
+    }
+
+    // Apply a non-default filter (category)
+    await page.getByText('Кофе', { exact: true }).click()
+    await page.waitForTimeout(500)
+    await expect(page).toHaveURL(/category=coffee/)
+
+    // Navigate back to /offers with no params
+    await page.goto('/offers')
+    await page.waitForTimeout(500)
+
+    // Dismiss onboarding overlay again if it re-appears on fresh navigation
+    if (await skipBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await skipBtn.click()
+      await page.waitForTimeout(500)
+    }
+
+    // Repeat-last-search chip should appear
+    const repeatChip = page.getByText('Повторить последний поиск', { exact: true })
+    await expect(repeatChip).toBeVisible()
+
+    // Clicking it should restore the stored filter
+    await repeatChip.click()
+    await page.waitForTimeout(500)
+    await expect(page).toHaveURL(/category=coffee/)
+  })
+
+  test('URL params hide repeat last search affordance', async ({ page }) => {
+    // Seed a recent filter first
+    await page.goto('/offers')
+    await page.waitForTimeout(500)
+
+    const skipBtn = page.getByText('Пропустить')
+    if (await skipBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await skipBtn.click()
+      await page.waitForTimeout(500)
+    }
+
+    await page.getByText('Еда', { exact: true }).click()
+    await page.waitForTimeout(500)
+    await expect(page).toHaveURL(/category=food/)
+
+    // Return with a different URL param
+    await page.goto('/offers?category=beauty')
+    await page.waitForTimeout(500)
+
+    // Dismiss onboarding overlay again if it re-appears
+    if (await skipBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await skipBtn.click()
+      await page.waitForTimeout(500)
+    }
+
+    // Repeat chip should not be shown because URL params win
+    await expect(page.getByText('Повторить последний поиск', { exact: true })).not.toBeVisible()
+    await expect(page).toHaveURL(/category=beauty/)
+  })
 })
 
 test.describe('Offers — Flash deals on home', () => {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/modules/auth/session'
 import { uploadFile } from '@/lib/supabase'
+import { prisma } from '@/lib/prisma'
 import { randomUUID } from 'crypto'
 import { logger } from '@/lib/logger'
 
@@ -16,6 +17,19 @@ export async function POST(request: NextRequest) {
   const session = await getSession()
   if (!session) {
     return NextResponse.json({ error: 'Необходимо войти в аккаунт' }, { status: 401 })
+  }
+
+  // Only users with at least one successful redemption can upload review photos.
+  const successfulRedemption = await prisma.redemption.findFirst({
+    where: { userId: session.userId, status: 'SUCCESS' },
+    select: { id: true },
+  })
+
+  if (!successfulRedemption) {
+    return NextResponse.json(
+      { error: 'Загрузка фото доступна только после успешного использования предложения' },
+      { status: 403 }
+    )
   }
 
   let formData: FormData

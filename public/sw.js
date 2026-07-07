@@ -7,7 +7,7 @@
  */
 
 const CACHE_NAME = 'echocity-v1'
-const STATIC_ASSETS = ['/', '/offers', '/manifest.json']
+const STATIC_ASSETS = ['/', '/offers', '/offline', '/manifest.json']
 
 // Install: cache static assets
 self.addEventListener('install', (event) => {
@@ -54,7 +54,7 @@ self.addEventListener('fetch', (event) => {
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone))
           return response
         })
-        .catch(() => caches.match(event.request).then((cached) => cached || caches.match('/')))
+        .catch(() => caches.match(event.request).then((cached) => cached || caches.match('/offline')))
     )
     return
   }
@@ -65,7 +65,7 @@ self.addEventListener('push', function (event) {
   const title = data.title || 'ГдеСейчас'
   const options = {
     body: data.body || '',
-    icon: data.icon || '/icon-192.png',
+    icon: data.icon || '/favicon.svg',
     badge: data.badge || '/badge-72.png',
     data: { url: data.url || '/' },
     vibrate: [100, 50, 100],

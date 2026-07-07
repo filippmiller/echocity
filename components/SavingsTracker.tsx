@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { PiggyBank, TrendingUp, TrendingDown, Share2 } from 'lucide-react'
 import { useAuth } from '@/lib/auth-client'
 import { toast } from 'sonner'
@@ -16,9 +16,40 @@ interface SavingsData {
 
 const MONTH_SHORT = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек']
 
+const PLACE_TYPE_LABELS: Record<string, string> = {
+  CAFE: 'Кафе',
+  RESTAURANT: 'Ресторан',
+  BAR: 'Бар',
+  BEAUTY: 'Красота',
+  NAILS: 'Ногтевой сервис',
+  HAIR: 'Парикмахерская',
+  DRYCLEANING: 'Химчистка',
+  OTHER: 'Другое',
+}
+
+const SHARE_URL = 'https://echocity.filippmiller.com'
+
 function formatMonth(monthStr: string): string {
   const parts = monthStr.split('-')
   return MONTH_SHORT[parseInt(parts[1]) - 1] || monthStr
+}
+
+function getCategoryLabel(placeType: string): string {
+  return PLACE_TYPE_LABELS[placeType] || placeType
+}
+
+function buildZeroFilledSeries(
+  series: Array<{ month: string; rubles: number }>
+): Array<{ month: string; rubles: number }> {
+  const months: string[] = []
+  const now = new Date()
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    months.push(key)
+  }
+  const map = new Map(series.map((s) => [s.month, s.rubles]))
+  return months.map((month) => ({ month, rubles: map.get(month) ?? 0 }))
 }
 
 export function SavingsTracker() {
@@ -37,12 +68,12 @@ export function SavingsTracker() {
 
   const handleShare = async () => {
     if (!data) return
-    const text = `Я сэкономил${data.lifetime.rubles.toLocaleString('ru-RU')} ₽ на ${data.lifetime.count} скидках с ГдеСейчас! 🎉`
+    const text = `Я сэкономил ${data.lifetime.rubles.toLocaleString('ru-RU')} ₽ на ${data.lifetime.count} скидках с EchoCity! 🎉`
     try {
       if (navigator.share) {
-        await navigator.share({ text, url: 'https://gdesejchas.ru' })
+        await navigator.share({ text, url: SHARE_URL })
       } else {
-        await navigator.clipboard.writeText(text)
+        await navigator.clipboard.writeText(`${text} ${SHARE_URL}`)
         toast.success('Скопировано для отправки')
       }
     } catch {
@@ -50,10 +81,15 @@ export function SavingsTracker() {
     }
   }
 
+  const monthlySeries = useMemo(() => {
+    if (!data) return []
+    return buildZeroFilledSeries(data.monthlySeries)
+  }, [data])
+
   if (!user || loading || !data) return null
 
   const maxCategory = Math.max(...data.categories.map((c) => c.rubles), 1)
-  const maxMonth = Math.max(...data.monthlySeries.map((m) => m.rubles), 1)
+  const maxMonth = Math.max(...monthlySeries.map((m) => m.rubles), 1)
 
   return (
     <div className="bg-white rounded-2xl shadow-sm overflow-hidden mx-4 mt-4">
@@ -71,6 +107,7 @@ export function SavingsTracker() {
             onClick={handleShare}
             className="p-2 bg-white/20 rounded-lg hover:bg-white/30 transition-colors"
             title="Поделиться"
+            type="button"
           >
             <Share2 className="w-5 h-5" />
           </button>
@@ -83,22 +120,29 @@ export function SavingsTracker() {
             <p className="text-lg font-bold">{data.thisMonth.rubles.toLocaleString('ru-RU')} ₽</p>
           </div>
           {data.monthOverMonth !== null && (
-            <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold ${
-              data.monthOverMonth >= 0 ? 'bg-green-400/30 text-white' : 'bg-red-400/30 text-white'
-            }`}>
-              {data.monthOverMonth >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-              {data.monthOverMonth > 0 ? '+' : ''}{data.monthOverMonth}%
+            <div
+              className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold ${
+                data.monthOverMonth >= 0 ? 'bg-green-400/30 text-white' : 'bg-red-400/30 text-white'
+              }`}
+            >
+              {data.monthOverMonth >= 0 ? (
+                <TrendingUp className="w-3 h-3" />
+              ) : (
+                <TrendingDown className="w-3 h-3" />
+              )}
+              {data.monthOverMonth > 0 ? '+' : ''}
+              {data.monthOverMonth}%
             </div>
           )}
         </div>
       </div>
 
       {/* Monthly bar chart */}
-      {data.monthlySeries.length > 1 && (
+      {monthlySeries.length > 1 && (
         <div className="p-4 border-b border-gray-100">
           <h3 className="text-sm font-semibold text-gray-800 mb-3">По месяцам</h3>
           <div className="flex items-end gap-2 h-24">
-            {data.monthlySeries.map((m) => {
+            {monthlySeries.map((m) => {
               const height = maxMonth > 0 ? (m.rubles / maxMonth) * 100 : 0
               return (
                 <div key={m.month} className="flex-1 flex flex-col items-center gap-1">
@@ -123,10 +167,14 @@ export function SavingsTracker() {
             {data.categories.map((cat) => {
               const width = maxCategory > 0 ? (cat.rubles / maxCategory) * 100 : 0
               return (
-                <div key={cat.placeType}>
+                <div key={cat.placeType || cat.name}>
                   <div className="flex items-center justify-between mb-0.5">
-                    <span className="text-xs text-gray-600">{cat.name}</span>
-                    <span className="text-xs font-medium text-gray-800">{cat.rubles.toLocaleString('ru-RU')} ₽</span>
+                    <span className="text-xs text-gray-600">
+                      {getCategoryLabel(cat.placeType || cat.name)}
+                    </span>
+                    <span className="text-xs font-medium text-gray-800">
+                      {cat.rubles.toLocaleString('ru-RU')} ₽
+                    </span>
                   </div>
                   <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                     <div
