@@ -4,12 +4,14 @@ RUN apk add --no-cache libc6-compat openssl
 
 WORKDIR /app
 
+RUN addgroup -S app && adduser -S -G app app
+
 COPY package.json package-lock.json* ./
 
 # Install ALL deps including devDeps for build (Coolify injects NODE_ENV=production which skips devDeps)
 RUN NODE_ENV=development npm ci
 
-COPY . .
+COPY --chown=app:app . .
 
 RUN npx prisma generate
 
@@ -20,9 +22,6 @@ ENV NEXTAUTH_SECRET=build-time-placeholder
 RUN npm run build
 ENV SESSION_SECRET=
 ENV NEXTAUTH_SECRET=
-
-RUN addgroup -S app && adduser -S -G app app
-RUN chown -R app:app /app
 
 EXPOSE 3000
 ENV PORT=3000
