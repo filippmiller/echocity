@@ -6,6 +6,7 @@ import { OfferCard } from "@/components/OfferCard"
 import { BundleCard } from "@/components/BundleCard"
 import { Footer } from "@/components/Footer"
 import { SavingsCounter } from "@/components/SavingsCounter"
+import { HomeCityBadge } from "@/components/HomeCityBadge"
 import { CollectionCard } from "@/components/CollectionCard"
 import { HomeStoriesBar } from "@/components/HomeStoriesBar"
 import { ForYouSection } from "@/components/ForYouSection"
@@ -170,6 +171,9 @@ function mapOfferToCard(offer: any) {
     expiresAt: offer.endAt?.toISOString(),
     isFlash: offer.offerType === 'FLASH',
     maxRedemptions: offer.limits?.totalLimit ?? null,
+    branchLat: offer.branch?.lat ?? null,
+    branchLng: offer.branch?.lng ?? null,
+    metadata: offer.metadata,
   }
 }
 
@@ -183,10 +187,7 @@ export default async function Home() {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/images/hero-bg.jpg" alt="" className="absolute inset-0 w-full h-full object-cover opacity-25 mix-blend-soft-light" />
         <div className="max-w-5xl mx-auto text-center relative z-10">
-          <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-3 py-1 text-xs font-medium text-blue-100 mb-4">
-            <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
-            Санкт-Петербург &middot; {allActive} скидок
-          </div>
+          <HomeCityBadge allActive={allActive} />
           <h1 className="text-3xl md:text-4xl font-bold mb-2 leading-tight">
             Скидки рядом с вами
           </h1>

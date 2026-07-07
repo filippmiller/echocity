@@ -124,13 +124,14 @@ export async function getOfferById(offerId: string): Promise<OfferWithDetails | 
       blackoutDates: true,
       branch: { select: { id: true, title: true, address: true, city: true, lat: true, lng: true, nearestMetro: true } },
       merchant: { select: { id: true, name: true, isVerified: true } },
+      offerReviews: { where: { isPublished: true }, select: { rating: true } },
     },
   }) as any
 }
 
 export async function getActiveOffersByCity(
   cityName: string,
-  options?: { visibility?: string; category?: string; metro?: string; limit?: number; offset?: number },
+  options?: { visibility?: string; category?: string; metro?: string; benefitType?: string; limit?: number; offset?: number },
 ) {
   const now = new Date()
   const isSurprise = options?.category === 'surprise'
@@ -154,12 +155,14 @@ export async function getActiveOffersByCity(
         ...(options?.metro ? { nearestMetro: { contains: options.metro, mode: 'insensitive' } } : {}),
       },
       ...(options?.visibility ? { visibility: options.visibility as any } : {}),
+      ...(options?.benefitType ? { benefitType: options.benefitType as any } : {}),
     },
     include: {
       schedules: true,
       limits: true,
       branch: { select: { id: true, title: true, address: true, city: true, lat: true, lng: true, nearestMetro: true } },
       merchant: { select: { id: true, name: true, isVerified: true } },
+      offerReviews: { where: { isPublished: true }, select: { rating: true } },
       _count: { select: { redemptions: true, offerReviews: true } },
     },
     orderBy: { createdAt: 'desc' },

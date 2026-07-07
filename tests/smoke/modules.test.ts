@@ -15,6 +15,23 @@ describe('modules/auth/session exports', () => {
   })
 })
 
+describe('modules/auth/password-reset exports', () => {
+  it('exports password reset request and confirm functions', async () => {
+    const mod = await import('@/modules/auth/password-reset')
+    expect(typeof mod.requestPasswordReset).toBe('function')
+    expect(typeof mod.confirmPasswordReset).toBe('function')
+    expect(typeof mod.hashResetToken).toBe('function')
+  })
+})
+
+describe('modules/email/resend exports', () => {
+  it('exports email delivery helpers', async () => {
+    const mod = await import('@/modules/email/resend')
+    expect(typeof mod.isEmailDeliveryConfigured).toBe('function')
+    expect(typeof mod.sendEmail).toBe('function')
+  })
+})
+
 describe('modules/offers/service exports', () => {
   it('exports offer CRUD and validation functions', async () => {
     const mod = await import('@/modules/offers/service')

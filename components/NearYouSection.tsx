@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react'
 import { MapPin, Navigation, Loader2 } from 'lucide-react'
 import { OfferCard } from '@/components/OfferCard'
+import { useCity } from '@/components/CitySelector'
 
 interface NearbyOffer {
   id: string
@@ -25,6 +26,7 @@ interface NearbyOffer {
 type LocationState = 'idle' | 'requesting' | 'loading' | 'loaded' | 'denied' | 'error'
 
 export function NearYouSection() {
+  const { city } = useCity()
   const [state, setState] = useState<LocationState>('idle')
   const [offers, setOffers] = useState<NearbyOffer[]>([])
   const [distanceLabel, setDistanceLabel] = useState('')
@@ -44,7 +46,7 @@ export function NearYouSection() {
 
         try {
           const response = await fetch(
-            `/api/offers/nearby?lat=${latitude}&lng=${longitude}&radius=10&city=Санкт-Петербург`
+            `/api/offers/nearby?lat=${latitude}&lng=${longitude}&radius=10&city=${encodeURIComponent(city)}`
           )
           if (!response.ok) throw new Error('Failed to fetch')
           const data = await response.json()

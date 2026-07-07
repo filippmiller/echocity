@@ -19,7 +19,7 @@ interface OfferData {
   benefitType: string
   benefitValue: number
   imageUrl: string | null
-  branch: { title: string; address: string; city: string; nearestMetro?: string | null }
+  branch: { title: string; address: string; city: string; nearestMetro?: string | null; lat?: number | null; lng?: number | null }
   merchant: { name: string; isVerified?: boolean }
   endAt?: string | null
   expiresAt?: string | null
@@ -32,9 +32,14 @@ interface OfferData {
   nearestMetro?: string | null
   isVerified?: boolean
   reviewCount?: number
+  avgRating?: number | null
+  branchLat?: number | null
+  branchLng?: number | null
+  branchAddress?: string | null
+  metadata?: unknown
 }
 
-export function OfferFeed({ city, visibility, category, activeNow, metro }: { city?: string; visibility?: string; category?: string; activeNow?: boolean; metro?: string }) {
+export function OfferFeed({ city, visibility, category, activeNow, metro, benefitType }: { city?: string; visibility?: string; category?: string; activeNow?: boolean; metro?: string; benefitType?: string }) {
   const [offers, setOffers] = useState<OfferData[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -45,6 +50,7 @@ export function OfferFeed({ city, visibility, category, activeNow, metro }: { ci
     if (category && category !== 'all') params.set('category', category)
     if (activeNow) params.set('activeNow', 'true')
     if (metro) params.set('metro', metro)
+    if (benefitType) params.set('benefitType', benefitType)
 
     fetch(`/api/offers?${params}`)
       .then((r) => r.json())
@@ -91,7 +97,6 @@ export function OfferFeed({ city, visibility, category, activeNow, metro }: { ci
           benefitValue={Number(offer.benefitValue)}
           imageUrl={offer.imageUrl}
           branchName={offer.branch.title}
-          branchAddress={offer.branch.address}
           expiresAt={offer.expiresAt || offer.endAt}
           redemptionCount={offer.redemptionCount}
           maxRedemptions={offer.maxRedemptions}
@@ -101,6 +106,11 @@ export function OfferFeed({ city, visibility, category, activeNow, metro }: { ci
           nearestMetro={offer.nearestMetro ?? offer.branch?.nearestMetro}
           isVerified={offer.isVerified ?? offer.merchant?.isVerified}
           reviewCount={offer.reviewCount}
+          avgRating={offer.avgRating}
+          branchLat={offer.branchLat ?? offer.branch?.lat ?? null}
+          branchLng={offer.branchLng ?? offer.branch?.lng ?? null}
+          branchAddress={offer.branchAddress ?? offer.branch?.address ?? null}
+          metadata={(offer as any).metadata}
         />
       ))}
     </div>

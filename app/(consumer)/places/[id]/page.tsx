@@ -7,6 +7,8 @@ import PlaceCard from '@/components/PlaceCard'
 import ReviewsSection from '@/components/ReviewsSection'
 import { OfferCard } from '@/components/OfferCard'
 import { DemandButton } from '@/components/DemandButton'
+import { buildYandexMapsRouteUrl } from '@/lib/offer-utils'
+import { Navigation } from 'lucide-react'
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params
@@ -114,9 +116,11 @@ export default async function PlacePage({ params }: PageProps) {
         approvalStatus: 'APPROVED',
       },
       include: {
-        branch: { select: { id: true, title: true, address: true, city: true } },
-        merchant: { select: { id: true, name: true } },
+        branch: { select: { id: true, title: true, address: true, city: true, lat: true, lng: true } },
+        merchant: { select: { id: true, name: true, isVerified: true } },
         limits: true,
+        offerReviews: { where: { isPublished: true }, select: { rating: true } },
+        _count: { select: { redemptions: true, offerReviews: true } },
       },
       orderBy: { createdAt: 'desc' },
       take: 6,
@@ -166,6 +170,11 @@ export default async function PlacePage({ params }: PageProps) {
   }
 
   const totalDemand = demandRequests.reduce((sum, d) => sum + d.supportCount, 0)
+  const placeLat = place.lat ?? place.latitude ?? null
+  const placeLng = place.lng ?? place.longitude ?? null
+  const mapRouteUrl = placeLat != null && placeLng != null
+    ? buildYandexMapsRouteUrl(placeLat, placeLng, `${place.address}, ${place.city}`)
+    : null
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -175,6 +184,21 @@ export default async function PlacePage({ params }: PageProps) {
           averageRating={averageRating}
           reviewCount={place._count.reviews}
         />
+
+        {/* Route to place */}
+        {mapRouteUrl && (
+          <div className="mt-6">
+            <a
+              href={mapRouteUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-white border border-gray-200 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-colors"
+            >
+              <Navigation className="w-5 h-5" />
+              Построить маршрут
+            </a>
+          </div>
+        )}
 
         {/* Reservation button */}
         {(place.placeType === 'CAFE' || place.placeType === 'RESTAURANT' || place.placeType === 'BAR') && (
@@ -199,24 +223,37 @@ export default async function PlacePage({ params }: PageProps) {
               Предложения
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {offers.map((offer) => (
-                <OfferCard
-                  key={offer.id}
-                  id={offer.id}
-                  title={offer.title}
-                  subtitle={offer.subtitle}
-                  offerType={offer.offerType}
-                  visibility={offer.visibility}
-                  benefitType={offer.benefitType}
-                  benefitValue={Number(offer.benefitValue)}
-                  imageUrl={offer.imageUrl}
-                  branchName={offer.branch.title}
-                  branchAddress={offer.branch.address}
-                  expiresAt={offer.endAt?.toISOString()}
-                  isFlash={offer.offerType === 'FLASH'}
-                  maxRedemptions={offer.limits?.totalLimit ?? null}
-                />
-              ))}
+              {offers.map((offer) => {
+                const reviews = offer.offerReviews ?? []
+                const avgRating = reviews.length > 0
+                  ? Number((reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1))
+                  : null
+                return (
+                  <OfferCard
+                    key={offer.id}
+                    id={offer.id}
+                    title={offer.title}
+                    subtitle={offer.subtitle}
+                    offerType={offer.offerType}
+                    visibility={offer.visibility}
+                    benefitType={offer.benefitType}
+                    benefitValue={Number(offer.benefitValue)}
+                    imageUrl={offer.imageUrl}
+                    branchName={offer.branch.title}
+                    branchAddress={offer.branch.address}
+                    expiresAt={offer.endAt?.toISOString()}
+                    isFlash={offer.offerType === 'FLASH'}
+                    maxRedemptions={offer.limits?.totalLimit ?? null}
+                    redemptionCount={offer._count?.redemptions ?? 0}
+                    reviewCount={offer._count?.offerReviews ?? 0}
+                    avgRating={avgRating}
+                    isVerified={offer.merchant?.isVerified}
+                    branchLat={offer.branch.lat}
+                    branchLng={offer.branch.lng}
+                    metadata={offer.metadata}
+                  />
+                )
+              })}
             </div>
           </section>
         )}

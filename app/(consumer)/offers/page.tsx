@@ -15,6 +15,7 @@ import { NearbyOffers } from '@/components/NearbyOffers'
 import { CollapsibleSection } from '@/components/CollapsibleSection'
 import { StreakWidget } from '@/components/StreakWidget'
 import { useCompare, CompareBar } from '@/components/OfferCompare'
+import { useCity } from '@/components/CitySelector'
 
 const FILTER_CHIPS = [
   { key: 'all', label: 'Все' },
@@ -22,6 +23,15 @@ const FILTER_CHIPS = [
   { key: 'FREE_FOR_ALL', label: 'Бесплатные' },
   { key: 'MEMBERS_ONLY', label: 'Plus' },
   { key: 'activeNow', label: '🟢 Сейчас' },
+]
+
+const BENEFIT_TYPES = [
+  { key: 'PERCENT', label: 'Скидка %' },
+  { key: 'FIXED_AMOUNT', label: 'Сумма ₽' },
+  { key: 'FIXED_PRICE', label: 'Цена ₽' },
+  { key: 'FREE_ITEM', label: 'Подарок' },
+  { key: 'BUNDLE', label: 'Комплект' },
+  { key: 'MYSTERY_BAG', label: 'Сюрприз' },
 ]
 
 const METRO_STATIONS = [
@@ -63,14 +73,24 @@ export default function OffersPage() {
   )
 }
 
+function CityLabel() {
+  const { city } = useCity()
+  return (
+    <div className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-700 shrink-0 flex items-center gap-1.5">
+      <span>📍</span>
+      {city}
+    </div>
+  )
+}
+
 function OffersContent() {
   const searchParams = useSearchParams()
   const compare = useCompare()
-  const [availableCities, setAvailableCities] = useState<string[]>(['Санкт-Петербург', 'Москва'])
-  const [city, setCity] = useState(searchParams.get('city') || 'Санкт-Петербург')
+  const { city } = useCity()
   const [section, setSection] = useState(searchParams.get('visibility') || 'all')
   const [category, setCategory] = useState(searchParams.get('category') || 'all')
   const [activeNow, setActiveNow] = useState(searchParams.get('activeNow') === 'true')
+  const [benefitType, setBenefitType] = useState(searchParams.get('benefitType') || '')
   const [metro, setMetro] = useState(searchParams.get('metro') || '')
   const [showMetroDropdown, setShowMetroDropdown] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
@@ -85,15 +105,15 @@ function OffersContent() {
   }, [])
 
   useEffect(() => {
-    const nextCity = searchParams.get('city') || 'Санкт-Петербург'
     const nextSection = searchParams.get('visibility') || 'all'
     const nextCategory = searchParams.get('category') || 'all'
     const nextActiveNow = searchParams.get('activeNow') === 'true'
+    const nextBenefitType = searchParams.get('benefitType') || ''
     const nextMetro = searchParams.get('metro') || ''
-    setCity(nextCity)
     setSection(nextSection)
     setCategory(nextCategory)
     setActiveNow(nextActiveNow)
+    setBenefitType(nextBenefitType)
     setMetro(nextMetro)
   }, [searchParams])
 
@@ -105,23 +125,7 @@ function OffersContent() {
       .catch(() => {})
   }, [city])
 
-  useEffect(() => {
-    fetch('/api/public/cities')
-      .then((res) => res.json())
-      .then((data) => {
-        const cityNames = Array.isArray(data.cities)
-          ? data.cities.map((item: { name: string }) => item.name).filter(Boolean)
-          : []
 
-        if (cityNames.length > 0) {
-          setAvailableCities(cityNames)
-          if (!cityNames.includes(city)) {
-            setCity(cityNames[0])
-          }
-        }
-      })
-      .catch(() => {})
-  }, [])
 
   return (
     <div className="min-h-screen bg-white">
@@ -144,13 +148,7 @@ function OffersContent() {
       <div className="sticky top-14 z-30 bg-white border-b border-gray-100 px-4 py-3 shadow-sm">
         <div className="max-w-7xl mx-auto space-y-3">
           <div className="flex items-center gap-3">
-            <select
-              value={city}
-              onChange={(e) => setCity(e.target.value)}
-              className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-700 shrink-0"
-            >
-              {availableCities.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
+            <CityLabel />
 
             <div className="flex gap-2 overflow-x-auto hide-scrollbar">
               {FILTER_CHIPS.map((chip) => {
@@ -173,6 +171,7 @@ function OffersContent() {
                         setSection(chip.key)
                         setActiveNow(false)
                         setShowNearby(false)
+                        setBenefitType('')
                       }
                     }}
                     className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors chip ${
@@ -218,6 +217,23 @@ function OffersContent() {
                 </button>
               )
             })}
+          </div>
+
+          {/* Benefit type filter */}
+          <div className="flex gap-2 overflow-x-auto hide-scrollbar">
+            {BENEFIT_TYPES.map((bt) => (
+              <button
+                key={bt.key}
+                onClick={() => setBenefitType(benefitType === bt.key ? '' : bt.key)}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors chip ${
+                  benefitType === bt.key
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-gray-50 text-gray-600 border border-gray-200 active:bg-gray-100'
+                }`}
+              >
+                {bt.label}
+              </button>
+            ))}
           </div>
 
           {/* Metro filter */}
@@ -297,6 +313,7 @@ function OffersContent() {
               category={category === 'all' ? undefined : category}
               activeNow={activeNow}
               metro={metro || undefined}
+              benefitType={benefitType || undefined}
             />
           </div>
         </div>

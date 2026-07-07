@@ -78,6 +78,18 @@ describe('API Route Exports', () => {
     expect(typeof mod.POST).toBe('function')
   })
 
+  it('POST /api/auth/password-reset/request exports a POST handler', async () => {
+    const mod = await import('@/app/api/auth/password-reset/request/route')
+    expect(mod.POST).toBeDefined()
+    expect(typeof mod.POST).toBe('function')
+  })
+
+  it('POST /api/auth/password-reset/confirm exports a POST handler', async () => {
+    const mod = await import('@/app/api/auth/password-reset/confirm/route')
+    expect(mod.POST).toBeDefined()
+    expect(typeof mod.POST).toBe('function')
+  })
+
   // ── Admin routes ────────────────────────────────────────
 
   it('GET /api/admin/analytics exports a GET handler', async () => {

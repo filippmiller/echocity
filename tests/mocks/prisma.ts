@@ -50,6 +50,7 @@ export interface MockPrismaClient {
   branch: MockModel
   merchant: MockModel
   user: MockModel
+  passwordResetToken: MockModel
   subscriptionPlan: MockModel
   userSubscription: MockModel
   $transaction: MockMethod
@@ -81,6 +82,7 @@ export function createMockPrismaClient(): MockPrismaClient {
     branch: createMockModel(),
     merchant: createMockModel(),
     user: createMockModel(),
+    passwordResetToken: createMockModel(),
     subscriptionPlan: createMockModel(),
     userSubscription: createMockModel(),
     $transaction: vi.fn(async (args: any) => {

@@ -30,15 +30,8 @@ ENV HOSTNAME="0.0.0.0"
 
 USER app
 
-# Boot sequence (fixes schema drift from 2026-04-09 migration squash):
-# 1. Mark 0_init as applied in _prisma_migrations (clears P3009 failed state).
-#    Pre-existing tables from the old non-squashed schema stay in place.
-# 2. prisma db push — reconciles the existing tables with schema.prisma, adding any
-#    columns present in the schema but missing in the DB (e.g. Offer.metadata JSONB).
-#    --accept-data-loss allows non-destructive column additions; it would only drop
-#    data if the schema deleted a column, which is not the case here after a squash.
-#    --skip-generate because generate already ran at build time.
-# 3. Start Next.js.
-# Once the DB is in sync, a single-commit cleanup can drop the resolve + db push steps
-# and go back to plain `prisma migrate deploy && npm start`.
-CMD ["sh", "-c", "(npx prisma migrate resolve --applied 0_init || true) && npx prisma db push --accept-data-loss --skip-generate && npm start"]
+# Apply committed Prisma migrations and start Next.js.
+# If production has legacy migration drift, reconcile it once using the
+# documented operator procedure before deploying this image. Do not run
+# `prisma db push --accept-data-loss` from application startup.
+CMD ["sh", "-c", "npx prisma migrate deploy && npm start"]

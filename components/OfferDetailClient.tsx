@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/lib/auth-client'
 import Link from 'next/link'
-import { MapPin, Clock, Shield, ChevronLeft, Flag, Globe, Copy, Train, Users } from 'lucide-react'
+import { MapPin, Clock, Shield, ChevronLeft, Flag, Globe, Copy, Train, Users, Navigation, Wallet, Star } from 'lucide-react'
 import { ComplaintSheet } from '@/components/ComplaintSheet'
 import { AuthPrompt } from '@/components/AuthPrompt'
 import { useAuthPrompt } from '@/lib/useAuthPrompt'
@@ -18,6 +18,7 @@ import { ExpiryCountdown } from '@/components/ExpiryCountdown'
 import { addRecentlyViewed } from '@/lib/recently-viewed'
 import { RecentActivityTicker } from '@/components/RecentActivityTicker'
 import { toast } from 'sonner'
+import { getEstimatedSavings, buildYandexMapsRouteUrl } from '@/lib/offer-utils'
 
 export interface OfferDetail {
   id: string
@@ -39,10 +40,12 @@ export interface OfferDetail {
   redemptionChannel?: string
   onlineUrl?: string | null
   promoCode?: string | null
-  branch: { id: string; title: string; address: string; city: string; nearestMetro?: string | null }
+  branch: { id: string; title: string; address: string; city: string; nearestMetro?: string | null; lat?: number | null; lng?: number | null }
   merchant: { id: string; name: string; isVerified?: boolean }
   schedules: Array<{ weekday: number; startTime: string; endTime: string }>
   limits: { dailyLimit: number | null; totalLimit: number | null; perUserDailyLimit: number | null } | null
+  metadata?: unknown
+  offerReviews?: Array<{ rating: number }>
 }
 
 const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
@@ -54,6 +57,7 @@ function getBenefitText(benefitType: string, benefitValue: number) {
     case 'FIXED_PRICE': return `${Math.round(benefitValue)}\u20BD`
     case 'FREE_ITEM': return 'Бесплатно'
     case 'BUNDLE': return 'Комплект'
+    case 'MYSTERY_BAG': return 'Сюрприз'
     default: return String(benefitValue)
   }
 }
@@ -175,6 +179,14 @@ export function OfferDetailClient({ offer }: { offer: OfferDetail | null }) {
 
   const isMembersOnly = offer.visibility === 'MEMBERS_ONLY'
   const benefitText = getBenefitText(offer.benefitType, Number(offer.benefitValue))
+  const estimatedSavings = getEstimatedSavings(offer.benefitType, Number(offer.benefitValue), offer.metadata)
+  const publishedReviews = (offer.offerReviews ?? []).filter((r) => r.rating != null)
+  const avgRating = publishedReviews.length > 0
+    ? Number((publishedReviews.reduce((sum, r) => sum + r.rating, 0) / publishedReviews.length).toFixed(1))
+    : null
+  const mapRouteUrl = offer.branch.lat != null && offer.branch.lng != null
+    ? buildYandexMapsRouteUrl(offer.branch.lat, offer.branch.lng, `${offer.branch.address}, ${offer.branch.city}`)
+    : null
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-4 pb-24">
@@ -195,10 +207,16 @@ export function OfferDetailClient({ offer }: { offer: OfferDetail | null }) {
         </div>
       )}
 
-      <div className="flex items-center gap-2 mb-3">
+      <div className="flex items-center gap-2 mb-3 flex-wrap">
         <span className="bg-deal-discount text-white px-3 py-1.5 rounded-lg text-lg font-bold badge">
           {benefitText}
         </span>
+        {estimatedSavings != null && estimatedSavings > 0 && (
+          <span className="flex items-center gap-1 bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-lg text-sm font-semibold badge">
+            <Wallet className="w-3.5 h-3.5" />
+            Экономия до {estimatedSavings.toLocaleString('ru-RU')}₽
+          </span>
+        )}
         {isMembersOnly && (
           <span className="bg-deal-premium text-white px-2.5 py-1 rounded-lg text-sm font-semibold badge">
             Plus
@@ -234,10 +252,27 @@ export function OfferDetailClient({ offer }: { offer: OfferDetail | null }) {
               {offer.branch.nearestMetro}
             </p>
           )}
-          <div className="flex items-center gap-1.5 mt-1">
+          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
             <p className="text-xs text-gray-400">{offer.merchant.name}</p>
             {offer.merchant.isVerified && <VerifiedBadge size="md" />}
+            {avgRating != null && avgRating > 0 && (
+              <span className="flex items-center gap-1 text-xs text-amber-500">
+                <Star className="w-3 h-3 fill-amber-400" />
+                {avgRating} · {publishedReviews.length} {publishedReviews.length === 1 ? 'отзыв' : publishedReviews.length < 5 ? 'отзыва' : 'отзывов'}
+              </span>
+            )}
           </div>
+          {mapRouteUrl && (
+            <a
+              href={mapRouteUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 inline-flex items-center gap-1.5 text-sm text-brand-600 hover:text-brand-700 font-medium"
+            >
+              <Navigation className="w-4 h-4" />
+              Построить маршрут
+            </a>
+          )}
         </div>
       </div>
 

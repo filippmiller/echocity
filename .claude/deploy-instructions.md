@@ -56,6 +56,8 @@ Optional:
 - Container: `b13rk5k1ix7mckiqotydobja`
 - Access: `docker exec b13rk5k1ix7mckiqotydobja psql -U echocity -d echocity`
 - Migrations: Prisma
+- App startup runs `npx prisma migrate deploy && npm start`
+- Legacy migration drift must be reconciled manually before deploy; see `docs/DEPLOYMENT_MIGRATIONS.md`
 
 ## Verification Steps
 
@@ -76,6 +78,7 @@ Optional:
 - **Build fails with SESSION_SECRET error**: Set both `SESSION_SECRET` and `NEXTAUTH_SECRET` as 32+ char strings
 - **Multiple lockfile warning**: Set `outputFileTracingRoot` in `next.config.ts`
 - **Push notifications warning**: Configure VAPID keys (non-blocking)
+- **Prisma migrate fails with drift/P3009**: Stop deployment, take a DB backup, inspect `_prisma_migrations`, and follow `docs/DEPLOYMENT_MIGRATIONS.md`. Do not use `prisma db push --accept-data-loss` as a startup workaround.
 
 ## Last Verified
 

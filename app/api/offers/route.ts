@@ -27,12 +27,13 @@ export async function GET(req: NextRequest) {
   const visibility = req.nextUrl.searchParams.get('visibility') || undefined
   const category = req.nextUrl.searchParams.get('category') || undefined
   const metro = req.nextUrl.searchParams.get('metro') || undefined
+  const benefitType = req.nextUrl.searchParams.get('benefitType') || undefined
   const activeNow = req.nextUrl.searchParams.get('activeNow') === 'true'
   const limit = Math.min(Math.max(parseInt(req.nextUrl.searchParams.get('limit') || '50') || 50, 1), 100)
   const offset = Math.max(parseInt(req.nextUrl.searchParams.get('offset') || '0') || 0, 0)
 
   const [rawOffers, trendingIds] = await Promise.all([
-    getActiveOffersByCity(city, { visibility, category, metro, limit, offset }),
+    getActiveOffersByCity(city, { visibility, category, metro, benefitType, limit, offset }),
     getTrendingOfferIds(city),
   ])
 
@@ -51,6 +52,10 @@ export async function GET(req: NextRequest) {
     .map((offer: any) => {
       const redemptionCount = offer._count?.redemptions ?? 0
       const reviewCount = offer._count?.offerReviews ?? 0
+      const publishedReviews = (offer.offerReviews ?? []).filter((r: any) => r.rating != null)
+      const avgRating = publishedReviews.length > 0
+        ? Number((publishedReviews.reduce((sum: number, r: any) => sum + r.rating, 0) / publishedReviews.length).toFixed(1))
+        : null
       const isTrending = trendingSet.has(offer.id)
       const isFlash = offer.offerType === 'FLASH'
       const ageHours = (now - new Date(offer.createdAt).getTime()) / 3_600_000
@@ -83,6 +88,10 @@ export async function GET(req: NextRequest) {
         nearestMetro: offer.branch?.nearestMetro ?? null,
         isVerified: offer.merchant?.isVerified ?? false,
         reviewCount,
+        avgRating,
+        branchLat: offer.branch?.lat ?? null,
+        branchLng: offer.branch?.lng ?? null,
+        branchAddress: offer.branch?.address ?? null,
         engagementScore: Math.round(engagementScore),
       }
     })

@@ -32,7 +32,7 @@ export default function GroupsPage() {
 
   useEffect(() => {
     if (!authLoading && !user) {
-      router.push('/auth/login?next=/groups')
+      router.push('/auth/login?redirect=/groups')
       return
     }
     if (!authLoading && user) {

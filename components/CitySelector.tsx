@@ -1,38 +1,80 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { useRouter, usePathname } from 'next/navigation'
 import { MapPin, ChevronDown, Check } from 'lucide-react'
 
 const CITY_KEY = 'echocity_city'
 const DEFAULT_CITY = 'Санкт-Петербург'
 
-const CITIES = [
+interface CityOption {
+  name: string
+  shortName: string
+}
+
+const DEFAULT_CITIES: CityOption[] = [
   { name: 'Санкт-Петербург', shortName: 'СПб' },
   { name: 'Москва', shortName: 'Мск' },
 ]
 
 export function useCity() {
+  const router = useRouter()
+  const pathname = usePathname()
   const [city, setCity] = useState(DEFAULT_CITY)
+  const [cities, setCities] = useState<CityOption[]>(DEFAULT_CITIES)
 
+  // Load available cities once
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(CITY_KEY)
-      if (stored) setCity(stored)
-    } catch {}
+    fetch('/api/public/cities')
+      .then((res) => res.json())
+      .then((data) => {
+        const cityNames = Array.isArray(data.cities)
+          ? data.cities.map((item: { name: string; shortName?: string }) => ({
+              name: item.name,
+              shortName: item.shortName || item.name,
+            })).filter((c: CityOption) => c.name)
+          : []
+        if (cityNames.length > 0) {
+          setCities(cityNames)
+        }
+      })
+      .catch(() => {})
   }, [])
 
-  const changeCity = (newCity: string) => {
+  // Initialize from URL (window.location) or localStorage
+  useEffect(() => {
+    let initialCity = DEFAULT_CITY
+    try {
+      const urlCity = new URLSearchParams(window.location.search).get('city')
+      if (urlCity) {
+        initialCity = urlCity
+      } else {
+        const stored = localStorage.getItem(CITY_KEY)
+        if (stored) initialCity = stored
+      }
+    } catch {}
+    setCity(initialCity)
+  }, [])
+
+  const changeCity = useCallback((newCity: string) => {
     setCity(newCity)
     try {
       localStorage.setItem(CITY_KEY, newCity)
     } catch {}
-  }
 
-  return { city, changeCity }
+    // Sync with URL if it already has a city param; otherwise leave URL clean
+    const current = new URLSearchParams(window.location.search)
+    if (current.has('city')) {
+      current.set('city', newCity)
+      router.replace(`${pathname}?${current.toString()}`, { scroll: false })
+    }
+  }, [pathname, router])
+
+  return { city, changeCity, cities }
 }
 
 export function CitySelector() {
-  const { city, changeCity } = useCity()
+  const { city, changeCity, cities } = useCity()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -48,7 +90,7 @@ export function CitySelector() {
     return () => document.removeEventListener('mousedown', handler)
   }, [open])
 
-  const shortName = CITIES.find((c) => c.name === city)?.shortName || city
+  const shortName = cities.find((c) => c.name === city)?.shortName || city
 
   return (
     <div ref={ref} className="relative">
@@ -69,7 +111,7 @@ export function CitySelector() {
             <div className="px-3 py-2 border-b border-gray-100">
               <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Город</p>
             </div>
-            {CITIES.map((c) => (
+            {cities.map((c) => (
               <button
                 key={c.name}
                 onClick={() => { changeCity(c.name); setOpen(false) }}

@@ -1,10 +1,11 @@
 'use client'
 
 import Link from 'next/link'
-import { Clock, Users, Flame, Globe, Train, Star, BadgeCheck } from 'lucide-react'
+import { Clock, Users, Flame, Globe, Train, Star, BadgeCheck, Navigation } from 'lucide-react'
 import { FavoriteButton } from '@/components/FavoriteButton'
 import { VerifiedBadge } from '@/components/VerifiedBadge'
 import { hapticTap } from '@/lib/haptics'
+import { getEstimatedSavings, buildYandexMapsRouteUrl } from '@/lib/offer-utils'
 
 interface ScheduleSlot {
   weekday: number   // 0=Monday..6=Sunday
@@ -34,6 +35,10 @@ interface OfferCardProps {
   isVerified?: boolean
   isTrending?: boolean
   reviewCount?: number
+  avgRating?: number | null
+  branchLat?: number | null
+  branchLng?: number | null
+  metadata?: unknown
 }
 
 type ScheduleStatus =
@@ -96,8 +101,13 @@ export function OfferCard({
   imageUrl, branchName, branchAddress, distance,
   expiresAt, redemptionCount, maxRedemptions, isFlash,
   redemptionChannel, schedules, nearestMetro, isVerified, isTrending, reviewCount,
+  avgRating, branchLat, branchLng, metadata,
 }: OfferCardProps) {
   const badge = getBenefitBadge(benefitType, benefitValue)
+  const estimatedSavings = getEstimatedSavings(benefitType, benefitValue, metadata)
+  const mapUrl = branchLat != null && branchLng != null
+    ? buildYandexMapsRouteUrl(branchLat, branchLng, branchAddress)
+    : null
   const isMembersOnly = visibility === 'MEMBERS_ONLY'
   const timeInfo = expiresAt ? getTimeLeft(expiresAt) : null
   const utilizationPercent = maxRedemptions && redemptionCount
@@ -130,6 +140,13 @@ export function OfferCard({
             {isFlash && <Flame className="inline w-3.5 h-3.5 mr-0.5 -mt-0.5" />}
             {badge}
           </div>
+
+          {/* Estimated savings badge */}
+          {estimatedSavings != null && estimatedSavings > 0 && (
+            <div className="absolute top-[34px] left-2 px-2 py-0.5 rounded-lg text-xs font-semibold text-white bg-emerald-500 badge">
+              выгода до {estimatedSavings.toLocaleString('ru-RU')}₽
+            </div>
+          )}
 
           {/* Plus badge */}
           {isMembersOnly && (
@@ -221,6 +238,12 @@ export function OfferCard({
             </div>
           )}
           <div className="mt-1.5 flex items-center gap-2 flex-wrap">
+            {avgRating != null && avgRating > 0 && (
+              <span className="flex items-center gap-1 text-xs text-amber-500">
+                <Star className="w-3 h-3 fill-amber-400" />
+                {avgRating}
+              </span>
+            )}
             {redemptionCount !== undefined && redemptionCount > 0 && (
               <span className="flex items-center gap-1 text-xs text-gray-400">
                 <Users className="w-3 h-3" />
@@ -232,6 +255,19 @@ export function OfferCard({
                 <BadgeCheck className="w-3 h-3" />
                 {reviewCount} {reviewCount === 1 ? 'отзыв' : reviewCount < 5 ? 'отзыва' : 'отзывов'}
               </span>
+            )}
+            {mapUrl && (
+              <a
+                href={mapUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="flex items-center gap-1 text-xs text-brand-600 hover:text-brand-700"
+                title="Построить маршрут"
+              >
+                <Navigation className="w-3 h-3" />
+                Маршрут
+              </a>
             )}
           </div>
         </div>

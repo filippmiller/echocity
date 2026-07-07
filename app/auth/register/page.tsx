@@ -200,6 +200,10 @@ function RegisterContent() {
 
   const handleVerifyOtp = async () => {
     const apiPhone = toApiPhone(phoneDisplay)
+    if (!termsAccepted) {
+      toast.error('Необходимо принять условия использования')
+      return
+    }
     if (code.length !== 4) {
       toast.error('Введите 4-значный код')
       return
@@ -209,7 +213,7 @@ function RegisterContent() {
       const response = await fetch('/api/auth/phone/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: apiPhone, code, termsAccepted: true }),
+        body: JSON.stringify({ phone: apiPhone, code, termsAccepted }),
       })
       const data = await response.json()
       if (!response.ok) {
@@ -301,6 +305,7 @@ function RegisterContent() {
                 type="checkbox"
                 checked={termsAccepted}
                 onChange={(e) => setTermsAccepted(e.target.checked)}
+                required
                 className="mt-1 h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
               />
               <span className="text-sm text-gray-600">
@@ -354,7 +359,7 @@ function RegisterContent() {
                 <button
                   type="button"
                   onClick={handleVerifyOtp}
-                  disabled={phoneLoading || code.length !== 4}
+                  disabled={phoneLoading || code.length !== 4 || !termsAccepted}
                   className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-base font-semibold text-white bg-brand-600 hover:bg-brand-700 active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 disabled:opacity-60 disabled:pointer-events-none transition-all min-h-[48px]"
                 >
                   {phoneLoading ? (
@@ -583,6 +588,7 @@ function RegisterContent() {
                   type="checkbox"
                   checked={termsAccepted}
                   onChange={(e) => setTermsAccepted(e.target.checked)}
+                  required
                   className="mt-1 h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
                 />
                 <span className="text-sm text-gray-600">
