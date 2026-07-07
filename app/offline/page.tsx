@@ -1,3 +1,5 @@
+import { RetryButton } from "./RetryButton"
+
 export default function OfflinePage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 text-center bg-white">
@@ -25,13 +27,7 @@ export default function OfflinePage() {
             Проверьте интернет и попробуйте снова
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => window.location.reload()}
-          className="inline-flex items-center justify-center px-5 py-2.5 bg-brand-600 text-white font-semibold rounded-xl hover:bg-brand-700 transition-colors"
-        >
-          Попробовать снова
-        </button>
+        <RetryButton />
       </div>
     </div>
   )
