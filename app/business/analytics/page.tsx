@@ -6,6 +6,7 @@ import { getBusinessAccessSummary } from '@/lib/business-access'
 import { canViewAnalytics } from '@/lib/permissions'
 import Link from 'next/link'
 import RedemptionHeatmap from '@/components/RedemptionHeatmap'
+import { getDemandCalendar } from '@/modules/analytics/demand-calendar'
 
 function formatRubles(kopecks: number): string {
   const rubles = Math.floor(kopecks / 100)
@@ -123,7 +124,7 @@ export default async function BusinessAnalyticsPage() {
   const offerIds = allOffers.map((offer) => offer.id)
 
   // Offer impressions and saves depend on the merchant's offer IDs
-  const [offerViewCounts, offerSaveCounts, overallViews, overallSaves] =
+  const [offerViewCounts, offerSaveCounts, overallViews, overallSaves, demandCalendar] =
     offerIds.length > 0
       ? await Promise.all([
           prisma.offerView.groupBy({
@@ -142,8 +143,9 @@ export default async function BusinessAnalyticsPage() {
           prisma.offerSave.count({
             where: { offerId: { in: offerIds } },
           }),
+          getDemandCalendar(merchantIds),
         ])
-      : [[], [], 0, 0]
+      : [[], [], 0, 0, await getDemandCalendar(merchantIds)]
 
   // === Summary stats ===
   const totalUniqueCustomers = uniqueCustomers.length
@@ -325,6 +327,39 @@ export default async function BusinessAnalyticsPage() {
             {overallViews > 0 ? Math.round((overallSaves / overallViews) * 1000) / 10 : 0}%
           </p>
         </div>
+      </div>
+
+      {/* (a3) Demand calendar */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-6">
+        <h2 className="text-sm font-semibold text-gray-900 mb-3">Календарь спроса</h2>
+        {demandCalendar.length === 0 || demandCalendar[0].weekday === -1 ? (
+          <div className="text-sm text-gray-500 space-y-2">
+            <p>{demandCalendar[0]?.recommendation ?? 'Недостаточно данных.'}</p>
+            <p className="text-xs text-gray-400">
+              Рекомендуем запускать в четверг–пятницу 18:00–20:00 по местному времени.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {demandCalendar.slice(0, 3).map((slot, idx) => (
+                <div key={`${slot.weekday}-${slot.hourBucket ?? idx}`} className="bg-gray-50 rounded-lg p-3">
+                  <p className="text-xs text-gray-500">{idx === 0 ? 'Топ-1' : idx === 1 ? 'Топ-2' : 'Топ-3'}</p>
+                  <p className="text-base font-bold text-gray-900">
+                    {slot.weekdayLabel}
+                    {slot.hourBucket ? <span className="text-sm font-normal text-gray-500"> · {slot.hourBucket}</span> : null}
+                  </p>
+                  <p className="text-xs text-gray-500">{slot.redemptionCount} использований</p>
+                </div>
+              ))}
+            </div>
+            {demandCalendar[0]?.recommendation && (
+              <p className="text-xs text-gray-600 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2">
+                {demandCalendar[0].recommendation}
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       {/* (b1) 7×24 Redemption heatmap — client component */}

@@ -26,6 +26,7 @@ export default function CreateOfferPage() {
               id: p.id,
               title: p.title,
               address: p.address,
+              city: p.city,
               businessType: p.placeType || biz.type,
             })),
           })

@@ -4,11 +4,13 @@ import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronDown, AlertTriangle, Lightbulb, ArrowLeft } from 'lucide-react'
 import { getOfferRecommendations, type OfferRecommendation } from '@/lib/offer-recommendations'
+import type { OfferReachForecast } from '@/modules/analytics/offer-reach-forecast'
 
 interface Branch {
   id: string
   title: string
   address: string
+  city?: string
   businessType?: string
 }
 
@@ -145,6 +147,8 @@ export function OfferWizard({ merchantId, branches }: WizardProps) {
   const [promoCode, setPromoCode] = useState('')
 
   const [categoryAverageDiscount, setCategoryAverageDiscount] = useState<number | undefined>(undefined)
+  const [forecast, setForecast] = useState<OfferReachForecast & { viewRange: string | null; saveRange: string | null; redemptionRange: string | null } | null>(null)
+  const [forecastLoading, setForecastLoading] = useState(false)
 
   const [form, setForm] = useState({
     branchId: branches[0]?.id || '',
@@ -181,6 +185,37 @@ export function OfferWizard({ merchantId, branches }: WizardProps) {
       })
       .catch(() => {})
   }, [])
+
+  // Load reach forecast once key fields are filled
+  useEffect(() => {
+    if (!branch || !form.offerType || !form.benefitType || form.benefitValue <= 0) {
+      setForecast(null)
+      return
+    }
+
+    const city = branch.city?.trim() || branch.address?.split(',').pop()?.trim() || ''
+    const params = new URLSearchParams({
+      city,
+      category: branch.businessType || '',
+      offerType: form.offerType,
+      benefitType: form.benefitType,
+      benefitValue: String(form.benefitValue),
+      merchantId,
+    })
+
+    setForecastLoading(true)
+    fetch(`/api/business/offers/forecast?${params.toString()}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d && typeof d.explanation === 'string') {
+          setForecast(d)
+        } else {
+          setForecast(null)
+        }
+      })
+      .catch(() => setForecast(null))
+      .finally(() => setForecastLoading(false))
+  }, [branch, form.offerType, form.benefitType, form.benefitValue, merchantId])
 
   // Load templates for the selected branch's business type
   useEffect(() => {
@@ -944,6 +979,47 @@ export function OfferWizard({ merchantId, branches }: WizardProps) {
           <span>Предложение выглядит отлично. Можно создавать!</span>
         </div>
       )}
+
+      {/* Reach forecast */}
+      <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <h4 className="text-sm font-medium text-gray-900 mb-2">Прогноз охвата</h4>
+        {forecastLoading ? (
+          <div className="space-y-2 animate-pulse">
+            <div className="h-4 w-32 bg-gray-200 rounded" />
+            <div className="h-3 w-full bg-gray-200 rounded" />
+          </div>
+        ) : !forecast ? (
+          <p className="text-sm text-gray-500">
+            Заполните тип выгоды и значение, чтобы увидеть прогноз.
+          </p>
+        ) : (
+          <div className="space-y-2">
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div className="bg-gray-50 rounded-lg p-2">
+                <p className="text-xs text-gray-500">Просмотры</p>
+                <p className="text-lg font-bold text-gray-900">{forecast.viewRange ?? '—'}</p>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-2">
+                <p className="text-xs text-gray-500">Сохранения</p>
+                <p className="text-lg font-bold text-brand-600">{forecast.saveRange ?? '—'}</p>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-2">
+                <p className="text-xs text-gray-500">Использования</p>
+                <p className="text-lg font-bold text-deal-savings">{forecast.redemptionRange ?? '—'}</p>
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 leading-relaxed">{forecast.explanation}</p>
+            <p className="text-xs text-gray-400">
+              Достоверность:{' '}
+              {forecast.confidence === 'high'
+                ? 'высокая'
+                : forecast.confidence === 'medium'
+                  ? 'средняя'
+                  : 'низкая (оценка приблизительная)'}
+            </p>
+          </div>
+        )}
+      </div>
     </div>,
   ]
 
