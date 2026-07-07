@@ -23,7 +23,7 @@ if ! run_migrate; then
   fi
 fi
 
-if [ ! -s "$log_file" ] || ! grep -q "All migrations have been successfully applied" "$log_file"; then
+if [ ! -s "$log_file" ] || ! grep -Eq "All migrations have been successfully applied|No pending migrations to apply" "$log_file"; then
   echo "Prisma migration step did not complete successfully."
   if [ "$mode" = "diagnose" ]; then
     echo "Diagnostic mode: keeping container alive for log inspection."
