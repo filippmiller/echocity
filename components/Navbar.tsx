@@ -23,12 +23,13 @@ export function Navbar() {
   }
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-gray-100">
-      <div className="flex items-center justify-between h-14 px-4 max-w-7xl mx-auto">
+    <header className="sticky top-0 z-40 border-b ec-line bg-[color:var(--ec-bg)]/95 backdrop-blur-xl">
+      <div className="flex items-center justify-between h-16 px-4 max-w-7xl mx-auto">
         {/* Logo + City */}
         <div className="flex items-center gap-2 shrink-0">
-          <Link href="/" className="text-lg font-bold text-gray-900">
-            ГдеСейчас
+          <Link href="/" className="leading-tight">
+            <span className="block text-lg font-semibold tracking-[-0.03em] text-[color:var(--ec-text)]">EchoCity</span>
+            <span className="block text-[11px] leading-none ec-muted">поиск предложений</span>
           </Link>
           <CitySelector />
         </div>
@@ -52,7 +53,7 @@ export function Navbar() {
           {/* Search — mobile only */}
           <Link
             href="/search"
-            className="md:hidden p-2 text-gray-500 hover:text-gray-700 rounded-full hover:bg-gray-100"
+            className="md:hidden p-2 ec-muted hover:text-[color:var(--ec-text)] rounded-full hover:bg-[color:var(--ec-surface)]"
           >
             <Search className="w-5 h-5" />
           </Link>
@@ -66,13 +67,13 @@ export function Navbar() {
                 className="flex items-center gap-2"
               >
                 {user.avatarUrl ? (
-                  <img src={user.avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover border border-gray-200" />
+                  <img src={user.avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover border ec-line" />
                 ) : (
-                  <div className="w-8 h-8 rounded-full bg-brand-100 flex items-center justify-center text-brand-600 text-xs font-bold">
+                  <div className="ec-chip w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ec-accent-text">
                     {user.email[0]?.toUpperCase() || '?'}
                   </div>
                 )}
-                <span className="hidden md:inline text-sm font-medium text-gray-700">
+                <span className="hidden md:inline text-sm font-medium text-[color:var(--ec-text)]">
                   {user.email.split('@')[0]}
                 </span>
               </button>
@@ -80,7 +81,7 @@ export function Navbar() {
               {showMenu && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
-                  <div className="absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-20">
+                  <div className="ec-surface absolute right-0 mt-2 w-52 rounded-2xl py-1 z-20">
                     {user.role === 'CITIZEN' && (
                       <DropdownLink href="/settings" icon={<Settings className="w-4 h-4" />} onClick={() => setShowMenu(false)}>
                         Настройки
@@ -109,10 +110,10 @@ export function Navbar() {
             </div>
           ) : (
             <div className="flex items-center gap-2">
-              <Link href="/auth/login" className="hidden md:inline-flex px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900">
+              <Link href="/auth/login" className="hidden md:inline-flex px-3 py-2 text-sm font-medium ec-muted hover:text-[color:var(--ec-text)]">
                 Войти
               </Link>
-              <Link href="/auth/register" className="px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 transition-colors">
+              <Link href="/auth/register" className="ec-accent-bg px-4 py-2 text-sm font-medium rounded-xl hover:opacity-90 transition-opacity">
                 Регистрация
               </Link>
             </div>
@@ -130,8 +131,8 @@ function NavLink({ href, current, children }: { href: string; current: string; c
       href={href}
       className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
         isActive
-          ? 'text-brand-600 bg-brand-50'
-          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+          ? 'text-[color:var(--ec-text)] bg-[color:var(--ec-surface)]'
+          : 'ec-muted hover:text-[color:var(--ec-text)] hover:bg-[color:var(--ec-surface)]'
       }`}
     >
       {children}
@@ -141,7 +142,7 @@ function NavLink({ href, current, children }: { href: string; current: string; c
 
 function DropdownLink({ href, icon, children, onClick }: { href: string; icon: React.ReactNode; children: React.ReactNode; onClick: () => void }) {
   return (
-    <Link href={href} className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50" onClick={onClick}>
+    <Link href={href} className="flex items-center gap-3 px-4 py-2.5 text-sm text-[color:var(--ec-text)] hover:bg-[color:var(--ec-surface-muted)]" onClick={onClick}>
       {icon}
       {children}
     </Link>

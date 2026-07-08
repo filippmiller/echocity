@@ -139,8 +139,6 @@ export function QRRedeemScreen({ offerId, offerTitle }: QRRedeemScreenProps) {
   }, [secondsLeft, createSession])
 
   const progress = secondsLeft / 60
-  const circumference = 2 * Math.PI * 130
-  const strokeDashoffset = circumference * (1 - progress)
 
   if (redeemed) {
     return (
@@ -191,11 +189,11 @@ export function QRRedeemScreen({ offerId, offerTitle }: QRRedeemScreenProps) {
 
   if (error) {
     return (
-      <div className="text-center py-8">
-        <div className="text-red-500 text-lg mb-4">{error}</div>
+      <div className="ec-panel p-4">
+        <div className="text-sm text-red-600 mb-4">{error}</div>
         <button
           onClick={createSession}
-          className="inline-flex items-center gap-2 bg-brand-600 text-white px-6 py-3 rounded-xl font-medium hover:bg-brand-700 transition-colors"
+          className="ec-button inline-flex items-center gap-2 px-4 py-2 text-sm transition-opacity hover:opacity-90"
         >
           <RefreshCw className="w-4 h-4" />
           Попробовать снова
@@ -206,77 +204,94 @@ export function QRRedeemScreen({ offerId, offerTitle }: QRRedeemScreenProps) {
 
   if (loading && !session) {
     return (
-      <div className="flex flex-col items-center justify-center py-12">
-        <div className="w-8 h-8 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" />
-        <p className="text-sm text-gray-500 mt-3">Создание QR-кода...</p>
+      <div className="ec-panel flex items-center gap-3 p-4">
+        <div className="w-5 h-5 border-2 border-[color:var(--ec-accent)] border-t-transparent rounded-full animate-spin" />
+        <p className="text-sm ec-muted">Создание QR-кода...</p>
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col items-center gap-4 py-4">
-      <p className="text-sm text-gray-500 font-medium">Покажите QR-код кассиру</p>
-
-      {/* QR with progress ring */}
-      <div className="relative">
-        <svg className="w-72 h-72" viewBox="0 0 280 280">
-          <circle cx="140" cy="140" r="130" fill="none" stroke="#F3F4F6" strokeWidth="6" />
-          <circle
-            cx="140" cy="140" r="130"
-            fill="none"
-            stroke={secondsLeft <= 10 ? '#EF4444' : '#2563EB'}
-            strokeWidth="6"
-            strokeLinecap="round"
-            strokeDasharray={circumference}
-            strokeDashoffset={strokeDashoffset}
-            transform="rotate(-90 140 140)"
-            className="transition-all duration-1000 ease-linear"
-          />
-        </svg>
-
-        <AnimatePresence mode="wait">
-          {qrDataUrl && (
-            <motion.div
-              key={session?.id}
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="absolute inset-0 flex items-center justify-center"
-            >
-              <img src={qrDataUrl} alt="QR Code" className="w-52 h-52 rounded-xl" />
-            </motion.div>
-          )}
-        </AnimatePresence>
+    <div className="space-y-3">
+      <div className="flex items-start justify-between gap-3 border-b ec-line pb-3">
+        <div>
+          <p className="text-xs ec-muted">предложение</p>
+          <h2 className="text-lg font-semibold tracking-[-0.03em] text-[color:var(--ec-text)]">
+            {offerTitle || 'Скидка активирована на кассе'}
+          </h2>
+        </div>
+        <span className="shrink-0 rounded-full border ec-line px-2.5 py-1 text-xs font-semibold text-[color:var(--ec-accent-2)]">
+          активно
+        </span>
       </div>
 
-      {session && (
-        <div className="text-center">
-          <p className="text-xs text-gray-400 mb-1">или введите код</p>
-          <p className="text-3xl font-mono font-bold tracking-widest text-gray-900">
-            {session.shortCode}
-          </p>
+      <div className="grid grid-cols-[164px_1fr] gap-3 border-b ec-line pb-3">
+        <div className="ec-panel grid h-[164px] w-[164px] place-items-center rounded-[18px] shadow-none">
+          <AnimatePresence mode="wait">
+            {qrDataUrl && (
+              <motion.img
+                key={session?.id}
+                initial={{ scale: 0.96, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.96, opacity: 0 }}
+                src={qrDataUrl}
+                alt="QR Code"
+                className="h-[132px] w-[132px] rounded-lg"
+              />
+            )}
+          </AnimatePresence>
         </div>
-      )}
 
-      <div className={`text-sm font-semibold ${secondsLeft <= 10 ? 'text-deal-discount' : 'text-gray-500'}`}>
-        {secondsLeft > 0 ? `${secondsLeft}с` : 'Истёк'}
+        <div className="min-w-0">
+          <div className={`text-4xl font-bold tracking-[-0.06em] ${secondsLeft <= 10 ? 'text-deal-discount' : 'ec-accent-text'}`}>
+            {secondsLeft > 0 ? `00:${secondsLeft.toString().padStart(2, '0')}` : '00:00'}
+          </div>
+          <p className="mt-0.5 text-xs ec-muted">до обновления QR</p>
+          {session && (
+            <>
+              <p className="mt-3 font-mono text-xl font-bold tracking-[0.18em] text-[color:var(--ec-text)]">
+                {session.shortCode}
+              </p>
+              <p className="text-xs ec-muted">код для ручного ввода</p>
+            </>
+          )}
+          <button
+            onClick={createSession}
+            className="ec-button-secondary mt-3 inline-flex h-9 w-full items-center justify-center gap-2 px-3 text-xs transition-colors"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            обновить QR
+          </button>
+        </div>
+      </div>
+
+      <div className="h-1 rounded-full bg-[color:var(--ec-line)]">
+        <div
+          className="h-full rounded-full bg-[color:var(--ec-accent)] transition-all duration-1000"
+          style={{ width: `${Math.max(0, Math.min(100, progress * 100))}%` }}
+        />
       </div>
 
       {geoStatus === 'denied' && (
-        <p className="text-xs text-amber-600 text-center max-w-[260px]">
+        <p className="text-xs text-[color:var(--ec-warning)]">
           Геолокация не предоставлена. Для подтверждения скидки рядом с заведением разрешите доступ к местоположению.
         </p>
       )}
 
-      {secondsLeft === 0 && (
-        <button
-          onClick={createSession}
-          className="inline-flex items-center gap-2 bg-brand-600 text-white px-6 py-3 rounded-xl font-medium hover:bg-brand-700 transition-colors"
-        >
-          <RefreshCw className="w-4 h-4" />
-          Обновить QR
-        </button>
-      )}
+      <div className="grid grid-cols-3 gap-2">
+        <div className="ec-panel p-2 shadow-none">
+          <b className="text-sm">QR</b>
+          <span className="block text-[11px] ec-muted">сканер</span>
+        </div>
+        <div className="ec-panel p-2 shadow-none">
+          <b className="text-sm">код</b>
+          <span className="block text-[11px] ec-muted">fallback</span>
+        </div>
+        <div className="ec-panel p-2 shadow-none">
+          <b className="text-sm">60 сек</b>
+          <span className="block text-[11px] ec-muted">TTL</span>
+        </div>
+      </div>
     </div>
   )
 }

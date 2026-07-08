@@ -95,8 +95,7 @@ export default function OffersPage() {
 function CityLabel() {
   const { city } = useCity()
   return (
-    <div className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-700 shrink-0 flex items-center gap-1.5">
-      <span>📍</span>
+    <div className="ec-chip text-sm rounded-xl px-3 py-2 shrink-0 flex items-center gap-1.5">
       {city}
     </div>
   )
@@ -292,28 +291,29 @@ function OffersContent() {
 
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="ec-page min-h-screen">
       {/* Page header */}
-      <div className="bg-gradient-to-r from-brand-600 to-brand-700 text-white px-4 py-6">
+      <div className="border-b ec-line px-4 py-4">
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between">
+          <div className="flex items-end justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold mb-1">Скидки в {city}</h1>
-              <p className="text-blue-100 text-sm">
+              <p className="text-xs ec-muted">поиск предложений</p>
+              <h1 className="text-xl font-semibold tracking-[-0.035em] text-[color:var(--ec-text)]">Скидки в {city}</h1>
+              <p className="ec-muted text-sm">
                 {categoryCounts.all > 0
                   ? `${categoryCounts.all} ${plural(categoryCounts.all, 'активное предложение', 'активных предложения', 'активных предложений')}`
                   : 'Актуальные предложения поблизости'}
               </p>
             </div>
           </div>
-          <div className="mt-3">
+          <div className="mt-3 max-w-sm">
             <StreakWidget />
           </div>
         </div>
       </div>
 
       {/* Sticky filter bar */}
-      <div className="sticky top-14 z-30 bg-white border-b border-gray-100 px-4 py-3 shadow-sm">
+      <div className="sticky top-16 z-30 border-b ec-line bg-[color:var(--ec-bg)]/95 px-4 py-3 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto space-y-3">
           <div className="flex items-center gap-3">
             <CityLabel />
@@ -346,12 +346,8 @@ function OffersContent() {
                     }}
                     className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors chip ${
                       isSelected
-                        ? isNearbyChip
-                          ? 'bg-blue-500 text-white'
-                          : isActiveNowChip
-                            ? 'bg-green-500 text-white'
-                            : 'bg-brand-600 text-white'
-                        : 'bg-gray-100 text-gray-600 active:bg-gray-200'
+                        ? 'ec-chip-active'
+                        : 'ec-chip active:opacity-80'
                     }`}
                   >
                     {chip.label}
@@ -365,7 +361,7 @@ function OffersContent() {
               id="offers-sort"
               value={sort}
               onChange={(e) => updateFilters({ sort: e.target.value as SortKey })}
-              className="text-sm border border-gray-200 rounded-lg px-2.5 py-2 bg-white text-gray-700 shrink-0 focus:outline-none focus:ring-2 focus:ring-brand-500"
+              className="ec-field text-sm px-2.5 py-2 shrink-0"
             >
               {SORT_OPTIONS.map((option) => (
                 <option key={option.key} value={option.key}>{option.label}</option>
@@ -378,7 +374,7 @@ function OffersContent() {
             <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar">
               <button
                 onClick={() => router.replace(`${pathname}?${recentFilters.params}`, { scroll: false })}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap bg-brand-100 text-brand-700 border border-brand-200 active:bg-brand-200 chip shrink-0"
+                className="ec-chip flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap active:opacity-80 chip shrink-0"
               >
                 <span>↻</span>
                 Повторить последний поиск
@@ -389,11 +385,11 @@ function OffersContent() {
           {/* Active filter pills */}
           {(section !== 'all' || category !== 'all' || activeNow || benefitType || metro || district || sort !== 'recommended') && (
             <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar">
-              <span className="text-xs text-gray-400 shrink-0">Активные:</span>
+              <span className="text-xs ec-muted shrink-0">Активные:</span>
               {section !== 'all' && section !== 'activeNow' && (
                 <button
                   onClick={() => updateFilters({ section: 'all' })}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap bg-brand-100 text-brand-700 border border-brand-200 active:bg-brand-200 chip shrink-0"
+                  className="ec-chip flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap active:opacity-80 chip shrink-0"
                 >
                   {section === 'FREE_FOR_ALL' ? 'Бесплатные' : section === 'MEMBERS_ONLY' ? 'Plus' : 'Рядом'}
                   <span className="text-brand-900">×</span>
@@ -402,7 +398,7 @@ function OffersContent() {
               {activeNow && (
                 <button
                   onClick={() => updateFilters({ activeNow: false })}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap bg-green-100 text-green-700 border border-green-200 active:bg-green-200 chip shrink-0"
+                  className="ec-chip flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap active:opacity-80 chip shrink-0"
                 >
                   Сейчас
                   <span className="text-green-900">×</span>
@@ -411,7 +407,7 @@ function OffersContent() {
               {category !== 'all' && (
                 <button
                   onClick={() => updateFilters({ category: 'all' })}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap bg-gray-900 text-white active:bg-gray-800 chip shrink-0"
+                  className="ec-chip-active flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap active:opacity-80 chip shrink-0"
                 >
                   {CATEGORIES.find((c) => c.slug === category)?.label || category}
                   <span>×</span>
@@ -456,7 +452,7 @@ function OffersContent() {
               {!isDefaultFilters(filters) && (
                 <button
                   onClick={() => updateFilters({ section: 'all', category: 'all', activeNow: false, benefitType: '', metro: '', district: '', sort: 'recommended' })}
-                  className="text-xs font-medium text-gray-500 hover:text-gray-700 whitespace-nowrap shrink-0 px-1"
+                  className="text-xs font-medium ec-muted hover:text-[color:var(--ec-text)] whitespace-nowrap shrink-0 px-1"
                 >
                   Сбросить всё
                 </button>
@@ -474,15 +470,15 @@ function OffersContent() {
                   onClick={() => updateFilters({ category: cat.slug })}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors chip ${
                     category === cat.slug
-                      ? 'bg-gray-900 text-white'
-                      : 'bg-gray-50 text-gray-600 border border-gray-200 active:bg-gray-100'
+                      ? 'ec-chip-active'
+                      : 'ec-chip active:opacity-80'
                   }`}
                 >
                   <span>{cat.emoji}</span>
                   {cat.label}
                   {count !== undefined && count > 0 && (
                     <span className={`ml-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
-                      category === cat.slug ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-500'
+                      category === cat.slug ? 'bg-white/20 text-white' : 'bg-[color:var(--ec-surface-muted)] ec-muted'
                     }`}>
                       {count}
                     </span>
@@ -500,8 +496,8 @@ function OffersContent() {
                 onClick={() => updateFilters({ benefitType: benefitType === bt.key ? '' : bt.key })}
                 className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors chip ${
                   benefitType === bt.key
-                    ? 'bg-emerald-600 text-white'
-                    : 'bg-gray-50 text-gray-600 border border-gray-200 active:bg-gray-100'
+                    ? 'ec-chip-active'
+                    : 'ec-chip active:opacity-80'
                 }`}
               >
                 {bt.label}
@@ -516,8 +512,8 @@ function OffersContent() {
                 onClick={() => setShowMetroDropdown((v) => !v)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors chip shrink-0 ${
                   metro
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-50 text-gray-600 border border-gray-200 active:bg-gray-100'
+                    ? 'ec-chip-active'
+                    : 'ec-chip active:opacity-80'
                 }`}
               >
                 <span>🚇</span>
@@ -527,7 +523,7 @@ function OffersContent() {
               {metro && (
                 <button
                   onClick={() => updateFilters({ metro: '' })}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap bg-gray-100 text-gray-500 active:bg-gray-200 chip shrink-0"
+                  className="ec-chip flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap active:opacity-80 chip shrink-0"
                 >
                   Сбросить метро
                 </button>
@@ -535,7 +531,7 @@ function OffersContent() {
             </div>
 
             {showMetroDropdown && (
-              <div className="absolute top-full left-0 mt-1 z-40 bg-white rounded-xl shadow-lg border border-gray-100 p-2 w-64 max-h-60 overflow-y-auto">
+              <div className="ec-surface absolute top-full left-0 mt-1 z-40 rounded-2xl p-2 w-64 max-h-60 overflow-y-auto">
                 <div className="flex flex-wrap gap-1.5">
                   {METRO_STATIONS.map((station) => (
                     <button
@@ -546,8 +542,8 @@ function OffersContent() {
                       }}
                       className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors chip ${
                         metro === station
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-100 text-gray-600 active:bg-gray-200'
+                          ? 'ec-chip-active'
+                          : 'ec-chip active:opacity-80'
                       }`}
                     >
                       {station}
@@ -566,8 +562,8 @@ function OffersContent() {
                   onClick={() => setShowDistrictDropdown((v) => !v)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors chip shrink-0 ${
                     district
-                      ? 'bg-emerald-600 text-white'
-                      : 'bg-gray-50 text-gray-600 border border-gray-200 active:bg-gray-100'
+                      ? 'ec-chip-active'
+                      : 'ec-chip active:opacity-80'
                   }`}
                 >
                   <span>🏘️</span>
@@ -577,7 +573,7 @@ function OffersContent() {
                 {district && (
                   <button
                     onClick={() => updateFilters({ district: '' })}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap bg-gray-100 text-gray-500 active:bg-gray-200 chip shrink-0"
+                    className="ec-chip flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap active:opacity-80 chip shrink-0"
                   >
                     Сбросить район
                   </button>
@@ -585,7 +581,7 @@ function OffersContent() {
               </div>
 
               {showDistrictDropdown && (
-                <div className="absolute top-full left-0 mt-1 z-40 bg-white rounded-xl shadow-lg border border-gray-100 p-2 w-64 max-h-60 overflow-y-auto">
+                <div className="ec-surface absolute top-full left-0 mt-1 z-40 rounded-2xl p-2 w-64 max-h-60 overflow-y-auto">
                   <div className="flex flex-wrap gap-1.5">
                     {districts.map((d) => (
                       <button
@@ -596,8 +592,8 @@ function OffersContent() {
                         }}
                         className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors chip ${
                           district === d.slug
-                            ? 'bg-emerald-600 text-white'
-                            : 'bg-gray-100 text-gray-600 active:bg-gray-200'
+                            ? 'ec-chip-active'
+                            : 'ec-chip active:opacity-80'
                         }`}
                       >
                         {d.name}
@@ -613,7 +609,7 @@ function OffersContent() {
 
       {/* Feed with pull-to-refresh */}
       <PullToRefresh onRefresh={handleRefresh}>
-        <div className="px-4 py-6">
+        <div className="px-4 py-4">
           <div className="max-w-7xl mx-auto">
             {showNearby && <NearbyOffers city={city} />}
             <RecentlyViewed />

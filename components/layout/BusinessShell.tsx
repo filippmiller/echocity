@@ -58,29 +58,29 @@ export function BusinessShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-surface-secondary">
+    <div className="min-h-screen bg-[#090b0e] text-[#f4f1ea]">
       {/* ---- Top header ---- */}
-      <header className="sticky top-0 z-40 bg-white border-b border-gray-100">
+      <header className="sticky top-0 z-40 border-b border-[#282d34] bg-[#090b0e]/95 backdrop-blur-xl">
         <div className="flex items-center justify-between h-14 px-4 max-w-7xl mx-auto">
           <div className="flex items-center gap-3">
             {/* Hamburger — mobile only */}
             <button
               onClick={() => setSidebarOpen(true)}
-              className="md:hidden p-1.5 -ml-1.5 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100"
+              className="md:hidden p-1.5 -ml-1.5 text-[#9b9a94] hover:text-[#f4f1ea] rounded-lg hover:bg-[#11161c]"
             >
               <Menu className="w-5 h-5" />
             </button>
 
-            <Link href="/business/dashboard" className="text-lg font-bold text-gray-900 shrink-0">
-              ГдеСейчас
-              <span className="text-brand-600 ml-1 text-sm font-semibold">Бизнес</span>
+            <Link href="/business/dashboard" className="shrink-0 leading-tight">
+              <span className="block text-lg font-semibold tracking-[-0.03em] text-[#f4f1ea]">EchoCity Business</span>
+              <span className="block text-[11px] leading-none text-[#9b9a94]">операционный день</span>
             </Link>
           </div>
 
           <div className="flex items-center gap-3">
             <Link
               href="/"
-              className="hidden md:flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+              className="hidden md:flex items-center gap-1 text-sm text-[#9b9a94] hover:text-[#f4f1ea] transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
               На сайт
@@ -90,15 +90,15 @@ export function BusinessShell({ children }: { children: React.ReactNode }) {
               <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse" />
             ) : user ? (
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-brand-100 flex items-center justify-center text-brand-600 text-xs font-bold">
+                <div className="w-8 h-8 rounded-full border border-[#282d34] bg-[#11161c] flex items-center justify-center text-[#d6b56d] text-xs font-bold">
                   {user.email[0]?.toUpperCase() || '?'}
                 </div>
-                <span className="hidden md:inline text-sm font-medium text-gray-700 max-w-[120px] truncate">
+                <span className="hidden md:inline text-sm font-medium text-[#f4f1ea] max-w-[120px] truncate">
                   {user.email.split('@')[0]}
                 </span>
                 <button
                   onClick={handleLogout}
-                  className="hidden md:flex p-2 text-gray-400 hover:text-red-500 rounded-lg hover:bg-gray-100 transition-colors"
+                  className="hidden md:flex p-2 text-[#9b9a94] hover:text-red-400 rounded-lg hover:bg-[#11161c] transition-colors"
                   title="Выйти"
                 >
                   <LogOut className="w-4 h-4" />
@@ -111,7 +111,7 @@ export function BusinessShell({ children }: { children: React.ReactNode }) {
 
       <div className="flex max-w-7xl mx-auto">
         {/* ---- Desktop sidebar ---- */}
-        <aside className="hidden md:flex flex-col w-56 shrink-0 border-r border-gray-100 bg-white min-h-[calc(100vh-56px)] sticky top-14 self-start">
+        <aside className="hidden md:flex flex-col w-56 shrink-0 border-r border-[#282d34] bg-[#10141a] min-h-[calc(100vh-64px)] sticky top-16 self-start">
           <nav className="flex-1 py-4 px-3 space-y-1">
             {SIDEBAR_ITEMS.map((item) => {
               const isActive = item.href === '/business/dashboard'
@@ -125,8 +125,8 @@ export function BusinessShell({ children }: { children: React.ReactNode }) {
                   href={item.href}
                   className={`flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors ${
                     isActive
-                      ? 'bg-brand-50 text-brand-600'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                      ? 'bg-[#090b0e] text-[#d6b56d] border border-[#282d34]'
+                      : 'text-[#9b9a94] hover:text-[#f4f1ea] hover:bg-[#11161c]'
                   }`}
                 >
                   <Icon className="w-5 h-5 shrink-0" strokeWidth={isActive ? 2.5 : 2} />
@@ -137,10 +137,10 @@ export function BusinessShell({ children }: { children: React.ReactNode }) {
             })}
           </nav>
 
-          <div className="p-3 border-t border-gray-100">
+          <div className="p-3 border-t border-[#282d34]">
             <Link
               href="/"
-              className="flex items-center gap-2 px-3 py-2 text-sm text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              className="flex items-center gap-2 px-3 py-2 text-sm text-[#9b9a94] hover:text-[#f4f1ea] rounded-lg hover:bg-[#11161c] transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
               Вернуться на сайт
@@ -156,7 +156,7 @@ export function BusinessShell({ children }: { children: React.ReactNode }) {
 
       {/* ---- Mobile bottom nav ---- */}
       <nav
-        className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#090b0e]/95 border-t border-[#282d34] backdrop-blur-xl"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         <div className="flex items-center justify-around h-14">
@@ -172,8 +172,8 @@ export function BusinessShell({ children }: { children: React.ReactNode }) {
                 href={item.href}
                 className={`flex flex-col items-center justify-center gap-0.5 w-full h-full transition-colors ${
                   isActive
-                    ? 'text-brand-600'
-                    : 'text-gray-400 active:text-gray-600'
+                    ? 'text-[#d6b56d]'
+                    : 'text-[#9b9a94] active:text-[#f4f1ea]'
                 }`}
               >
                 <Icon className="w-5 h-5" strokeWidth={isActive ? 2.5 : 2} />
@@ -191,14 +191,14 @@ export function BusinessShell({ children }: { children: React.ReactNode }) {
             className="fixed inset-0 z-50 bg-black/40 md:hidden"
             onClick={() => setSidebarOpen(false)}
           />
-          <div className="fixed inset-y-0 left-0 z-50 w-72 bg-white shadow-xl md:hidden flex flex-col">
-            <div className="flex items-center justify-between h-14 px-4 border-b border-gray-100">
-              <span className="text-lg font-bold text-gray-900">
-                ГдеСейчас <span className="text-brand-600 text-sm font-semibold">Бизнес</span>
+          <div className="fixed inset-y-0 left-0 z-50 w-72 bg-[#10141a] shadow-xl md:hidden flex flex-col">
+            <div className="flex items-center justify-between h-14 px-4 border-b border-[#282d34]">
+              <span className="text-lg font-semibold text-[#f4f1ea]">
+                EchoCity <span className="text-[#d6b56d] text-sm font-semibold">Business</span>
               </span>
               <button
                 onClick={() => setSidebarOpen(false)}
-                className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg"
+                className="p-1.5 text-[#9b9a94] hover:text-[#f4f1ea] rounded-lg"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -218,8 +218,8 @@ export function BusinessShell({ children }: { children: React.ReactNode }) {
                     onClick={() => setSidebarOpen(false)}
                     className={`flex items-center gap-3 px-3 py-3 text-sm font-medium rounded-lg transition-colors ${
                       isActive
-                        ? 'bg-brand-50 text-brand-600'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                        ? 'bg-[#090b0e] text-[#d6b56d] border border-[#282d34]'
+                        : 'text-[#9b9a94] hover:text-[#f4f1ea] hover:bg-[#11161c]'
                     }`}
                   >
                     <Icon className="w-5 h-5 shrink-0" strokeWidth={isActive ? 2.5 : 2} />
@@ -229,11 +229,11 @@ export function BusinessShell({ children }: { children: React.ReactNode }) {
               })}
             </nav>
 
-            <div className="p-3 border-t border-gray-100 space-y-1">
+            <div className="p-3 border-t border-[#282d34] space-y-1">
               <Link
                 href="/"
                 onClick={() => setSidebarOpen(false)}
-                className="flex items-center gap-2 px-3 py-3 text-sm text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-50"
+                className="flex items-center gap-2 px-3 py-3 text-sm text-[#9b9a94] hover:text-[#f4f1ea] rounded-lg hover:bg-[#11161c]"
               >
                 <ArrowLeft className="w-4 h-4" />
                 Вернуться на сайт

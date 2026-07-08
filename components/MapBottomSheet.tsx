@@ -36,25 +36,25 @@ export function MapBottomSheet({
     >
       <Drawer.Portal>
         <Drawer.Content
-          className="fixed bottom-0 left-0 right-0 z-40 flex flex-col bg-white rounded-t-2xl md:hidden"
+          className="fixed bottom-0 left-0 right-0 z-40 flex flex-col bg-[color:var(--ec-surface)] rounded-t-2xl md:hidden"
           style={{ maxHeight: '85vh' }}
         >
           {/* Drag handle */}
-          <div className="mx-auto w-12 h-1.5 shrink-0 rounded-full bg-gray-300 my-3" />
+          <div className="mx-auto w-12 h-1.5 shrink-0 rounded-full bg-[color:var(--ec-line)] my-3" />
 
           {/* Selected place detail */}
           {selectedPlace && (
-            <div className="px-4 pb-3 border-b border-gray-100">
+            <div className="px-4 pb-3 border-b ec-line">
               <Link href={`/places/${selectedPlace.id}`} className="block">
-                <h3 className="font-semibold text-gray-900">{selectedPlace.name}</h3>
+                <h3 className="font-semibold text-[color:var(--ec-text)]">{selectedPlace.name}</h3>
                 {selectedPlace.addressLine1 && (
-                  <p className="text-sm text-gray-500 flex items-center gap-1 mt-1">
+                  <p className="text-sm ec-muted flex items-center gap-1 mt-1">
                     <MapPin className="w-3.5 h-3.5" />
                     {selectedPlace.addressLine1}
                   </p>
                 )}
                 {selectedPlace.placeType && (
-                  <span className="inline-block mt-1.5 text-xs bg-brand-50 text-brand-700 px-2 py-0.5 rounded-full badge">
+                  <span className="ec-chip inline-block mt-1.5 text-xs px-2 py-0.5 badge">
                     {selectedPlace.placeType}
                   </span>
                 )}
@@ -64,7 +64,7 @@ export function MapBottomSheet({
 
           {/* Place list */}
           <div className="flex-1 overflow-y-auto px-4 py-2 pb-safe">
-            <p className="text-xs text-gray-400 mb-2">{places.length} мест на карте</p>
+            <p className="text-xs ec-muted mb-2">{places.length} мест на карте</p>
             <div className="space-y-2">
               {places.map((place) => (
                 <button
@@ -72,13 +72,13 @@ export function MapBottomSheet({
                   onClick={() => onPlaceSelect(place)}
                   className={`w-full text-left p-3 rounded-xl transition-colors ${
                     selectedPlace?.id === place.id
-                      ? 'bg-brand-50 border border-brand-200'
-                      : 'bg-gray-50 hover:bg-gray-100 border border-transparent'
+                      ? 'bg-[color:var(--ec-surface-muted)] border ec-line'
+                      : 'bg-[color:var(--ec-bg)] hover:bg-[color:var(--ec-surface-muted)] border border-transparent'
                   }`}
                 >
-                  <h4 className="font-medium text-sm text-gray-900">{place.name}</h4>
+                  <h4 className="font-medium text-sm text-[color:var(--ec-text)]">{place.name}</h4>
                   {place.addressLine1 && (
-                    <p className="text-xs text-gray-500 mt-0.5">{place.addressLine1}</p>
+                    <p className="text-xs ec-muted mt-0.5">{place.addressLine1}</p>
                   )}
                 </button>
               ))}

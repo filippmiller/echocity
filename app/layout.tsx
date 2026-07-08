@@ -44,7 +44,8 @@ export default function RootLayout({
     <html lang="ru" className={manrope.variable}>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-        <meta name="theme-color" content="#2563EB" />
+        <meta name="theme-color" content="#f7f3ed" media="(prefers-color-scheme: light)" />
+        <meta name="theme-color" content="#090b0e" media="(prefers-color-scheme: dark)" />
         <link rel="manifest" href="/manifest.json" />
       </head>
       <body>

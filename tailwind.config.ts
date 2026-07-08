@@ -13,24 +13,24 @@ const config: Config = {
     extend: {
       colors: {
         brand: {
-          50: '#EFF6FF',
-          100: '#DBEAFE',
-          200: '#BFDBFE',
-          500: '#3B82F6',
-          600: '#2563EB',
-          700: '#1D4ED8',
+          50: '#f2e8dc',
+          100: '#eadccb',
+          200: '#d8c4ad',
+          500: '#71412f',
+          600: '#5f3728',
+          700: '#43271d',
         },
         deal: {
-          discount: '#EF4444',
-          savings: '#16A34A',
-          urgent: '#D97706',
-          premium: '#7C3AED',
-          flash: '#E11D48',
+          discount: '#71412f',
+          savings: '#235848',
+          urgent: '#9a641b',
+          premium: '#1f2933',
+          flash: '#8b2f25',
         },
         surface: {
-          primary: '#FFFFFF',
-          secondary: '#F9FAFB',
-          tertiary: '#F3F4F6',
+          primary: '#fffdf8',
+          secondary: '#f7f3ed',
+          tertiary: '#f2e8dc',
         },
       },
       spacing: {

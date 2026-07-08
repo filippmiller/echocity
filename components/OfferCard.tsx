@@ -93,167 +93,97 @@ export function OfferCard({
 
   return (
     <Link href={`/offers/${id}`} className="block group" onClick={hapticTap}>
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all active:scale-[0.98]">
-        {/* Image */}
-        <div className="relative aspect-[16/10] bg-gray-100">
+      <div className="grid grid-cols-[76px_1fr] gap-3 border-b ec-line py-3 transition-colors hover:bg-[color:var(--ec-surface)]/60 active:opacity-80">
+        <div className="relative h-[76px] w-[76px] overflow-hidden rounded-xl bg-[color:var(--ec-surface-muted)]">
           {imageUrl ? (
-            <img src={imageUrl} alt={title} className="w-full h-full object-cover" loading="lazy" />
+            <img src={imageUrl} alt={title} className="h-full w-full object-cover saturate-[0.9]" loading="lazy" />
           ) : (
             <img
               src={`/images/offers/offer-placeholder-${id.length > 0 ? ((id.charCodeAt(id.length - 1) % 4) + 1) : 1}.jpg`}
               alt={title}
-              className="w-full h-full object-cover opacity-80"
+              className="h-full w-full object-cover opacity-90 saturate-[0.85]"
               loading="lazy"
               onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
             />
           )}
 
-          {/* Discount badge */}
-          <div className={`absolute top-2 left-2 px-2 py-1 rounded-lg text-sm font-bold text-white badge ${
-            isFlash ? 'bg-deal-flash' : 'bg-deal-discount'
-          }`}>
-            {isFlash && <Flame className="inline w-3.5 h-3.5 mr-0.5 -mt-0.5" />}
+          <div className="absolute left-1.5 top-1.5 rounded-full bg-[color:var(--ec-bg)]/90 px-1.5 py-0.5 text-[10px] font-bold ec-accent-text backdrop-blur badge">
+            {isFlash && <Flame className="mr-0.5 inline h-3 w-3 -mt-0.5" />}
             {badge}
           </div>
-
-
-          {/* Plus badge */}
-          {isMembersOnly && (
-            <div className="absolute top-2 right-10 bg-deal-premium text-white px-2 py-0.5 rounded text-xs font-semibold badge">
-              Plus
-            </div>
-          )}
-
-          {/* Online badge */}
-          {(redemptionChannel === 'ONLINE' || redemptionChannel === 'BOTH') && (
-            <div className={`absolute ${isMembersOnly ? 'top-8' : 'top-2'} right-10 bg-blue-500 text-white px-2 py-0.5 rounded text-xs font-semibold badge flex items-center gap-0.5`}>
-              <Globe className="w-3 h-3" />
-              Online
-            </div>
-          )}
-
-          {/* Trending badge */}
-          {isTrending && (
-            <div className="absolute top-2 left-2 mt-7 px-2 py-0.5 rounded text-xs font-semibold badge bg-amber-400 text-white flex items-center gap-0.5 leading-tight">
-              🔥 Популярно
-            </div>
-          )}
-
-          {/* Favorite button */}
-          <div className="absolute top-1.5 right-1.5 z-10">
-            <FavoriteButton entityType="OFFER" entityId={id} size="sm" />
-          </div>
-
-          {/* Urgency bar */}
-          {(timeInfo || isAlmostGone) && (
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent px-2 py-1.5 flex items-center gap-2">
-              {timeInfo && (
-                <span className={`flex items-center gap-1 text-xs font-medium badge ${timeInfo.urgent ? 'text-deal-urgent' : 'text-white'}`}>
-                  <Clock className="w-3 h-3" />
-                  {timeInfo.text}
-                </span>
-              )}
-              {isAlmostGone && maxRedemptions && redemptionCount !== undefined && (
-                <span className="flex items-center gap-1 text-xs font-medium text-white badge">
-                  Осталось {maxRedemptions - (redemptionCount || 0)}
-                </span>
-              )}
-            </div>
-          )}
         </div>
 
-        {/* Content */}
-        <div className="p-3">
-          <h3 className="font-semibold text-gray-900 text-sm leading-snug line-clamp-2 group-hover:text-brand-600">
-            {title}
-          </h3>
+        <div className="min-w-0">
+          <div className="flex items-start justify-between gap-2">
+            <h3 className="line-clamp-2 text-[15px] font-semibold leading-tight tracking-[-0.02em] text-[color:var(--ec-text)] group-hover:ec-accent-text">
+              {title}
+            </h3>
+            <div className="shrink-0">
+              <FavoriteButton entityType="OFFER" entityId={id} size="sm" />
+            </div>
+          </div>
           {subtitle && (
-            <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{subtitle}</p>
+            <p className="mt-0.5 line-clamp-1 text-xs ec-muted">{subtitle}</p>
           )}
-          {/* Price / savings */}
+          <div className="mt-1 flex items-center gap-1.5 text-xs ec-muted">
+            <span className="truncate">{branchName}</span>
+            {isVerified && <VerifiedBadge size="sm" />}
+            {distance !== undefined && (
+              <span className="shrink-0">
+                · {distance < 1 ? `${Math.round(distance * 1000)} м` : `${distance.toFixed(1)} км`}
+              </span>
+            )}
+          </div>
+
           {pricePair ? (
-            <div className="mt-1.5 flex items-center gap-2 flex-wrap">
-              <span className="text-xs text-gray-400 line-through">{formatPrice(pricePair.original)}</span>
-              <span className="text-sm font-bold text-gray-900">{formatPrice(pricePair.current)}</span>
+            <div className="mt-1.5 flex items-baseline gap-2">
+              <span className="text-base font-bold tracking-[-0.02em] text-[color:var(--ec-text)]">{formatPrice(pricePair.current)}</span>
+              <span className="text-xs line-through ec-muted">{formatPrice(pricePair.original)}</span>
               {estimatedSavings != null && estimatedSavings > 0 && (
-                <span className="text-xs font-semibold text-emerald-600">
-                  выгода {formatPrice(estimatedSavings)}
+                <span className="text-xs font-semibold text-[color:var(--ec-accent-2)]">
+                  {formatPrice(estimatedSavings)}
                 </span>
               )}
             </div>
           ) : estimatedSavings != null && estimatedSavings > 0 ? (
-            <div className="mt-1.5 text-xs font-semibold text-emerald-600">
+            <div className="mt-1.5 text-xs font-semibold text-[color:var(--ec-accent-2)]">
               Выгода до {formatPrice(estimatedSavings)}
             </div>
           ) : null}
-          {/* Schedule availability indicator */}
-          {scheduleStatus && (
-            <div className="mt-1">
-              {scheduleStatus.kind === 'open_now' && (
-                <span className="inline-flex items-center gap-1 text-xs font-medium text-green-600 badge">
-                  <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse inline-block" />
-                  Сейчас
-                </span>
-              )}
-              {scheduleStatus.kind === 'opens_today' && (
-                <span className="text-xs text-orange-500 font-medium badge">
-                  Сегодня с {scheduleStatus.startTime}
-                </span>
-              )}
-              {scheduleStatus.kind === 'tomorrow' && (
-                <span className="text-xs text-gray-400 badge">Завтра</span>
-              )}
-            </div>
-          )}
-          <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
-            <span className="flex items-center gap-1 truncate max-w-[60%]">
-              <span className="truncate">{branchName}</span>
-              {isVerified && <VerifiedBadge size="sm" />}
-            </span>
-            {distance !== undefined && (
-              <span className="shrink-0 font-medium text-gray-600">
-                {distance < 1 ? `${Math.round(distance * 1000)} м` : `${distance.toFixed(1)} км`}
-              </span>
-            )}
-          </div>
+
           {nearestMetro && (
-            <div className="mt-0.5 flex items-center gap-1 text-xs text-gray-400">
+            <div className="mt-0.5 flex items-center gap-1 text-xs ec-muted">
               <Train className="w-3 h-3 shrink-0" />
               <span className="truncate">{nearestMetro}</span>
             </div>
           )}
-          <div className="mt-1.5 flex items-center gap-2 flex-wrap">
+          <div className="mt-1.5 flex items-center gap-2 overflow-hidden text-xs ec-muted">
+            {scheduleStatus?.kind === 'open_now' && (
+              <span className="shrink-0 font-medium text-[color:var(--ec-accent-2)]">сейчас</span>
+            )}
+            {scheduleStatus?.kind === 'opens_today' && (
+              <span className="shrink-0 font-medium text-[color:var(--ec-warning)]">с {scheduleStatus.startTime}</span>
+            )}
+            {timeInfo && (
+              <span className="flex shrink-0 items-center gap-1">
+                <Clock className="h-3 w-3" />
+                {timeInfo.text}
+              </span>
+            )}
             {avgRating != null && avgRating > 0 && (
-              <span className="flex items-center gap-1 text-xs text-amber-500">
-                <Star className="w-3 h-3 fill-amber-400" />
+              <span className="flex shrink-0 items-center gap-1">
+                <Star className="h-3 w-3" />
                 {avgRating}
               </span>
             )}
             {redemptionCount !== undefined && redemptionCount > 0 && (
-              <span className="flex items-center gap-1 text-xs text-gray-400">
-                <Users className="w-3 h-3" />
-                {redemptionCount} использовали
+              <span className="flex shrink-0 items-center gap-1">
+                <Users className="h-3 w-3" />
+                {redemptionCount}
               </span>
             )}
-            {reviewCount !== undefined && reviewCount > 0 && (
-              <span className="flex items-center gap-1 text-xs text-green-500">
-                <BadgeCheck className="w-3 h-3" />
-                {reviewCount} {reviewCount === 1 ? 'отзыв' : reviewCount < 5 ? 'отзыва' : 'отзывов'}
-              </span>
-            )}
-            {mapUrl && (
-              <a
-                href={mapUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                className="flex items-center gap-1 text-xs text-brand-600 hover:text-brand-700"
-                title="Построить маршрут"
-              >
-                <Navigation className="w-3 h-3" />
-                Маршрут
-              </a>
-            )}
+            {isMembersOnly && <span className="shrink-0">Plus</span>}
+            {(redemptionChannel === 'ONLINE' || redemptionChannel === 'BOTH') && <Globe className="h-3 w-3 shrink-0" />}
           </div>
         </div>
       </div>
