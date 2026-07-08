@@ -82,7 +82,7 @@ export function OfferFeed({ city, visibility, category, activeNow, metro, distri
 
   if (loading) {
     return (
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <div className="ec-panel divide-y ec-line">
         {Array.from({ length: 6 }).map((_, i) => (
           <OfferCardSkeleton key={i} />
         ))}
@@ -92,12 +92,9 @@ export function OfferFeed({ city, visibility, category, activeNow, metro, distri
 
   if (offers.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-center px-4">
-        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-          <span className="text-2xl text-gray-400">%</span>
-        </div>
-        <p className="text-gray-900 font-semibold text-lg">Нет подходящих предложений</p>
-        <p className="text-sm text-gray-500 mt-1 max-w-xs">
+      <div className="ec-panel px-4 py-6 text-left">
+        <p className="text-[color:var(--ec-text)] font-semibold text-base">Нет подходящих предложений</p>
+        <p className="text-sm ec-muted mt-1 max-w-md">
           {hasActiveFilters
             ? 'Попробуйте изменить фильтры или сбросить их, чтобы увидеть все скидки.'
             : 'Первые партнёры подключаются. Загляните позже или посмотрите другие разделы.'}
@@ -105,7 +102,7 @@ export function OfferFeed({ city, visibility, category, activeNow, metro, distri
         {hasActiveFilters && onClearFilters && (
           <button
             onClick={onClearFilters}
-            className="mt-4 px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-full hover:bg-brand-700 active:bg-brand-800 transition-colors"
+            className="ec-button mt-4 px-4 py-2 text-sm transition-opacity hover:opacity-90"
           >
             Сбросить фильтры
           </button>
@@ -115,7 +112,7 @@ export function OfferFeed({ city, visibility, category, activeNow, metro, distri
   }
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+    <div className="ec-panel divide-y ec-line px-3 md:px-4">
       {offers.map((offer) => (
         <OfferCard
           key={offer.id}

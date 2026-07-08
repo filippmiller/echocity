@@ -196,46 +196,52 @@ export default async function Home() {
   const { freeOffers, memberOffers, flashOffers, allActive, demandCount, placeCount, collections, activeBundles, dealOfTheDay, seasonalCollections, curatedCollections } = await getHomeData()
 
   return (
-    <main className="min-h-screen bg-white">
-      {/* Hero — compact, punchy, with photo background */}
-      <section className="relative bg-gradient-to-br from-brand-600 via-brand-700 to-blue-800 text-white pt-8 pb-12 px-4 overflow-hidden">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/images/hero-bg.jpg" alt="" className="absolute inset-0 w-full h-full object-cover opacity-25 mix-blend-soft-light" />
-        <div className="max-w-5xl mx-auto text-center relative z-10">
-          <HomeCityBadge allActive={allActive} />
-          <h1 className="text-3xl md:text-4xl font-bold mb-2 leading-tight">
-            Скидки рядом с вами
-          </h1>
-          <p className="text-blue-100 text-sm md:text-base mb-5 max-w-lg mx-auto">
-            Находите предложения, активируйте через QR и экономьте каждый день
-          </p>
+    <main className="ec-page min-h-screen">
+      <section className="border-b ec-line px-4 py-5">
+        <div className="max-w-5xl mx-auto">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-xs ec-muted">поиск предложений рядом</p>
+              <h1 className="mt-1 max-w-xl text-2xl md:text-3xl font-semibold tracking-[-0.045em] leading-tight text-[color:var(--ec-text)]">
+                Найдите выгодное место без купонного шума
+              </h1>
+              <p className="mt-2 max-w-xl text-sm ec-muted">
+                Сравниваем расстояние, выгоду, рейтинг, условия и время действия.
+              </p>
+            </div>
+            <div className="hidden md:block">
+              <HomeCityBadge allActive={allActive} />
+            </div>
+          </div>
 
-          {/* Search bar */}
-          <div className="max-w-md mx-auto mb-4">
+          <div className="mt-4 max-w-xl">
             <Link
               href="/offers"
-              className="flex items-center gap-3 bg-white/95 rounded-xl px-4 py-3 text-gray-500 text-sm hover:bg-white transition-colors shadow-lg"
+              className="ec-field flex h-12 items-center gap-3 px-4 text-base ec-muted transition-colors hover:bg-[color:var(--ec-surface)]"
             >
-              <svg className="w-5 h-5 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
-              Найти скидку, заведение...
+              кофе, ужин, маникюр рядом
             </Link>
           </div>
 
-          {/* Stats — only show when numbers are meaningful */}
-          {placeCount >= 20 ? (
-            <div className="flex justify-center gap-6 text-xs text-blue-200">
-              <span><strong className="text-white">{placeCount}</strong> {plural(placeCount, 'заведение', 'заведения', 'заведений')}</span>
-              <span><strong className="text-white">{allActive}</strong> {plural(allActive, 'скидка', 'скидки', 'скидок')}</span>
-              <span><strong className="text-white">{demandCount}</strong> {plural(demandCount, 'запрос', 'запроса', 'запросов')}</span>
+          <div className="mt-4 grid grid-cols-3 gap-2 max-w-xl">
+            <div className="ec-kpi">
+              <b className="text-lg">{placeCount}</b>
+              <span className="block text-[11px] ec-muted">{plural(placeCount, 'место', 'места', 'мест')}</span>
             </div>
-          ) : (
-            <p className="text-xs text-blue-200">Новые скидки каждый день</p>
-          )}
+            <div className="ec-kpi">
+              <b className="text-lg">{allActive}</b>
+              <span className="block text-[11px] ec-muted">{plural(allActive, 'скидка', 'скидки', 'скидок')}</span>
+            </div>
+            <div className="ec-kpi">
+              <b className="text-lg">{demandCount}</b>
+              <span className="block text-[11px] ec-muted">{plural(demandCount, 'запрос', 'запроса', 'запросов')}</span>
+            </div>
+          </div>
 
-          {/* Savings counter */}
-          <div className="mt-4">
+          <div className="mt-4 max-w-xl">
             <SavingsCounter variant="hero" />
           </div>
         </div>
@@ -256,17 +262,16 @@ export default async function Home() {
       )}
 
       {/* Categories — horizontal scroll with emojis */}
-      <section className="py-5 px-4 border-b border-gray-100">
+      <section className="py-4 px-4 border-b ec-line">
         <div className="max-w-5xl mx-auto">
           <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1 md:flex-wrap md:overflow-visible">
             {CATEGORIES.map((cat) => (
               <Link
                 key={cat.slug}
                 href={cat.slug === 'tourist' ? '/tourist' : `/offers?category=${cat.slug}`}
-                className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 rounded-full hover:bg-gray-100 shrink-0 transition-colors"
+                className="ec-chip flex items-center gap-2 px-3 py-2 rounded-full shrink-0 transition-opacity hover:opacity-80"
               >
-                <span className="text-lg">{cat.emoji}</span>
-                <span className="text-sm text-gray-700 font-medium whitespace-nowrap">{cat.name}</span>
+                <span className="text-sm text-[color:var(--ec-text)] font-medium whitespace-nowrap">{cat.name}</span>
               </Link>
             ))}
           </div>
@@ -274,30 +279,21 @@ export default async function Home() {
       </section>
 
       {/* How it works — 3-step explainer */}
-      <section className="py-6 px-4 bg-gray-50 border-b border-gray-100">
+      <section className="py-5 px-4 border-b ec-line">
         <div className="max-w-5xl mx-auto">
-          <h2 className="text-center font-bold text-gray-900 mb-5">Как это работает</h2>
+          <h2 className="font-semibold text-[color:var(--ec-text)] mb-4">Как это работает</h2>
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
-              <div className="w-12 h-12 bg-brand-100 rounded-xl flex items-center justify-center mx-auto mb-2">
-                <span className="text-2xl">&#x1F50D;</span>
-              </div>
-              <p className="text-sm font-semibold text-gray-800">Найдите скидку</p>
-              <p className="text-xs text-gray-500 mt-1">Рядом с вами или по категории</p>
+              <p className="text-sm font-semibold text-[color:var(--ec-text)]">Найдите</p>
+              <p className="text-xs ec-muted mt-1">по месту, цене и времени</p>
             </div>
             <div>
-              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mx-auto mb-2">
-                <span className="text-2xl">&#x1F4F1;</span>
-              </div>
-              <p className="text-sm font-semibold text-gray-800">Покажите QR</p>
-              <p className="text-xs text-gray-500 mt-1">На кассе в заведении</p>
+              <p className="text-sm font-semibold text-[color:var(--ec-text)]">Покажите QR</p>
+              <p className="text-xs ec-muted mt-1">кассиру до оплаты</p>
             </div>
             <div>
-              <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center mx-auto mb-2">
-                <span className="text-2xl">&#x1F389;</span>
-              </div>
-              <p className="text-sm font-semibold text-gray-800">Получите скидку</p>
-              <p className="text-xs text-gray-500 mt-1">Мгновенно и без хлопот</p>
+              <p className="text-sm font-semibold text-[color:var(--ec-text)]">Сэкономьте</p>
+              <p className="text-xs ec-muted mt-1">с подтверждением</p>
             </div>
           </div>
         </div>
@@ -343,11 +339,10 @@ export default async function Home() {
 
       {/* Editorial collections from DB */}
       {collections.length > 0 && (
-        <section className="py-6 px-4 bg-gray-50">
+        <section className="py-6 px-4 border-y ec-line">
           <div className="max-w-5xl mx-auto">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="font-bold text-gray-900 flex items-center gap-2">
-                <span className="text-lg">✨</span>
+              <h2 className="font-semibold text-[color:var(--ec-text)] flex items-center gap-2">
                 Редакционные подборки
               </h2>
             </div>
@@ -369,21 +364,20 @@ export default async function Home() {
 
       {/* Seasonal Collections */}
       {seasonalCollections.length > 0 && (
-        <section className="py-6 px-4 bg-gradient-to-r from-emerald-50 to-teal-50">
+        <section className="py-6 px-4 border-y ec-line">
           <div className="max-w-5xl mx-auto">
             <div className="flex items-center gap-2 mb-4">
-              <span className="text-lg">🌿</span>
-              <h2 className="font-bold text-gray-900">Сезонные подборки</h2>
+              <h2 className="font-semibold text-[color:var(--ec-text)]">Сезонные подборки</h2>
             </div>
             <div className="space-y-6">
               {seasonalCollections.map((col: SeasonalCollection) => (
                 <div key={col.slug}>
                   <div className="flex items-center justify-between mb-3">
                     <div>
-                      <h3 className="font-semibold text-gray-800 text-sm">{col.title}</h3>
-                      <p className="text-xs text-gray-500 mt-0.5">{col.description}</p>
+                      <h3 className="font-semibold text-[color:var(--ec-text)] text-sm">{col.title}</h3>
+                      <p className="text-xs ec-muted mt-0.5">{col.description}</p>
                     </div>
-                    <span className="text-xs text-gray-400 shrink-0">{col.offers.length} предложений</span>
+                    <span className="text-xs ec-muted shrink-0">{col.offers.length} предложений</span>
                   </div>
                   <div className="flex gap-4 overflow-x-auto hide-scrollbar pb-2">
                     {col.offers.map((offer) => (
@@ -401,13 +395,12 @@ export default async function Home() {
 
       {/* Flash Deals */}
       {flashOffers.length > 0 && (
-        <section className="py-6 px-4 bg-gradient-to-r from-deal-flash/5 to-orange-50">
+        <section className="py-6 px-4 border-y ec-line">
           <div className="max-w-5xl mx-auto">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <span className="text-lg">⚡</span>
-                <h2 className="font-bold text-gray-900">Flash-скидки</h2>
-                <span className="text-xs bg-deal-flash text-white px-2 py-0.5 rounded-full font-medium animate-pulse badge">
+                <h2 className="font-semibold text-[color:var(--ec-text)]">Flash-скидки</h2>
+                <span className="ec-chip text-xs px-2 py-0.5 rounded-full font-medium badge">
                   Ограничено
                 </span>
               </div>
@@ -428,13 +421,12 @@ export default async function Home() {
 
       {/* Bundles — cross-merchant combos */}
       {activeBundles.length > 0 && (
-        <section className="py-6 px-4 bg-gradient-to-r from-indigo-50 to-purple-50">
+        <section className="py-6 px-4 border-y ec-line">
           <div className="max-w-5xl mx-auto">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <span className="text-lg">&#x1F381;</span>
-                <h2 className="font-bold text-gray-900">Комбо</h2>
-                <span className="text-xs bg-indigo-600 text-white px-2 py-0.5 rounded-full font-medium badge">
+                <h2 className="font-semibold text-[color:var(--ec-text)]">Комбо</h2>
+                <span className="ec-chip text-xs px-2 py-0.5 rounded-full font-medium badge">
                   Несколько заведений
                 </span>
               </div>
@@ -487,13 +479,12 @@ export default async function Home() {
 
       {/* Members-only Deals */}
       {memberOffers.length > 0 && (
-        <section className="py-6 px-4 bg-gradient-to-r from-deal-premium/5 to-purple-50">
+        <section className="py-6 px-4 border-y ec-line">
           <div className="max-w-5xl mx-auto">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <span className="text-lg">👑</span>
-                <h2 className="font-bold text-gray-900">Для подписчиков</h2>
-                <span className="text-xs bg-deal-premium text-white px-2 py-0.5 rounded-full font-medium badge">
+                <h2 className="font-semibold text-[color:var(--ec-text)]">Для подписчиков</h2>
+                <span className="ec-chip text-xs px-2 py-0.5 rounded-full font-medium badge">
                   Plus
                 </span>
               </div>
@@ -516,13 +507,12 @@ export default async function Home() {
                   <div className="absolute inset-0 flex items-center justify-center">
                     <Link
                       href="/subscription"
-                      className="bg-white/95 backdrop-blur-sm rounded-xl shadow-lg px-5 py-4 text-center max-w-[220px] hover:shadow-xl transition-shadow"
+                      className="ec-surface rounded-xl px-5 py-4 text-center max-w-[220px] transition-opacity hover:opacity-90"
                     >
-                      <div className="text-2xl mb-1">🔓</div>
-                      <p className="font-bold text-gray-900 text-sm mb-1">
+                      <p className="font-bold text-[color:var(--ec-text)] text-sm mb-1">
                         +{memberOffers.length} эксклюзивных скидок
                       </p>
-                      <p className="text-xs text-deal-premium font-medium">
+                      <p className="text-xs ec-accent-text font-medium">
                         от 199₽/мес · 7 дней бесплатно
                       </p>
                     </Link>
@@ -537,19 +527,19 @@ export default async function Home() {
       {/* Demand CTA — "Хочу скидку" */}
       <section className="py-8 px-4">
         <div className="max-w-5xl mx-auto">
-          <div className="bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl p-6 text-white text-center">
-            <h2 className="text-xl font-bold mb-2">Нет скидки? Запросите!</h2>
-            <p className="text-amber-100 text-sm mb-4">
+          <div className="ec-panel p-5">
+            <h2 className="text-lg font-semibold text-[color:var(--ec-text)] mb-2">Нет скидки? Запросите</h2>
+            <p className="ec-muted text-sm mb-4">
               Нажмите «Хочу скидку» на странице заведения — когда наберётся достаточно запросов, мы договоримся о скидке
             </p>
             {demandCount > 0 && (
-              <p className="text-xs text-amber-200 mb-3">
+              <p className="text-xs ec-muted mb-3">
                 {demandCount} {demandCount === 1 ? 'активный запрос' : demandCount < 5 ? 'активных запроса' : 'активных запросов'} от пользователей
               </p>
             )}
             <Link
               href="/offers"
-              className="inline-block px-6 py-2.5 bg-white text-orange-600 rounded-xl font-semibold text-sm hover:bg-orange-50 transition-colors"
+              className="ec-button inline-block px-5 py-2.5 text-sm transition-opacity hover:opacity-90"
             >
               Смотреть заведения
             </Link>
@@ -560,26 +550,26 @@ export default async function Home() {
       {/* Business + Subscription CTAs — compact side by side */}
       <section className="py-6 px-4">
         <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-4">
-          <div className="bg-gray-50 rounded-2xl p-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-2">Для бизнеса</h2>
-            <p className="text-gray-600 text-sm mb-4">
+          <div className="ec-panel p-5">
+            <h2 className="text-lg font-semibold text-[color:var(--ec-text)] mb-2">Для бизнеса</h2>
+            <p className="ec-muted text-sm mb-4">
               Привлекайте новых клиентов через скидки и отслеживайте результаты
             </p>
             <Link
               href="/business/register"
-              className="inline-block px-5 py-2.5 bg-gray-900 text-white rounded-xl text-sm font-semibold hover:bg-gray-800 transition-colors"
+              className="ec-button inline-block px-5 py-2.5 text-sm transition-opacity hover:opacity-90"
             >
               Подключить заведение
             </Link>
           </div>
-          <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-2xl p-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-2">Подписка Plus</h2>
-            <p className="text-gray-600 text-sm mb-4">
+          <div className="ec-panel p-5">
+            <h2 className="text-lg font-semibold text-[color:var(--ec-text)] mb-2">Подписка Plus</h2>
+            <p className="ec-muted text-sm mb-4">
               Эксклюзивные скидки от лучших заведений. 7 дней бесплатно.
             </p>
             <Link
               href="/subscription"
-              className="inline-block px-5 py-2.5 bg-deal-premium text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity"
+              className="ec-button inline-block px-5 py-2.5 text-sm transition-opacity hover:opacity-90"
             >
               Попробовать бесплатно
             </Link>

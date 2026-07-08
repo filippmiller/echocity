@@ -69,7 +69,7 @@ export function MobileBottomNav() {
   return (
     <>
       <nav
-        className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t ec-line bg-[color:var(--ec-bg)]/95 backdrop-blur-xl"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         <div className="flex justify-around items-center h-14">
@@ -89,8 +89,8 @@ export function MobileBottomNav() {
                 onClick={(e) => handleTabClick(e, tab)}
                 className={`flex flex-col items-center justify-center gap-0.5 w-full h-full transition-colors ${
                   isActive
-                    ? 'text-brand-600'
-                    : 'text-gray-400 active:text-gray-600'
+                    ? 'ec-accent-text'
+                    : 'ec-muted active:text-[color:var(--ec-text)]'
                 }`}
               >
                 <Icon className="w-5 h-5" strokeWidth={isActive ? 2.5 : 2} />
