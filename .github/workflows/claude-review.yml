@@ -11,7 +11,7 @@ jobs:
     if: |
       (github.event_name == 'pull_request') ||
       (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude'))
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, lan-ci-linux]
     permissions:
       contents: read
       pull-requests: write
